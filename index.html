@@ -231,7 +231,6 @@ tbody tr:last-child td{ border-bottom:none; }
 .approval-actions{ display:flex; gap:6px; }
 .btn.approve{ background:transparent; color:var(--green); border:1px solid var(--green); padding:5px 9px; font-size:10px; }
 .btn.reject{ background:transparent; color:var(--red); border:1px solid var(--red); padding:5px 9px; font-size:10px; }
-.btn.edit{ background:transparent; color:var(--blue); border:1px solid var(--blue); padding:5px 9px; font-size:10px; }
 .approval-note{ font-size:10.5px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; }
 
 /* LOGIN SCREEN */
@@ -336,6 +335,7 @@ tbody tr:last-child td{ border-bottom:none; }
       <div class="nav-item" data-view="planningsystem"><span class="num">05</span> Planning System</div>
       <div class="nav-item" data-view="history"><span class="num">06</span> Historical Report</div>
       <div class="nav-item" data-view="summary"><span class="num">07</span> Summary Mechanic</div>
+      <div class="nav-item" data-view="hm"><span class="num">08</span> Monitoring HM</div>
     </nav>
     <div class="sidebar-foot" id="sidebar-status"><span class="status-dot"></span>SYSTEM ONLINE</div>
   </aside>
@@ -445,7 +445,10 @@ tbody tr:last-child td{ border-bottom:none; }
             </div>
             <div class="grid grid-3">
               <div class="field"><label>Operator / Mekanik</label>
-                <select id="p2h-operator" required></select>
+                <select id="p2h-operator" required>
+                  <option value="Robertus G M">Robertus G M</option>
+                  <option value="Alfius S">Alfius S</option>
+                </select>
               </div>
               <div class="field"><label>HM / KM Awal</label><input type="number" id="p2h-hmawal" min="0" step="1" required></div>
               <div class="field"><label>HM / KM Akhir</label><input type="number" id="p2h-hmakhir" min="0" step="1"></div>
@@ -508,7 +511,7 @@ tbody tr:last-child td{ border-bottom:none; }
               <div class="field"><label>Type Unit</label><input type="text" id="d-typeunit" disabled></div>
               <div class="field"><label>HM (Hour Meter)</label><input type="number" id="d-hm" min="0" step="1" required placeholder="e.g. 12450"></div>
             </div>
-            <div class="grid grid-4">
+            <div class="grid grid-3">
               <div class="field"><label>Breakdown Description (kategori)</label>
                 <select id="d-category" required>
                   <option value="Breakdown">Breakdown</option>
@@ -516,11 +519,11 @@ tbody tr:last-child td{ border-bottom:none; }
                   <option value="Periodical">Periodical Maintenance</option>
                 </select>
               </div>
-              <div class="field"><label>Mechanic (Penginput)</label>
-                <select id="d-mechanic" required></select>
-              </div>
-              <div class="field"><label>Mechanic 2 (rekan kerja, opsional)</label>
-                <select id="d-mechanic2"></select>
+              <div class="field"><label>Mechanic</label>
+                <select id="d-mechanic" required>
+                  <option value="Robertus G M">Robertus G M</option>
+                  <option value="Alfius S">Alfius S</option>
+                </select>
               </div>
               <div class="field"><label>Area</label>
                 <select id="d-area" required>
@@ -529,7 +532,6 @@ tbody tr:last-child td{ border-bottom:none; }
                 </select>
               </div>
             </div>
-            <div class="hint" style="margin-top:-6px; margin-bottom:6px;">Jika pekerjaan dikerjakan oleh 2 mekanik, pilih nama rekan pada <b>Mechanic 2</b>. Penginputan data tetap dilakukan oleh satu mekanik saja (field <b>Mechanic (Penginput)</b> mengikuti akun yang sedang login).</div>
             <div class="field"><label>Job Description</label><textarea id="d-jobdesc" required placeholder="Uraian pekerjaan..."></textarea></div>
             <div class="grid grid-4">
               <div class="field"><label>Breakdown Time</label><input type="time" id="d-breakdowntime"></div>
@@ -547,9 +549,8 @@ tbody tr:last-child td{ border-bottom:none; }
               </div>
             </div>
             <div class="toolbar">
-              <button type="submit" class="btn" id="d-submit-btn">＋ Simpan Record</button>
-              <button type="reset" class="btn secondary" id="d-reset-btn">Reset Form</button>
-              <button type="button" class="btn secondary" id="d-cancel-edit-btn" style="display:none;">✕ Batal Edit</button>
+              <button type="submit" class="btn">＋ Simpan Record</button>
+              <button type="reset" class="btn secondary">Reset Form</button>
             </div>
           </form>
         </div>
@@ -560,7 +561,7 @@ tbody tr:last-child td{ border-bottom:none; }
             <table>
               <thead><tr>
                 <th>Tanggal</th><th>Unit Code</th><th>Type</th><th>HM</th><th>Kategori</th><th>Job Desc</th>
-                <th>BD Time</th><th>Start</th><th>End</th><th>Durasi</th><th>Mechanic</th><th>Mechanic 2</th><th>Area</th><th>Status</th>
+                <th>BD Time</th><th>Start</th><th>End</th><th>Durasi</th><th>Mechanic</th><th>Area</th><th>Status</th>
                 <th>Approval</th><th></th>
               </tr></thead>
               <tbody id="daily-tbody"></tbody>
@@ -734,7 +735,7 @@ tbody tr:last-child td{ border-bottom:none; }
             <table>
               <thead><tr>
                 <th>Tanggal</th><th>Unit Code</th><th>Type</th><th>HM</th><th>Kategori</th><th>Job Desc</th>
-                <th>Durasi</th><th>Mechanic</th><th>Mechanic 2</th><th>Area</th><th>Status</th><th>Approval</th><th>Approved By</th>
+                <th>Durasi</th><th>Mechanic</th><th>Area</th><th>Status</th><th>Approval</th><th>Approved By</th>
               </tr></thead>
               <tbody id="history-tbody"></tbody>
             </table>
@@ -756,6 +757,23 @@ tbody tr:last-child td{ border-bottom:none; }
                 <th>Total Durasi (jam)</th><th>Rata² Durasi (jam)</th><th>Job Close</th><th>% Completion</th>
               </tr></thead>
               <tbody id="summary-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- MONITORING HM -->
+      <section class="view" id="view-hm">
+        <div class="banner">⛭ Panel ini menampilkan riwayat Monitoring HM. Penginputan data dilakukan lewat Google Spreadsheet (integrasi sinkronisasi menyusul) — bukan lewat form di aplikasi ini.</div>
+        <div class="panel">
+          <div class="panel-head"><h2>Riwayat Monitoring HM</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Tanggal</th><th>User</th><th>Kategori</th><th>Nama</th><th>Shift</th><th>Kode Unit</th>
+                <th>Pekerjaan</th><th>HM Awal</th><th>HM Akhir</th><th>HM Total</th><th>Fuel</th><th>Keterangan</th><th></th>
+              </tr></thead>
+              <tbody id="hm-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -840,7 +858,7 @@ const BACKEND_CONFIG = {
 
   // ---- OPSI B: Supabase — lihat supabase-setup.sql ----
   supabaseUrl: 'https://boabocernsqrqklvasjm.supabase.co',
-  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvYWJvY2VybnNxcnFrbHZhc2ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NDIxNDMsImV4cCI6MjA5OTUxODE0M30.cn7eg-aEdTcCqDdlPqmZsy7DGjPX_atbEvIljV-x5po',
+  supabaseAnonKey: 'sb_publishable_k6bgzzLNwk8_1QKxl_5uEg_EzAlkj5L',
 };
 
 const localFallbackStorage = {
@@ -1009,6 +1027,7 @@ let dailyRecords = [];
 let planRecords = [];
 let planningSystemRecords = [];
 let p2hRecords = [];
+let hmRecords = [];
 
 /* ================= STORAGE ================= */
 async function loadData(){
@@ -1028,6 +1047,10 @@ async function loadData(){
     const p2h = await appStorage.get('p2h-records');
     p2hRecords = p2h ? JSON.parse(p2h.value) : [];
   }catch(e){ p2hRecords = []; }
+  try{
+    const hm = await appStorage.get('hm-records');
+    hmRecords = hm ? JSON.parse(hm.value) : [];
+  }catch(e){ hmRecords = []; }
 
   // one-time import of the Excel plan schedule, guarded so it never re-runs after being cleared
   let seeded = false;
@@ -1067,13 +1090,18 @@ async function saveP2H(){
   try{ await appStorage.set('p2h-records', JSON.stringify(p2hRecords)); }
   catch(e){ console.error('save p2h failed', e); }
 }
+async function saveHM(){
+  try{ await appStorage.set('hm-records', JSON.stringify(hmRecords)); }
+  catch(e){ console.error('save hm failed', e); }
+}
 
 /* ================= NAV ================= */
 const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 const titleMap = {
   dashboard:'Dashboard KPI', database:'Database Unit', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
-  plan:'Plan Service', planningsystem:'Planning System', history:'Historical Report', summary:'Summary Mechanic'
+  plan:'Plan Service', planningsystem:'Planning System', history:'Historical Report', summary:'Summary Mechanic',
+  hm:'Monitoring HM'
 };
 navItems.forEach(item=>{
   item.addEventListener('click', ()=>{
@@ -1087,6 +1115,7 @@ navItems.forEach(item=>{
     if(item.dataset.view==='summary') renderSummary();
     if(item.dataset.view==='planningsystem') renderPlanningTable();
     if(item.dataset.view==='p2h') renderP2HChecklist();
+    if(item.dataset.view==='hm') renderHMTable();
   });
 });
 document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('id-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
@@ -1118,23 +1147,6 @@ const USERS = [
   { username:'fahmi.fanani', password:'FahmiFanani#26', name:'Fahmi Fanani',  role:'Supervisor', position:'Supervisor' },
   { username:'nasrun',       password:'Nasrun#PJO26',   name:'Nasrun',        role:'Supervisor', position:'PJO' },
 ];
-
-/* Daftar nama mekanik yang benar-benar punya akun login & mengerjakan Daily Maintenance
-   (field Mechanic / Mechanic 2 pada panel Daily Maintenance). */
-const MECHANIC_LOGIN_NAMES = ['Robertus G M','Alfius S'];
-
-/* Daftar nama operator untuk dropdown Operator/Mekanik di panel P2H —
-   mencakup akun login mekanik + nama-nama operator tambahan. */
-const OPERATOR_NAMES = [
-  'Robertus G M','Alfius S',
-  'Dede Darmawan','Suntoko','Miki Mustakim','Hengki Ramadan',
-  'Jhohan','Hairul Fadly','Alief','Alimudin','Husen'
-];
-function fillNameSelect(sel, list, {blankLabel} = {}){
-  if(!sel) return;
-  const options = list.map(n=>`<option value="${n}">${n}</option>`).join('');
-  sel.innerHTML = (blankLabel ? `<option value="">${blankLabel}</option>` : '') + options;
-}
 
 let loggedInUser = null;
 function currentRole(){ return loggedInUser ? loggedInUser.role : 'Mechanic'; }
@@ -1202,7 +1214,7 @@ document.getElementById('btn-logout').addEventListener('click', async ()=>{
   showLoginScreen();
 });
 
-const MECHANIC_VISIBLE_VIEWS = ['p2h','daily','plan','planningsystem','summary'];
+const MECHANIC_VISIBLE_VIEWS = ['p2h','daily','plan','planningsystem','summary','hm'];
 function updateRoleUI(){
   const isSupervisor = currentRole()==='Supervisor';
   document.body.classList.toggle('role-supervisor', isSupervisor);
@@ -1251,6 +1263,7 @@ function updateRoleUI(){
       p2hOperatorField.disabled = false;
     }
   }
+  renderHMTable();
 }
 
 /* ================= HELPERS ================= */
@@ -1302,8 +1315,6 @@ function renderUnitCards(){
 /* ================= DAILY MAINTENANCE ================= */
 const dUnitSelect = document.getElementById('d-unitcode');
 fillUnitSelect(dUnitSelect);
-fillNameSelect(document.getElementById('d-mechanic'), MECHANIC_LOGIN_NAMES);
-fillNameSelect(document.getElementById('d-mechanic2'), MECHANIC_LOGIN_NAMES, {blankLabel:'— Tidak ada / dikerjakan sendiri —'});
 function syncTypeFromUnit(selectEl, typeEl){
   const u = UNITS.find(x=>x.code===selectEl.value);
   typeEl.value = u ? u.type : '';
@@ -1318,102 +1329,36 @@ function updateDurationPreview(){
 document.getElementById('d-start').addEventListener('change', updateDurationPreview);
 document.getElementById('d-end').addEventListener('change', updateDurationPreview);
 
-let editingDailyId = null;
-function exitDailyEditMode(){
-  editingDailyId = null;
-  document.getElementById('d-submit-btn').textContent = '＋ Simpan Record';
-  document.getElementById('d-cancel-edit-btn').style.display = 'none';
-}
-document.getElementById('d-cancel-edit-btn').addEventListener('click', ()=>{
-  exitDailyEditMode();
-  document.getElementById('form-daily').reset();
-  syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
-  document.getElementById('d-duration').value='';
-  updateRoleUI();
-});
-window.editDaily = function(id){
-  const r = dailyRecords.find(x=>x.id===id);
-  if(!r) return;
-  editingDailyId = id;
-  document.getElementById('d-tanggal').value = r.tanggal||'';
-  document.getElementById('d-unitcode').value = r.unitCode||'';
-  syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
-  document.getElementById('d-hm').value = r.hm||'';
-  document.getElementById('d-category').value = r.category||'Breakdown';
-  document.getElementById('d-mechanic').value = r.mechanic||'';
-  document.getElementById('d-mechanic2').value = r.mechanic2||'';
-  document.getElementById('d-area').value = r.area||'Workshop';
-  document.getElementById('d-jobdesc').value = r.jobDesc||'';
-  document.getElementById('d-breakdowntime').value = r.breakdownTime||'';
-  document.getElementById('d-start').value = r.start||'';
-  document.getElementById('d-end').value = r.end||'';
-  updateDurationPreview();
-  document.getElementById('d-status').value = r.status||'Open';
-  document.getElementById('d-submit-btn').textContent = '💾 Update Record';
-  document.getElementById('d-cancel-edit-btn').style.display = '';
-  document.getElementById('view-daily').scrollIntoView({behavior:'smooth', block:'start'});
-};
 document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const start = document.getElementById('d-start').value;
   const end = document.getElementById('d-end').value;
   const duration = calcDuration(start,end);
-  const mechanic2 = document.getElementById('d-mechanic2').value;
-
-  if(editingDailyId){
-    const r = dailyRecords.find(x=>x.id===editingDailyId);
-    if(r){
-      r.tanggal = document.getElementById('d-tanggal').value;
-      r.unitCode = document.getElementById('d-unitcode').value;
-      r.typeUnit = document.getElementById('d-typeunit').value;
-      r.hm = document.getElementById('d-hm').value;
-      r.category = document.getElementById('d-category').value;
-      r.jobDesc = document.getElementById('d-jobdesc').value;
-      r.breakdownTime = document.getElementById('d-breakdowntime').value;
-      r.start = start; r.end = end; r.duration = duration;
-      r.mechanic = document.getElementById('d-mechanic').value;
-      r.mechanic2 = mechanic2;
-      r.area = document.getElementById('d-area').value;
-      r.status = document.getElementById('d-status').value;
-      // Record yang diedit wajib disetujui ulang oleh Supervisor.
-      r.editedBy = currentUserName();
-      r.editedAt = new Date().toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'});
-      r.approvalStatus = 'Pending';
-      r.approvedBy = null;
-      r.approvedAt = null;
-      r.rejectNote = null;
-    }
-    await saveDaily();
-    exitDailyEditMode();
-  } else {
-    const rec = {
-      id: uid(),
-      tanggal: document.getElementById('d-tanggal').value,
-      unitCode: document.getElementById('d-unitcode').value,
-      typeUnit: document.getElementById('d-typeunit').value,
-      hm: document.getElementById('d-hm').value,
-      category: document.getElementById('d-category').value,
-      jobDesc: document.getElementById('d-jobdesc').value,
-      breakdownTime: document.getElementById('d-breakdowntime').value,
-      start, end, duration,
-      mechanic: document.getElementById('d-mechanic').value,
-      mechanic2,
-      area: document.getElementById('d-area').value,
-      status: document.getElementById('d-status').value,
-      submittedBy: currentUserName(),
-      approvalStatus: 'Pending',
-      approvedBy: null,
-      approvedAt: null,
-      rejectNote: null,
-    };
-    dailyRecords.unshift(rec);
-    await saveDaily();
-  }
+  const rec = {
+    id: uid(),
+    tanggal: document.getElementById('d-tanggal').value,
+    unitCode: document.getElementById('d-unitcode').value,
+    typeUnit: document.getElementById('d-typeunit').value,
+    hm: document.getElementById('d-hm').value,
+    category: document.getElementById('d-category').value,
+    jobDesc: document.getElementById('d-jobdesc').value,
+    breakdownTime: document.getElementById('d-breakdowntime').value,
+    start, end, duration,
+    mechanic: document.getElementById('d-mechanic').value,
+    area: document.getElementById('d-area').value,
+    status: document.getElementById('d-status').value,
+    submittedBy: currentUserName(),
+    approvalStatus: 'Pending',
+    approvedBy: null,
+    approvedAt: null,
+    rejectNote: null,
+  };
+  dailyRecords.unshift(rec);
+  await saveDaily();
   document.getElementById('form-daily').reset();
   syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
   document.getElementById('d-duration').value='';
   renderAll();
-  updateRoleUI();
 });
 
 function approvalPillHTML(r){
@@ -1425,7 +1370,7 @@ function approvalPillHTML(r){
 function renderDailyTable(){
   const tbody = document.getElementById('daily-tbody');
   if(!dailyRecords.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="16">Belum ada record. Tambahkan lewat form di atas.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="15">Belum ada record. Tambahkan lewat form di atas.</td></tr>`;
     return;
   }
   const isSupervisor = currentRole()==='Supervisor';
@@ -1443,9 +1388,6 @@ function renderDailyTable(){
     } else {
       actionCell = `<div class="approval-note">menunggu Supervisor</div>`;
     }
-    // Tombol Edit ditampilkan untuk SEMUA user (Mechanic maupun Supervisor).
-    // Mengedit record akan mengembalikan status approval ke Pending agar diverifikasi ulang.
-    const editBtn = `<button class="btn edit" style="margin-top:6px;" onclick="editDaily('${r.id}')">✎ Edit</button>`;
     return `
     <tr>
       <td>${r.tanggal||'—'}</td>
@@ -1459,11 +1401,10 @@ function renderDailyTable(){
       <td>${r.end||'—'}</td>
       <td>${fmtDur(r.duration)}</td>
       <td>${r.mechanic}</td>
-      <td>${r.mechanic2||'—'}</td>
       <td>${r.area}</td>
       <td><span class="pill ${pillClass(r.status)}">${r.status==='Progress'?'On Progress':r.status}</span></td>
       <td>${approvalPillHTML(r)}</td>
-      <td>${actionCell}${editBtn}<button class="btn danger" style="margin-top:6px;" onclick="deleteDaily('${r.id}')">Hapus</button></td>
+      <td>${actionCell}<button class="btn danger" style="margin-top:6px;" onclick="deleteDaily('${r.id}')">Hapus</button></td>
     </tr>`;
   }).join('');
 }
@@ -1495,6 +1436,38 @@ window.rejectDaily = async function(id){
   renderAll();
 }
 
+
+/* ================= MONITORING HM ================= */
+/* Data akan diisi lewat integrasi Google Spreadsheet (menyusul). Panel ini hanya menampilkan riwayat. */
+function renderHMTable(){
+  const tbody = document.getElementById('hm-tbody');
+  if(!tbody) return;
+  if(!hmRecords.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="13">Belum ada data. Data akan tersinkron dari Google Spreadsheet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = hmRecords.map(r=>`
+    <tr>
+      <td>${r.tanggal||'—'}</td>
+      <td>${r.user||'—'}</td>
+      <td>${r.category||'—'}</td>
+      <td>${r.nama||'—'}</td>
+      <td>${r.shift||'—'}</td>
+      <td>${r.unitCode||'—'}</td>
+      <td style="white-space:normal; min-width:180px;">${r.pekerjaan||'—'}</td>
+      <td>${r.hmAwal ?? '—'}</td>
+      <td>${r.hmAkhir ?? '—'}</td>
+      <td>${r.hmTotal ?? '—'}</td>
+      <td>${r.fuel || '—'}</td>
+      <td style="white-space:normal; min-width:140px;">${r.keterangan||'—'}</td>
+      <td><button class="btn danger" onclick="deleteHM('${r.id}')">Hapus</button></td>
+    </tr>`).join('');
+}
+window.deleteHM = async function(id){
+  hmRecords = hmRecords.filter(r=>r.id!==id);
+  await saveHM();
+  renderAll();
+}
 
 /* ================= PLAN SERVICE ================= */
 const pUnitSelect = document.getElementById('p-unitcode');
@@ -1782,7 +1755,6 @@ const WA_CONTACTS = [
 
 const p2hUnitSelect = document.getElementById('p2h-unitcode');
 fillUnitSelect(p2hUnitSelect);
-fillNameSelect(document.getElementById('p2h-operator'), OPERATOR_NAMES);
 p2hUnitSelect.addEventListener('change', ()=>{
   syncTypeFromUnit(p2hUnitSelect, document.getElementById('p2h-typeunit'));
   renderP2HChecklist();
@@ -2009,7 +1981,7 @@ function renderHistory(){
   let rows = filterHistoryRows();
   const tbody = document.getElementById('history-tbody');
   if(!rows.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="13">Tidak ada data sesuai filter.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="12">Tidak ada data sesuai filter.</td></tr>`;
     return;
   }
   tbody.innerHTML = rows.map(r=>`
@@ -2017,7 +1989,7 @@ function renderHistory(){
       <td>${r.tanggal||'—'}</td><td>${r.unitCode}</td><td>${r.typeUnit}</td><td>${r.hm||'—'}</td>
       <td><span class="cat ${r.category}">${r.category==='Daily'?'Daily Maint.':r.category}</span></td>
       <td style="white-space:normal; min-width:180px;">${r.jobDesc||'—'}</td>
-      <td>${fmtDur(r.duration)}</td><td>${r.mechanic}</td><td>${r.mechanic2||'—'}</td><td>${r.area}</td>
+      <td>${fmtDur(r.duration)}</td><td>${r.mechanic}</td><td>${r.area}</td>
       <td><span class="pill ${pillClass(r.status)}">${r.status==='Progress'?'On Progress':r.status}</span></td>
       <td>${approvalPillHTML(r)}</td>
       <td>${r.approvedBy||'—'}</td>
@@ -2025,11 +1997,11 @@ function renderHistory(){
 }
 document.getElementById('h-export').addEventListener('click', ()=>{
   let rows = filterHistoryRows();
-  const header = ['Tanggal','UnitCode','TypeUnit','HM','Kategori','JobDesc','BreakdownTime','Start','End','DurasiJam','Mechanic','Mechanic2','Area','Status','ApprovalStatus','ApprovedBy','ApprovedAt','RejectNote'];
+  const header = ['Tanggal','UnitCode','TypeUnit','HM','Kategori','JobDesc','BreakdownTime','Start','End','DurasiJam','Mechanic','Area','Status','ApprovalStatus','ApprovedBy','ApprovedAt','RejectNote'];
   const csv = [header.join(',')].concat(rows.map(r=>[
     r.tanggal, r.unitCode, r.typeUnit, r.hm, r.category,
     `"${(r.jobDesc||'').replace(/"/g,'""')}"`, r.breakdownTime, r.start, r.end,
-    r.duration!==null?r.duration.toFixed(2):'', r.mechanic, r.mechanic2||'', r.area, r.status,
+    r.duration!==null?r.duration.toFixed(2):'', r.mechanic, r.area, r.status,
     r.approvalStatus||'Pending', r.approvedBy||'', r.approvedAt||'', `"${(r.rejectNote||'').replace(/"/g,'""')}"`
   ].join(','))).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
@@ -2147,6 +2119,7 @@ function renderAll(){
   renderPlanTable();
   renderPlanningTable();
   renderP2HTable();
+  renderHMTable();
   renderHistory();
   renderSummary();
   renderDashboard();
