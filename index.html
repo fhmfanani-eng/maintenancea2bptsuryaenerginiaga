@@ -157,6 +157,9 @@ tbody tr:last-child td{ border-bottom:none; }
 .pill.overdue{ background:rgba(229,72,77,0.15); color:var(--red); }
 .pill.planned{ background:rgba(74,144,217,0.15); color:var(--blue); }
 .pill.done{ background:rgba(76,175,109,0.15); color:var(--green); }
+select.exec-open, select.exec-close{ font-family:inherit; font-size:12px; font-weight:600; border-radius:6px; padding:4px 8px; border:1px solid var(--line); cursor:pointer; }
+select.exec-open{ background:rgba(255,199,44,0.15); color:var(--yellow); }
+select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 .cat{ display:inline-block; padding:2px 8px; border-radius:2px; font-size:10px; font-weight:700; font-family:'JetBrains Mono',monospace; }
 .cat.Breakdown{ background:rgba(229,72,77,0.15); color:var(--red); }
 .cat.Daily{ background:rgba(74,144,217,0.15); color:var(--blue); }
@@ -511,12 +514,18 @@ tbody tr:last-child td{ border-bottom:none; }
               <div class="field"><label>Type Unit</label><input type="text" id="d-typeunit" disabled></div>
               <div class="field"><label>HM (Hour Meter)</label><input type="number" id="d-hm" min="0" step="1" required placeholder="e.g. 12450"></div>
             </div>
-            <div class="grid grid-3">
+            <div class="grid grid-4">
               <div class="field"><label>Breakdown Description (kategori)</label>
                 <select id="d-category" required>
                   <option value="Breakdown">Breakdown</option>
                   <option value="Daily">Daily Maintenance</option>
                   <option value="Periodical">Periodical Maintenance</option>
+                </select>
+              </div>
+              <div class="field"><label>Breakdown Plan/Unplan</label>
+                <select id="d-planunplan" required>
+                  <option value="Plan">Plan</option>
+                  <option value="Unplan">Unplan</option>
                 </select>
               </div>
               <div class="field"><label>Mechanic</label>
@@ -560,7 +569,7 @@ tbody tr:last-child td{ border-bottom:none; }
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>Tanggal</th><th>Unit Code</th><th>Type</th><th>HM</th><th>Kategori</th><th>Job Desc</th>
+                <th>Tanggal</th><th>Unit Code</th><th>Type</th><th>HM</th><th>Kategori</th><th>Plan/Unplan</th><th>Job Desc</th>
                 <th>BD Time</th><th>Start</th><th>End</th><th>Durasi</th><th>Mechanic</th><th>Area</th><th>Status</th>
                 <th>Approval</th><th></th>
               </tr></thead>
@@ -616,7 +625,7 @@ tbody tr:last-child td{ border-bottom:none; }
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Tgl Rencana</th><th>Unit Code</th><th>Type</th><th>HM Rencana</th><th>Jenis Service</th><th>PIC</th><th>Status</th><th>Catatan</th><th></th></tr></thead>
+              <thead><tr><th>Tgl Rencana</th><th>Unit Code</th><th>Type</th><th>HM Rencana</th><th>Jenis Service</th><th>PIC</th><th>Status</th><th>Status Eksekusi</th><th>Tgl Eksekusi</th><th>Catatan</th><th></th></tr></thead>
               <tbody id="plan-tbody"></tbody>
             </table>
           </div>
@@ -859,6 +868,10 @@ const BACKEND_CONFIG = {
   // ---- OPSI B: Supabase — lihat supabase-setup.sql ----
   supabaseUrl: 'https://boabocernsqrqklvasjm.supabase.co',
   supabaseAnonKey: 'sb_publishable_k6bgzzLNwk8_1QKxl_5uEg_EzAlkj5L',
+
+  // ---- Sinkron Google Sheets (pilot: Daily Maintenance) ----
+  // Isi setelah deploy Apps Script sebagai Web App (URL berakhiran /exec).
+  sheetsWebAppUrl: '',
 };
 
 const localFallbackStorage = {
@@ -946,9 +959,11 @@ function loadExternalScript(src){
   });
 }
 
+let supabaseRealtimeClient = null;
 function makeSupabaseStorage(url, anonKey){
   if(typeof window.supabase === 'undefined'){ console.error('Supabase SDK belum termuat.'); return null; }
   const client = window.supabase.createClient(url, anonKey);
+  supabaseRealtimeClient = client;
   return {
     async get(key){
       const { data, error } = await client.from('kv_store').select('*').eq('key', key).maybeSingle();
@@ -1029,11 +1044,85 @@ let planningSystemRecords = [];
 let p2hRecords = [];
 let hmRecords = [];
 
+/* ---- Mapping Daily Maintenance: JS (camelCase) <-> Supabase table (snake_case) ---- */
+function dailyRecToRow(r){
+  return {
+    id: r.id,
+    tanggal: r.tanggal || null,
+    unit_code: r.unitCode || null,
+    type_unit: r.typeUnit || null,
+    hm: r.hm ? Number(r.hm) : null,
+    category: r.category || null,
+    plan_unplan: r.planUnplan || null,
+    job_desc: r.jobDesc || null,
+    breakdown_time: r.breakdownTime || null,
+    start_time: r.start || null,
+    end_time: r.end || null,
+    duration: (r.duration===null || r.duration===undefined || r.duration==='') ? null : Number(r.duration),
+    mechanic: r.mechanic || null,
+    area: r.area || null,
+    status: r.status || null,
+    submitted_by: r.submittedBy || null,
+    approval_status: r.approvalStatus || 'Pending',
+    approved_by: r.approvedBy || null,
+    approved_at: r.approvedAt || null,
+    reject_note: r.rejectNote || null,
+  };
+}
+function rowToDailyRec(row){
+  return {
+    id: row.id,
+    tanggal: row.tanggal,
+    unitCode: row.unit_code,
+    typeUnit: row.type_unit,
+    hm: row.hm,
+    category: row.category,
+    planUnplan: row.plan_unplan,
+    jobDesc: row.job_desc,
+    breakdownTime: row.breakdown_time,
+    start: row.start_time,
+    end: row.end_time,
+    duration: row.duration,
+    mechanic: row.mechanic,
+    area: row.area,
+    status: row.status,
+    submittedBy: row.submitted_by,
+    approvalStatus: row.approval_status,
+    approvedBy: row.approved_by,
+    approvedAt: row.approved_at,
+    rejectNote: row.reject_note,
+    updatedAt: row.updated_at,
+  };
+}
+async function loadDailyFromTable(){
+  const { data, error } = await supabaseRealtimeClient
+    .from('daily_maintenance_records').select('*').order('created_at', { ascending:false });
+  if(error){ console.error('load daily_maintenance_records gagal', error); dailyRecords = []; return; }
+  dailyRecords = (data||[]).map(rowToDailyRec);
+}
+async function insertDailyRecordDb(rec){
+  const { error } = await supabaseRealtimeClient.from('daily_maintenance_records').insert(dailyRecToRow(rec));
+  if(error) console.error('insert daily_maintenance_records gagal', error);
+}
+async function updateDailyRecordDb(rec){
+  const { error } = await supabaseRealtimeClient.from('daily_maintenance_records').update(dailyRecToRow(rec)).eq('id', rec.id);
+  if(error) console.error('update daily_maintenance_records gagal', error);
+}
+async function deleteDailyRecordDb(id){
+  const { error } = await supabaseRealtimeClient.from('daily_maintenance_records').delete().eq('id', id);
+  if(error) console.error('delete daily_maintenance_records gagal', error);
+}
+const usingDailyTable = ()=> STORAGE_MODE==='supabase' && !!supabaseRealtimeClient;
+
 /* ================= STORAGE ================= */
 async function loadData(){
   try{
-    const d = await appStorage.get('daily-records');
-    dailyRecords = d ? JSON.parse(d.value) : [];
+    if(usingDailyTable()){
+      await loadDailyFromTable();
+    } else {
+      const d = await appStorage.get('daily-records');
+      dailyRecords = d ? JSON.parse(d.value) : [];
+    }
   }catch(e){ dailyRecords = []; }
   try{
     const p = await appStorage.get('plan-records');
@@ -1341,6 +1430,7 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
     typeUnit: document.getElementById('d-typeunit').value,
     hm: document.getElementById('d-hm').value,
     category: document.getElementById('d-category').value,
+    planUnplan: document.getElementById('d-planunplan').value,
     jobDesc: document.getElementById('d-jobdesc').value,
     breakdownTime: document.getElementById('d-breakdowntime').value,
     start, end, duration,
@@ -1352,14 +1442,30 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
     approvedBy: null,
     approvedAt: null,
     rejectNote: null,
+    updatedAt: new Date().toISOString(),
   };
   dailyRecords.unshift(rec);
-  await saveDaily();
+  if(usingDailyTable()){ await insertDailyRecordDb(rec); } else { await saveDaily(); }
   document.getElementById('form-daily').reset();
   syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
   document.getElementById('d-duration').value='';
   renderAll();
+  syncDailyToSheets();
 });
+
+/* ---- Sinkron ke Google Sheets (pilot: Daily Maintenance) ----
+   Dipanggil tiap kali dailyRecords berubah (simpan/approve/reject/hapus).
+   Dikirim sebagai text/plain supaya tidak kena CORS preflight ke Apps Script. */
+async function syncDailyToSheets(){
+  if(!BACKEND_CONFIG.sheetsWebAppUrl) return;
+  try{
+    await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ sheet: 'Daily Maintenance', records: dailyRecords })
+    });
+  }catch(e){ console.error('Sync ke Google Sheets gagal', e); }
+}
 
 function approvalPillHTML(r){
   const a = r.approvalStatus || 'Pending';
@@ -1370,7 +1476,7 @@ function approvalPillHTML(r){
 function renderDailyTable(){
   const tbody = document.getElementById('daily-tbody');
   if(!dailyRecords.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="15">Belum ada record. Tambahkan lewat form di atas.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="16">Belum ada record. Tambahkan lewat form di atas.</td></tr>`;
     return;
   }
   const isSupervisor = currentRole()==='Supervisor';
@@ -1395,6 +1501,7 @@ function renderDailyTable(){
       <td>${r.typeUnit}</td>
       <td>${r.hm||'—'}</td>
       <td><span class="cat ${r.category}">${r.category==='Daily'?'Daily Maint.':r.category}</span></td>
+      <td><span class="pill ${r.planUnplan==='Plan'?'planned':'overdue'}">${r.planUnplan||'—'}</span></td>
       <td style="white-space:normal; min-width:180px;">${r.jobDesc||'—'}</td>
       <td>${r.breakdownTime||'—'}</td>
       <td>${r.start||'—'}</td>
@@ -1410,8 +1517,9 @@ function renderDailyTable(){
 }
 window.deleteDaily = async function(id){
   dailyRecords = dailyRecords.filter(r=>r.id!==id);
-  await saveDaily();
+  if(usingDailyTable()){ await deleteDailyRecordDb(id); } else { await saveDaily(); }
   renderAll();
+  syncDailyToSheets();
 }
 window.approveDaily = async function(id){
   const r = dailyRecords.find(x=>x.id===id);
@@ -1420,8 +1528,10 @@ window.approveDaily = async function(id){
   r.approvedBy = currentUserName();
   r.approvedAt = new Date().toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'});
   r.rejectNote = null;
-  await saveDaily();
+  r.updatedAt = new Date().toISOString();
+  if(usingDailyTable()){ await updateDailyRecordDb(r); } else { await saveDaily(); }
   renderAll();
+  syncDailyToSheets();
 }
 window.rejectDaily = async function(id){
   const r = dailyRecords.find(x=>x.id===id);
@@ -1432,8 +1542,10 @@ window.rejectDaily = async function(id){
   r.approvedBy = currentUserName();
   r.approvedAt = new Date().toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'});
   r.rejectNote = reason;
-  await saveDaily();
+  r.updatedAt = new Date().toISOString();
+  if(usingDailyTable()){ await updateDailyRecordDb(r); } else { await saveDaily(); }
   renderAll();
+  syncDailyToSheets();
 }
 
 
@@ -1487,6 +1599,8 @@ document.getElementById('form-plan').addEventListener('submit', async (e)=>{
     mechanic: document.getElementById('p-mechanic').value,
     status: document.getElementById('p-status').value,
     notes: document.getElementById('p-notes').value,
+    execStatus: 'Open',
+    execDate: '',
   };
   planRecords.unshift(rec);
   await savePlan();
@@ -1498,7 +1612,7 @@ document.getElementById('form-plan').addEventListener('submit', async (e)=>{
 function renderPlanTable(){
   const tbody = document.getElementById('plan-tbody');
   if(!planRecords.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Belum ada rencana service.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="11">Belum ada rencana service.</td></tr>`;
     return;
   }
   const today = new Date().toISOString().slice(0,10);
@@ -1506,6 +1620,7 @@ function renderPlanTable(){
     const isOverdue = r.status==='Planned' && r.planDate && r.planDate < today;
     const statusLabel = isOverdue ? 'Overdue' : r.status;
     const statusClass = isOverdue ? 'overdue' : (r.status==='Done'?'done':'planned');
+    const exec = r.execStatus || 'Open';
     return `<tr>
       <td>${r.planDate||'—'}</td>
       <td>${r.unitCode}</td>
@@ -1514,10 +1629,34 @@ function renderPlanTable(){
       <td>${r.serviceType}</td>
       <td>${r.mechanic}</td>
       <td><span class="pill ${statusClass}">${statusLabel}</span></td>
+      <td>
+        <select onchange="updatePlanExecStatus('${r.id}', this.value)" class="${exec==='Close'?'exec-close':'exec-open'}">
+          <option value="Open" ${exec==='Open'?'selected':''}>Open</option>
+          <option value="Close" ${exec==='Close'?'selected':''}>Close</option>
+        </select>
+      </td>
+      <td><input type="date" value="${r.execDate||''}" onchange="updatePlanExecDate('${r.id}', this.value)" style="background:var(--panel-2); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-family:inherit; font-size:12px;"></td>
       <td style="white-space:normal; min-width:150px;">${r.notes||'—'}</td>
       <td><button class="btn danger" onclick="deletePlan('${r.id}')">Hapus</button></td>
     </tr>`;
   }).join('');
+}
+window.updatePlanExecStatus = async function(id, value){
+  const r = planRecords.find(x=>x.id===id);
+  if(!r) return;
+  r.execStatus = value;
+  if(value==='Close' && !r.execDate){
+    r.execDate = new Date().toISOString().slice(0,10);
+  }
+  await savePlan();
+  renderAll();
+}
+window.updatePlanExecDate = async function(id, value){
+  const r = planRecords.find(x=>x.id===id);
+  if(!r) return;
+  r.execDate = value;
+  await savePlan();
+  renderAll();
 }
 window.deletePlan = async function(id){
   planRecords = planRecords.filter(r=>r.id!==id);
@@ -2125,6 +2264,30 @@ function renderAll(){
   renderDashboard();
 }
 
+/* ---- Realtime: auto-refresh dailyRecords kalau berubah dari luar panel
+   (misalnya dari Google Sheets lewat Apps Script, atau device lain). ---- */
+function subscribeDailyRealtime(){
+  if(!usingDailyTable()) return;
+  supabaseRealtimeClient
+    .channel('daily_maintenance_records-changes')
+    .on('postgres_changes',
+      { event:'*', schema:'public', table:'daily_maintenance_records' },
+      (payload)=>{
+        try{
+          if(payload.eventType==='DELETE'){
+            dailyRecords = dailyRecords.filter(r=>r.id!==payload.old.id);
+          } else {
+            const rec = rowToDailyRec(payload.new);
+            const idx = dailyRecords.findIndex(r=>r.id===rec.id);
+            if(idx>-1) dailyRecords[idx] = rec; else dailyRecords.unshift(rec);
+          }
+          renderAll();
+        }catch(e){ console.error('Gagal proses update realtime', e); }
+      }
+    )
+    .subscribe();
+}
+
 /* ================= INIT ================= */
 (async function init(){
   await setupStorageBackend();
@@ -2136,6 +2299,7 @@ function renderAll(){
     await loadData();
     renderAll();
     updateRoleUI();
+    subscribeDailyRealtime();
   } else {
     showLoginScreen();
   }
