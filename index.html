@@ -556,12 +556,21 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
                   <option value="Alfius S">Alfius S</option>
                 </select>
               </div>
+              <div class="field"><label>Man Power 2 (Opsional)</label>
+                <select id="d-mechanic2">
+                  <option value="">— Tidak ada —</option>
+                  <option value="Robertus G M">Robertus G M</option>
+                  <option value="Alfius S">Alfius S</option>
+                </select>
+              </div>
               <div class="field"><label>Area</label>
                 <select id="d-area" required>
                   <option value="Workshop">Workshop</option>
                   <option value="Field">Field</option>
                 </select>
               </div>
+            </div>
+            <div class="grid grid-4">
               <div class="field"><label>Status</label>
                 <select id="d-status" required>
                   <option value="Open">Open</option>
@@ -1102,6 +1111,7 @@ function dailyRecToRow(r){
     duration: (r.duration===null || r.duration===undefined || r.duration==='') ? null : Number(r.duration),
     total_breakdown: (r.totalBreakdown===null || r.totalBreakdown===undefined || r.totalBreakdown==='') ? null : Number(r.totalBreakdown),
     mechanic: r.mechanic || null,
+    mechanic_2: r.mechanic2 || null,
     area: r.area || null,
     status: r.status || null,
     keterangan: r.keterangan || null,
@@ -1135,6 +1145,7 @@ function rowToDailyRec(row){
     duration: row.duration,
     totalBreakdown: row.total_breakdown,
     mechanic: row.mechanic,
+    mechanic2: row.mechanic_2,
     area: row.area,
     status: row.status,
     keterangan: row.keterangan,
@@ -1517,6 +1528,12 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   const breakdownDate = document.getElementById('d-breakdowndate').value;
   const breakdownTime = document.getElementById('d-breakdowntime').value;
   const category = document.getElementById('d-category').value;
+  const mechanic = document.getElementById('d-mechanic').value;
+  const mechanic2 = document.getElementById('d-mechanic2').value;
+  if(mechanic2 && mechanic2===mechanic){
+    alert('Man Power 2 tidak boleh sama dengan Man Power utama. Pilih mekanik lain atau kosongkan.');
+    return;
+  }
   const duration = calcHoursBetween(startDate, start, endDate, end);
   const totalBreakdown = calcHoursBetween(breakdownDate, breakdownTime, endDate, end);
   const rec = {
@@ -1535,7 +1552,7 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
     breakdownDate, breakdownTime,
     startDate, start, endDate, end,
     duration, totalBreakdown,
-    mechanic: document.getElementById('d-mechanic').value,
+    mechanic, mechanic2,
     area: document.getElementById('d-area').value,
     status: document.getElementById('d-status').value,
     keterangan: document.getElementById('d-keterangan').value,
@@ -1552,6 +1569,12 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
   document.getElementById('d-duration').value='';
   document.getElementById('d-totalbreakdown').value='';
+  // Setelah reset, kunci ulang field "Mechanic" ke nama mekanik yang login —
+  // form.reset() mengembalikan <select> ke opsi pertama, bukan ke nama user aktif.
+  if(loggedInUser && currentRole()!=='Supervisor'){
+    const mechanicField = document.getElementById('d-mechanic');
+    if(mechanicField){ mechanicField.value = loggedInUser.name; mechanicField.disabled = true; }
+  }
   updateCodeBDPreview();
   renderAll();
   syncDailyToSheets();
@@ -1618,7 +1641,7 @@ function renderDailyTable(){
       <td><span class="pill ${r.planUnplan==='Plan'?'planned':'overdue'}">${r.planUnplan||'—'}</span></td>
       <td style="white-space:normal; min-width:180px;">${r.jobDesc||'—'}</td>
       <td style="white-space:normal; min-width:180px;">${r.repairAction||'—'}</td>
-      <td>${r.mechanic}</td>
+      <td>${r.mechanic2 ? r.mechanic + ', ' + r.mechanic2 : (r.mechanic||'—')}</td>
       <td>${r.area}</td>
       <td><span class="pill ${pillClass(r.status)}">${r.status==='Progress'?'On Progress':r.status}</span></td>
       <td style="white-space:normal; min-width:140px;">${r.keterangan||'—'}</td>
@@ -2270,15 +2293,21 @@ function renderSummary(){
   const month = sMonth.value; // YYYY-MM
   const rows = dailyRecords.filter(r=>r.tanggal && r.tanggal.startsWith(month));
   const byMech = {};
+  function addToMech(name, r){
+    if(!name) return;
+    if(!byMech[name]) byMech[name] = { total:0, bd:0, daily:0, periodical:0, dur:0, close:0 };
+    const s = byMech[name];
+    s.total++;
+    if(r.category==='Breakdown') s.bd++;
+    if(r.category==='Daily') s.daily++;
+    if(r.category==='Periodical') s.periodical++;
+    if(r.duration) s.dur += r.duration;
+    if(r.status==='Close') s.close++;
+  }
   rows.forEach(r=>{
-    const m = r.mechanic || 'Unassigned';
-    if(!byMech[m]) byMech[m] = { total:0, bd:0, daily:0, periodical:0, dur:0, close:0 };
-    byMech[m].total++;
-    if(r.category==='Breakdown') byMech[m].bd++;
-    if(r.category==='Daily') byMech[m].daily++;
-    if(r.category==='Periodical') byMech[m].periodical++;
-    if(r.duration) byMech[m].dur += r.duration;
-    if(r.status==='Close') byMech[m].close++;
+    // Job dengan 2 Man Power dihitung untuk kedua mekanik (masing-masing tetap dapat kredit penuh atas job tsb).
+    addToMech(r.mechanic || 'Unassigned', r);
+    if(r.mechanic2) addToMech(r.mechanic2, r);
   });
   const tbody = document.getElementById('summary-tbody');
   const names = Object.keys(byMech);
