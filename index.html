@@ -509,15 +509,22 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
           <div class="panel-head"><h2><span class="tag">INPUT</span> Daily Maintenance</h2></div>
           <form id="form-daily">
             <div class="grid grid-4">
+              <div class="field"><label>Code BD (auto)</label><input type="text" id="d-codebd" disabled placeholder="—"></div>
               <div class="field"><label>Tanggal</label><input type="date" id="d-tanggal" required></div>
-              <div class="field"><label>Unit Code</label>
+              <div class="field"><label>Shift</label>
+                <select id="d-shift" required>
+                  <option value="Shift 1">Shift 1</option>
+                  <option value="Shift 2">Shift 2</option>
+                </select>
+              </div>
+              <div class="field"><label>Equipment Code</label>
                 <select id="d-unitcode" required></select>
               </div>
-              <div class="field"><label>Type Unit</label><input type="text" id="d-typeunit" disabled></div>
-              <div class="field"><label>HM (Hour Meter)</label><input type="number" id="d-hm" min="0" step="1" required placeholder="e.g. 12450"></div>
             </div>
             <div class="grid grid-4">
-              <div class="field"><label>Breakdown Description (kategori)</label>
+              <div class="field"><label>Type Unit</label><input type="text" id="d-typeunit" disabled></div>
+              <div class="field"><label>HM (Hour Meter)</label><input type="number" id="d-hm" min="0" step="1" required placeholder="e.g. 12450"></div>
+              <div class="field"><label>Kategori Job</label>
                 <select id="d-category" required>
                   <option value="Breakdown">Breakdown</option>
                   <option value="Daily">Daily Maintenance</option>
@@ -530,7 +537,20 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
                   <option value="Unplan">Unplan</option>
                 </select>
               </div>
-              <div class="field"><label>Mechanic</label>
+            </div>
+            <div class="grid grid-4">
+              <div class="field"><label>Breakdown Category (Komponen/Spartpart)</label>
+                <select id="d-bdcategory" required>
+                  <option value="Powertrain">Powertrain</option>
+                  <option value="Hydraulic & Structural">Hydraulic &amp; Structural</option>
+                  <optgroup label="Support & Consumable">
+                    <option value="Support & Consumable">Support &amp; Consumable (Umum)</option>
+                    <option value="Engine">Engine</option>
+                    <option value="Undercarriage">Undercarriage</option>
+                  </optgroup>
+                </select>
+              </div>
+              <div class="field"><label>Man Power</label>
                 <select id="d-mechanic" required>
                   <option value="Robertus G M">Robertus G M</option>
                   <option value="Alfius S">Alfius S</option>
@@ -542,15 +562,6 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
                   <option value="Field">Field</option>
                 </select>
               </div>
-            </div>
-            <div class="field"><label>Job Description</label><textarea id="d-jobdesc" required placeholder="Uraian pekerjaan..."></textarea></div>
-            <div class="grid grid-4">
-              <div class="field"><label>Breakdown Time</label><input type="time" id="d-breakdowntime"></div>
-              <div class="field"><label>Start Job</label><input type="time" id="d-start" required></div>
-              <div class="field"><label>End Job</label><input type="time" id="d-end" required></div>
-              <div class="field"><label>Duration (auto)</label><input type="text" id="d-duration" disabled placeholder="—"></div>
-            </div>
-            <div class="grid grid-3">
               <div class="field"><label>Status</label>
                 <select id="d-status" required>
                   <option value="Open">Open</option>
@@ -559,6 +570,25 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
                 </select>
               </div>
             </div>
+
+            <div class="field"><label>Breakdown Deskripsi</label><textarea id="d-jobdesc" required placeholder="Uraian kerusakan / pekerjaan..."></textarea></div>
+            <div class="field"><label>Repair Action</label><textarea id="d-repairaction" placeholder="Tindakan perbaikan yang dilakukan..."></textarea></div>
+
+            <div class="grid grid-4">
+              <div class="field"><label>Breakdown — Tanggal</label><input type="date" id="d-breakdowndate"></div>
+              <div class="field"><label>Breakdown — Jam</label><input type="time" id="d-breakdowntime"></div>
+              <div class="field"><label>Repair Start — Tanggal</label><input type="date" id="d-startdate" required></div>
+              <div class="field"><label>Repair Start — Jam</label><input type="time" id="d-start" required></div>
+            </div>
+            <div class="grid grid-4">
+              <div class="field"><label>Repair End — Tanggal</label><input type="date" id="d-enddate" required></div>
+              <div class="field"><label>Repair End — Jam</label><input type="time" id="d-end" required></div>
+              <div class="field"><label>Total Repair (auto)</label><input type="text" id="d-duration" disabled placeholder="—"></div>
+              <div class="field"><label>Total Breakdown (auto)</label><input type="text" id="d-totalbreakdown" disabled placeholder="—"></div>
+            </div>
+
+            <div class="field"><label>Keterangan Part Consumable</label><textarea id="d-keterangan" placeholder="Catatan part consumable (opsional)..."></textarea></div>
+
             <div class="toolbar">
               <button type="submit" class="btn">＋ Simpan Record</button>
               <button type="reset" class="btn secondary">Reset Form</button>
@@ -571,8 +601,10 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>Tanggal</th><th>Unit Code</th><th>Type</th><th>HM</th><th>Kategori</th><th>Plan/Unplan</th><th>Job Desc</th>
-                <th>BD Time</th><th>Start</th><th>End</th><th>Durasi</th><th>Mechanic</th><th>Area</th><th>Status</th>
+                <th>Code BD</th><th>Tanggal</th><th>Shift</th><th>Equipment Code</th><th>Type</th><th>HM</th>
+                <th>BD Tanggal</th><th>BD Jam</th><th>Repair Start Tgl</th><th>Repair Start Jam</th><th>Repair End Tgl</th><th>Repair End Jam</th>
+                <th>Total Repair</th><th>Total Breakdown</th><th>Breakdown Category</th><th>Plan/Unplan</th>
+                <th>Breakdown Deskripsi</th><th>Repair Action</th><th>Man Power</th><th>Area</th><th>Status</th><th>Keterangan Part Consumable</th>
                 <th>Approval</th><th></th>
               </tr></thead>
               <tbody id="daily-tbody"></tbody>
@@ -1050,20 +1082,29 @@ let hmRecords = [];
 function dailyRecToRow(r){
   return {
     id: r.id,
+    code_bd: r.codeBD || null,
     tanggal: r.tanggal || null,
+    shift: r.shift || null,
     unit_code: r.unitCode || null,
     type_unit: r.typeUnit || null,
     hm: r.hm ? Number(r.hm) : null,
     category: r.category || null,
+    bd_category: r.bdCategory || null,
     plan_unplan: r.planUnplan || null,
     job_desc: r.jobDesc || null,
+    repair_action: r.repairAction || null,
+    breakdown_date: r.breakdownDate || null,
     breakdown_time: r.breakdownTime || null,
+    start_date: r.startDate || null,
     start_time: r.start || null,
+    end_date: r.endDate || null,
     end_time: r.end || null,
     duration: (r.duration===null || r.duration===undefined || r.duration==='') ? null : Number(r.duration),
+    total_breakdown: (r.totalBreakdown===null || r.totalBreakdown===undefined || r.totalBreakdown==='') ? null : Number(r.totalBreakdown),
     mechanic: r.mechanic || null,
     area: r.area || null,
     status: r.status || null,
+    keterangan: r.keterangan || null,
     submitted_by: r.submittedBy || null,
     approval_status: r.approvalStatus || 'Pending',
     approved_by: r.approvedBy || null,
@@ -1074,20 +1115,29 @@ function dailyRecToRow(r){
 function rowToDailyRec(row){
   return {
     id: row.id,
+    codeBD: row.code_bd,
     tanggal: row.tanggal,
+    shift: row.shift,
     unitCode: row.unit_code,
     typeUnit: row.type_unit,
     hm: row.hm,
     category: row.category,
+    bdCategory: row.bd_category,
     planUnplan: row.plan_unplan,
     jobDesc: row.job_desc,
+    repairAction: row.repair_action,
+    breakdownDate: row.breakdown_date,
     breakdownTime: row.breakdown_time,
+    startDate: row.start_date,
     start: row.start_time,
+    endDate: row.end_date,
     end: row.end_time,
     duration: row.duration,
+    totalBreakdown: row.total_breakdown,
     mechanic: row.mechanic,
     area: row.area,
     status: row.status,
+    keterangan: row.keterangan,
     submittedBy: row.submitted_by,
     approvalStatus: row.approval_status,
     approvedBy: row.approved_by,
@@ -1305,7 +1355,7 @@ document.getElementById('btn-logout').addEventListener('click', async ()=>{
   showLoginScreen();
 });
 
-const MECHANIC_VISIBLE_VIEWS = ['p2h','daily','plan','planningsystem','summary','hm'];
+const MECHANIC_VISIBLE_VIEWS = ['p2h','daily','plan','planningsystem','hm'];
 function updateRoleUI(){
   const isSupervisor = currentRole()==='Supervisor';
   document.body.classList.toggle('role-supervisor', isSupervisor);
@@ -1362,6 +1412,10 @@ function uid(){ return 'r'+Date.now()+Math.random().toString(16).slice(2,7); }
 function fillUnitSelect(sel){
   sel.innerHTML = UNITS.map(u=>`<option value="${u.code}">${u.code} — ${u.type}</option>`).join('');
 }
+/* Varian khusus: hanya menampilkan Code Unit tanpa Type Unit, karena Type Unit sudah ada sebagai field terpisah (auto-fill). */
+function fillUnitSelectCodeOnly(sel){
+  sel.innerHTML = UNITS.map(u=>`<option value="${u.code}">${u.code}</option>`).join('');
+}
 function timeToMinutes(t){
   if(!t) return null;
   const [h,m] = t.split(':').map(Number);
@@ -1373,6 +1427,16 @@ function calcDuration(start,end){
   let diff = e-s;
   if(diff<0) diff += 24*60; // overnight
   return diff/60; // hours
+}
+/* Menghitung selisih jam antara dua titik tanggal+jam (mendukung breakdown/repair lintas hari). */
+function calcHoursBetween(date1,time1,date2,time2){
+  if(!date1 || !time1 || !date2 || !time2) return null;
+  const dt1 = new Date(`${date1}T${time1}`);
+  const dt2 = new Date(`${date2}T${time2}`);
+  if(isNaN(dt1.getTime()) || isNaN(dt2.getTime())) return null;
+  const diffMs = dt2 - dt1;
+  if(diffMs < 0) return null;
+  return diffMs / 3600000; // hours
 }
 function fmtDur(hrs){
   if(hrs===null||isNaN(hrs)) return '—';
@@ -1405,7 +1469,7 @@ function renderUnitCards(){
 
 /* ================= DAILY MAINTENANCE ================= */
 const dUnitSelect = document.getElementById('d-unitcode');
-fillUnitSelect(dUnitSelect);
+fillUnitSelectCodeOnly(dUnitSelect);
 function syncTypeFromUnit(selectEl, typeEl){
   const u = UNITS.find(x=>x.code===selectEl.value);
   typeEl.value = u ? u.type : '';
@@ -1414,31 +1478,67 @@ dUnitSelect.addEventListener('change', ()=>syncTypeFromUnit(dUnitSelect, documen
 syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
 
 function updateDurationPreview(){
-  const dur = calcDuration(document.getElementById('d-start').value, document.getElementById('d-end').value);
-  document.getElementById('d-duration').value = dur===null ? '' : fmtDur(dur);
+  const startDate = document.getElementById('d-startdate').value;
+  const start = document.getElementById('d-start').value;
+  const endDate = document.getElementById('d-enddate').value;
+  const end = document.getElementById('d-end').value;
+  const bdDate = document.getElementById('d-breakdowndate').value;
+  const bdTime = document.getElementById('d-breakdowntime').value;
+
+  const totalRepair = calcHoursBetween(startDate, start, endDate, end);
+  document.getElementById('d-duration').value = totalRepair===null ? '' : fmtDur(totalRepair);
+
+  const totalBreakdown = calcHoursBetween(bdDate, bdTime, endDate, end);
+  document.getElementById('d-totalbreakdown').value = totalBreakdown===null ? '' : fmtDur(totalBreakdown);
 }
-document.getElementById('d-start').addEventListener('change', updateDurationPreview);
-document.getElementById('d-end').addEventListener('change', updateDurationPreview);
+['d-breakdowndate','d-breakdowntime','d-startdate','d-start','d-enddate','d-end'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', updateDurationPreview);
+});
+
+/* ---- Code BD otomatis: prefix mengikuti kategori job, nomor urut berjalan per kategori ---- */
+function genRecordCode(category){
+  const prefixMap = { Breakdown:'BD', Daily:'DM', Periodical:'PM' };
+  const prefix = prefixMap[category] || 'BD';
+  const countSame = dailyRecords.filter(r=>r.category===category).length + 1;
+  return `${prefix}-${String(countSame).padStart(4,'0')}`;
+}
+function updateCodeBDPreview(){
+  document.getElementById('d-codebd').value = genRecordCode(document.getElementById('d-category').value);
+}
+document.getElementById('d-category').addEventListener('change', updateCodeBDPreview);
+updateCodeBDPreview();
 
 document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   e.preventDefault();
+  const startDate = document.getElementById('d-startdate').value;
   const start = document.getElementById('d-start').value;
+  const endDate = document.getElementById('d-enddate').value;
   const end = document.getElementById('d-end').value;
-  const duration = calcDuration(start,end);
+  const breakdownDate = document.getElementById('d-breakdowndate').value;
+  const breakdownTime = document.getElementById('d-breakdowntime').value;
+  const category = document.getElementById('d-category').value;
+  const duration = calcHoursBetween(startDate, start, endDate, end);
+  const totalBreakdown = calcHoursBetween(breakdownDate, breakdownTime, endDate, end);
   const rec = {
     id: uid(),
+    codeBD: genRecordCode(category),
     tanggal: document.getElementById('d-tanggal').value,
+    shift: document.getElementById('d-shift').value,
     unitCode: document.getElementById('d-unitcode').value,
     typeUnit: document.getElementById('d-typeunit').value,
     hm: document.getElementById('d-hm').value,
-    category: document.getElementById('d-category').value,
+    category,
+    bdCategory: document.getElementById('d-bdcategory').value,
     planUnplan: document.getElementById('d-planunplan').value,
     jobDesc: document.getElementById('d-jobdesc').value,
-    breakdownTime: document.getElementById('d-breakdowntime').value,
-    start, end, duration,
+    repairAction: document.getElementById('d-repairaction').value,
+    breakdownDate, breakdownTime,
+    startDate, start, endDate, end,
+    duration, totalBreakdown,
     mechanic: document.getElementById('d-mechanic').value,
     area: document.getElementById('d-area').value,
     status: document.getElementById('d-status').value,
+    keterangan: document.getElementById('d-keterangan').value,
     submittedBy: currentUserName(),
     approvalStatus: 'Pending',
     approvedBy: null,
@@ -1451,6 +1551,8 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   document.getElementById('form-daily').reset();
   syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
   document.getElementById('d-duration').value='';
+  document.getElementById('d-totalbreakdown').value='';
+  updateCodeBDPreview();
   renderAll();
   syncDailyToSheets();
 });
@@ -1478,7 +1580,7 @@ function approvalPillHTML(r){
 function renderDailyTable(){
   const tbody = document.getElementById('daily-tbody');
   if(!dailyRecords.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="16">Belum ada record. Tambahkan lewat form di atas.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="24">Belum ada record. Tambahkan lewat form di atas.</td></tr>`;
     return;
   }
   const isSupervisor = currentRole()==='Supervisor';
@@ -1498,20 +1600,28 @@ function renderDailyTable(){
     }
     return `
     <tr>
+      <td>${r.codeBD||'—'}</td>
       <td>${r.tanggal||'—'}</td>
+      <td>${r.shift||'—'}</td>
       <td>${r.unitCode}</td>
       <td>${r.typeUnit}</td>
       <td>${r.hm||'—'}</td>
-      <td><span class="cat ${r.category}">${r.category==='Daily'?'Daily Maint.':r.category}</span></td>
-      <td><span class="pill ${r.planUnplan==='Plan'?'planned':'overdue'}">${r.planUnplan||'—'}</span></td>
-      <td style="white-space:normal; min-width:180px;">${r.jobDesc||'—'}</td>
+      <td>${r.breakdownDate||'—'}</td>
       <td>${r.breakdownTime||'—'}</td>
+      <td>${r.startDate||'—'}</td>
       <td>${r.start||'—'}</td>
+      <td>${r.endDate||'—'}</td>
       <td>${r.end||'—'}</td>
       <td>${fmtDur(r.duration)}</td>
+      <td>${fmtDur(r.totalBreakdown)}</td>
+      <td>${r.bdCategory||'—'}</td>
+      <td><span class="pill ${r.planUnplan==='Plan'?'planned':'overdue'}">${r.planUnplan||'—'}</span></td>
+      <td style="white-space:normal; min-width:180px;">${r.jobDesc||'—'}</td>
+      <td style="white-space:normal; min-width:180px;">${r.repairAction||'—'}</td>
       <td>${r.mechanic}</td>
       <td>${r.area}</td>
       <td><span class="pill ${pillClass(r.status)}">${r.status==='Progress'?'On Progress':r.status}</span></td>
+      <td style="white-space:normal; min-width:140px;">${r.keterangan||'—'}</td>
       <td>${approvalPillHTML(r)}</td>
       <td>${actionCell}<button class="btn danger" style="margin-top:6px;" onclick="deleteDaily('${r.id}')">Hapus</button></td>
     </tr>`;
