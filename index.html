@@ -512,6 +512,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
       <!-- DAILY MAINTENANCE -->
       <section class="view" id="view-daily">
         <div class="banner" id="daily-role-banner">Setiap record baru berstatus <b>&nbsp;Pending Approval&nbsp;</b> dan menunggu konfirmasi Supervisor sebelum masuk perhitungan KPI resmi.</div>
+        <div class="banner warn" id="daily-sync-warning" style="display:none;"></div>
         <div class="panel">
           <div class="panel-head"><h2><span class="tag">INPUT</span> Daily Maintenance</h2></div>
           <form id="form-daily">
@@ -1074,18 +1075,31 @@ async function setupStorageBackend(){
 
 function updateStorageStatusUI(){
   const el = document.getElementById('sidebar-status');
-  if(!el) return;
+  const dailyWarn = document.getElementById('daily-sync-warning');
   const labels = {
     'claude-cloud': 'CLOUD SYNC — Claude.ai (semua device)',
     'custom-api':   'CLOUD SYNC — Server ptsen.com',
     'supabase':     'CLOUD SYNC — Supabase',
     'local':        'LOCAL MODE — device ini saja',
   };
-  if(STORAGE_MODE!=='local'){
-    el.innerHTML = `<span class="status-dot"></span>${labels[STORAGE_MODE]}`;
-  } else {
-    el.innerHTML = `<span class="status-dot" style="background:var(--yellow); box-shadow:0 0 6px var(--yellow);"></span>${labels.local}`;
-    el.title = 'Data disimpan di browser ini saja (localStorage). Isi BACKEND_CONFIG di bagian atas script untuk mengaktifkan sinkron antar device.';
+  if(el){
+    if(STORAGE_MODE!=='local'){
+      el.innerHTML = `<span class="status-dot"></span>${labels[STORAGE_MODE]}`;
+    } else {
+      el.innerHTML = `<span class="status-dot" style="background:var(--yellow); box-shadow:0 0 6px var(--yellow);"></span>${labels.local}`;
+      el.title = 'Data disimpan di browser ini saja (localStorage). Isi BACKEND_CONFIG di bagian atas script untuk mengaktifkan sinkron antar device.';
+    }
+  }
+  // Peringatan khusus di panel Daily Maintenance: kalau mode bukan cloud-sync,
+  // record yang diinput mekanik HANYA tersimpan di browser mekanik itu sendiri —
+  // Supervisor/PJO yang login di device lain tidak akan pernah melihatnya.
+  if(dailyWarn){
+    if(STORAGE_MODE==='local'){
+      dailyWarn.style.display = '';
+      dailyWarn.innerHTML = '⚠ Panel ini berjalan dalam <b>LOCAL MODE</b> (data hanya tersimpan di browser/device ini). Record yang diinput mekanik di device lain <b>tidak akan muncul</b> di sini untuk diproses approval. Aktifkan sinkron cloud (Supabase) lewat BACKEND_CONFIG agar semua device melihat data yang sama.';
+    } else {
+      dailyWarn.style.display = 'none';
+    }
   }
 }
 
@@ -1168,20 +1182,32 @@ function rowToDailyRec(row){
 async function loadDailyFromTable(){
   const { data, error } = await supabaseRealtimeClient
     .from('daily_maintenance_records').select('*').order('created_at', { ascending:false });
-  if(error){ console.error('load daily_maintenance_records gagal', error); dailyRecords = []; return; }
+  if(error){
+    console.error('load daily_maintenance_records gagal', error);
+    dailyRecords = [];
+    const dailyWarn = document.getElementById('daily-sync-warning');
+    if(dailyWarn){
+      dailyWarn.style.display = '';
+      dailyWarn.innerHTML = `⚠ Gagal memuat data Daily Maintenance dari server (${error.message||'unknown error'}). Tabel di bawah mungkin kosong/tidak lengkap — hubungi admin untuk memeriksa akses database (RLS/policy Supabase).`;
+    }
+    return;
+  }
   dailyRecords = (data||[]).map(rowToDailyRec);
 }
 async function insertDailyRecordDb(rec){
   const { error } = await supabaseRealtimeClient.from('daily_maintenance_records').insert(dailyRecToRow(rec));
-  if(error) console.error('insert daily_maintenance_records gagal', error);
+  if(error){ console.error('insert daily_maintenance_records gagal', error); return { ok:false, error }; }
+  return { ok:true };
 }
 async function updateDailyRecordDb(rec){
   const { error } = await supabaseRealtimeClient.from('daily_maintenance_records').update(dailyRecToRow(rec)).eq('id', rec.id);
-  if(error) console.error('update daily_maintenance_records gagal', error);
+  if(error){ console.error('update daily_maintenance_records gagal', error); return { ok:false, error }; }
+  return { ok:true };
 }
 async function deleteDailyRecordDb(id){
   const { error } = await supabaseRealtimeClient.from('daily_maintenance_records').delete().eq('id', id);
-  if(error) console.error('delete daily_maintenance_records gagal', error);
+  if(error) return false;
+  return true;
 }
 const usingDailyTable = ()=> STORAGE_MODE==='supabase' && !!supabaseRealtimeClient;
 
@@ -1627,20 +1653,27 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   };
 
   let wasEditing = false;
+  let saveFailed = false;
+  let lastErrDetail = null;
   if(editingDailyId){
     const existing = dailyRecords.find(x=>x.id===editingDailyId);
     const isOwner = existing && loggedInUser && existing.submittedBy===loggedInUser.name;
     if(existing && isOwner && (existing.approvalStatus||'Pending')==='Pending'){
+      const backup = { ...existing };
       Object.assign(existing, fields);
       existing.updatedAt = new Date().toISOString();
-      if(usingDailyTable()){ await updateDailyRecordDb(existing); } else { await saveDaily(); }
+      if(usingDailyTable()){
+        const res = await updateDailyRecordDb(existing);
+        if(!res.ok){ Object.assign(existing, backup); saveFailed = true; lastErrDetail = res.error; }
+      } else { await saveDaily(); }
       wasEditing = true;
     } else {
       alert('Record ini sudah tidak bisa diedit (sudah diproses Supervisor).');
+      return;
     }
   }
 
-  if(!wasEditing){
+  if(!wasEditing && !saveFailed){
     const rec = {
       id: uid(),
       codeBD: genRecordCode(category),
@@ -1653,7 +1686,17 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
       updatedAt: new Date().toISOString(),
     };
     dailyRecords.unshift(rec);
-    if(usingDailyTable()){ await insertDailyRecordDb(rec); } else { await saveDaily(); }
+    if(usingDailyTable()){
+      const res = await insertDailyRecordDb(rec);
+      if(!res.ok){ dailyRecords = dailyRecords.filter(r=>r.id!==rec.id); saveFailed = true; lastErrDetail = res.error; }
+    } else { await saveDaily(); }
+  }
+
+  if(saveFailed){
+    const msg = lastErrDetail ? (lastErrDetail.message||lastErrDetail.hint||JSON.stringify(lastErrDetail)) : 'unknown error';
+    alert(`⚠ Gagal menyimpan record ke server (Supabase): ${msg}\n\nReport ini BELUM tersimpan dan tidak akan terlihat oleh Supervisor/PJO. Sampaikan pesan error di atas ke admin (kemungkinan besar terkait izin akses/RLS policy tabel daily_maintenance_records di Supabase).`);
+    renderAll();
+    return;
   }
 
   cancelEditDaily();
@@ -1746,20 +1789,28 @@ function renderDailyTable(){
   }).join('');
 }
 window.deleteDaily = async function(id){
+  const backup = dailyRecords;
   dailyRecords = dailyRecords.filter(r=>r.id!==id);
-  if(usingDailyTable()){ await deleteDailyRecordDb(id); } else { await saveDaily(); }
+  if(usingDailyTable()){
+    const ok = await deleteDailyRecordDb(id);
+    if(!ok){ dailyRecords = backup; alert('⚠ Gagal menghapus record di server. Coba lagi.'); }
+  } else { await saveDaily(); }
   renderAll();
   syncDailyToSheets();
 }
 window.approveDaily = async function(id){
   const r = dailyRecords.find(x=>x.id===id);
   if(!r) return;
+  const backup = { ...r };
   r.approvalStatus = 'Approved';
   r.approvedBy = currentUserName();
   r.approvedAt = new Date().toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'});
   r.rejectNote = null;
   r.updatedAt = new Date().toISOString();
-  if(usingDailyTable()){ await updateDailyRecordDb(r); } else { await saveDaily(); }
+  if(usingDailyTable()){
+    const res = await updateDailyRecordDb(r);
+    if(!res.ok){ Object.assign(r, backup); alert(`⚠ Gagal menyimpan approval ke server: ${res.error?.message||'unknown error'}`); renderAll(); return; }
+  } else { await saveDaily(); }
   renderAll();
   syncDailyToSheets();
 }
@@ -1768,12 +1819,16 @@ window.rejectDaily = async function(id){
   if(!r) return;
   const reason = prompt('Alasan penolakan record ini:','');
   if(reason===null) return;
+  const backup = { ...r };
   r.approvalStatus = 'Rejected';
   r.approvedBy = currentUserName();
   r.approvedAt = new Date().toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'});
   r.rejectNote = reason;
   r.updatedAt = new Date().toISOString();
-  if(usingDailyTable()){ await updateDailyRecordDb(r); } else { await saveDaily(); }
+  if(usingDailyTable()){
+    const res = await updateDailyRecordDb(r);
+    if(!res.ok){ Object.assign(r, backup); alert(`⚠ Gagal menyimpan penolakan ke server: ${res.error?.message||'unknown error'}`); renderAll(); return; }
+  } else { await saveDaily(); }
   renderAll();
   syncDailyToSheets();
 }
