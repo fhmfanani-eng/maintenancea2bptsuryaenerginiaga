@@ -236,7 +236,9 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 .approval-actions{ display:flex; gap:6px; }
 .btn.approve{ background:transparent; color:var(--green); border:1px solid var(--green); padding:5px 9px; font-size:10px; }
 .btn.reject{ background:transparent; color:var(--red); border:1px solid var(--red); padding:5px 9px; font-size:10px; }
+.btn.edit-report{ background:transparent; color:var(--yellow); border:1px solid var(--yellow); padding:5px 9px; font-size:10px; }
 .approval-note{ font-size:10.5px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; }
+.approval-note .edit-hint{ margin-top:4px; }
 
 /* LOGIN SCREEN */
 #login-overlay{
@@ -599,8 +601,9 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
             <div class="field"><label>Keterangan Part Consumable</label><textarea id="d-keterangan" placeholder="Catatan part consumable (opsional)..."></textarea></div>
 
             <div class="toolbar">
-              <button type="submit" class="btn">＋ Simpan Record</button>
-              <button type="reset" class="btn secondary">Reset Form</button>
+              <button type="submit" class="btn" id="d-submit-btn">＋ Simpan Record</button>
+              <button type="reset" class="btn secondary" id="d-reset-btn">Reset Form</button>
+              <span class="hint" id="d-edit-hint" style="display:none;">✎ Mode edit: memperbarui record yang sudah pernah diinput (masih Pending Approval).</span>
             </div>
           </form>
         </div>
@@ -1519,6 +1522,68 @@ function updateCodeBDPreview(){
 document.getElementById('d-category').addEventListener('change', updateCodeBDPreview);
 updateCodeBDPreview();
 
+/* ---- Edit record (khusus mekanik, sebelum di-approve) ----
+   Mekanik hanya boleh mengedit record miliknya sendiri yang masih Pending Approval,
+   supaya salah input bisa dikoreksi tanpa perlu menunggu/lewat Supervisor. ---- */
+let editingDailyId = null;
+
+window.editDaily = function(id){
+  const r = dailyRecords.find(x=>x.id===id);
+  if(!r) return;
+  const isOwner = loggedInUser && r.submittedBy===loggedInUser.name;
+  if(currentRole()==='Supervisor' || !isOwner || (r.approvalStatus||'Pending')!=='Pending'){
+    alert('Record ini tidak bisa diedit (bukan milik Anda atau sudah diproses Supervisor).');
+    return;
+  }
+  editingDailyId = id;
+  document.getElementById('d-tanggal').value = r.tanggal || '';
+  document.getElementById('d-shift').value = r.shift || 'Shift 1';
+  dUnitSelect.value = r.unitCode || '';
+  syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
+  document.getElementById('d-hm').value = r.hm || '';
+  document.getElementById('d-category').value = r.category || 'Breakdown';
+  document.getElementById('d-planunplan').value = r.planUnplan || 'Plan';
+  document.getElementById('d-bdcategory').value = r.bdCategory || 'Powertrain';
+  document.getElementById('d-mechanic2').value = r.mechanic2 || '';
+  document.getElementById('d-area').value = r.area || 'Workshop';
+  document.getElementById('d-status').value = r.status || 'Open';
+  document.getElementById('d-jobdesc').value = r.jobDesc || '';
+  document.getElementById('d-repairaction').value = r.repairAction || '';
+  document.getElementById('d-breakdowndate').value = r.breakdownDate || '';
+  document.getElementById('d-breakdowntime').value = r.breakdownTime || '';
+  document.getElementById('d-startdate').value = r.startDate || '';
+  document.getElementById('d-start').value = r.start || '';
+  document.getElementById('d-enddate').value = r.endDate || '';
+  document.getElementById('d-end').value = r.end || '';
+  document.getElementById('d-keterangan').value = r.keterangan || '';
+  document.getElementById('d-codebd').value = r.codeBD || '';
+  updateDurationPreview();
+
+  document.getElementById('d-submit-btn').textContent = '✎ Update Record';
+  document.getElementById('d-edit-hint').style.display = '';
+  document.getElementById('view-daily').scrollIntoView({behavior:'smooth', block:'start'});
+};
+
+function cancelEditDaily(){
+  editingDailyId = null;
+  document.getElementById('d-submit-btn').textContent = '＋ Simpan Record';
+  document.getElementById('d-edit-hint').style.display = 'none';
+}
+document.getElementById('form-daily').addEventListener('reset', ()=>{
+  cancelEditDaily();
+  // Native reset() mengosongkan semua field termasuk yang disabled — kunci ulang setelahnya.
+  setTimeout(()=>{
+    syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
+    document.getElementById('d-duration').value='';
+    document.getElementById('d-totalbreakdown').value='';
+    if(loggedInUser && currentRole()!=='Supervisor'){
+      const mechanicField = document.getElementById('d-mechanic');
+      if(mechanicField){ mechanicField.value = loggedInUser.name; mechanicField.disabled = true; }
+    }
+    updateCodeBDPreview();
+  }, 0);
+});
+
 document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const startDate = document.getElementById('d-startdate').value;
@@ -1536,9 +1601,7 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   }
   const duration = calcHoursBetween(startDate, start, endDate, end);
   const totalBreakdown = calcHoursBetween(breakdownDate, breakdownTime, endDate, end);
-  const rec = {
-    id: uid(),
-    codeBD: genRecordCode(category),
+  const fields = {
     tanggal: document.getElementById('d-tanggal').value,
     shift: document.getElementById('d-shift').value,
     unitCode: document.getElementById('d-unitcode').value,
@@ -1556,15 +1619,39 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
     area: document.getElementById('d-area').value,
     status: document.getElementById('d-status').value,
     keterangan: document.getElementById('d-keterangan').value,
-    submittedBy: currentUserName(),
-    approvalStatus: 'Pending',
-    approvedBy: null,
-    approvedAt: null,
-    rejectNote: null,
-    updatedAt: new Date().toISOString(),
   };
-  dailyRecords.unshift(rec);
-  if(usingDailyTable()){ await insertDailyRecordDb(rec); } else { await saveDaily(); }
+
+  let wasEditing = false;
+  if(editingDailyId){
+    const existing = dailyRecords.find(x=>x.id===editingDailyId);
+    const isOwner = existing && loggedInUser && existing.submittedBy===loggedInUser.name;
+    if(existing && isOwner && (existing.approvalStatus||'Pending')==='Pending'){
+      Object.assign(existing, fields);
+      existing.updatedAt = new Date().toISOString();
+      if(usingDailyTable()){ await updateDailyRecordDb(existing); } else { await saveDaily(); }
+      wasEditing = true;
+    } else {
+      alert('Record ini sudah tidak bisa diedit (sudah diproses Supervisor).');
+    }
+  }
+
+  if(!wasEditing){
+    const rec = {
+      id: uid(),
+      codeBD: genRecordCode(category),
+      ...fields,
+      submittedBy: currentUserName(),
+      approvalStatus: 'Pending',
+      approvedBy: null,
+      approvedAt: null,
+      rejectNote: null,
+      updatedAt: new Date().toISOString(),
+    };
+    dailyRecords.unshift(rec);
+    if(usingDailyTable()){ await insertDailyRecordDb(rec); } else { await saveDaily(); }
+  }
+
+  cancelEditDaily();
   document.getElementById('form-daily').reset();
   syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
   document.getElementById('d-duration').value='';
@@ -1619,7 +1706,10 @@ function renderDailyTable(){
     } else if(r.approvalStatus==='Rejected'){
       actionCell = `<div class="approval-note">oleh ${r.approvedBy||'—'}${r.rejectNote?'<br>alasan: '+r.rejectNote:''}</div>`;
     } else {
-      actionCell = `<div class="approval-note">menunggu Supervisor</div>`;
+      const isOwner = !isSupervisor && loggedInUser && r.submittedBy===loggedInUser.name;
+      actionCell = `<div class="approval-note">menunggu Supervisor${isOwner
+        ? `<div class="edit-hint"><button class="btn edit-report" onclick="editDaily('${r.id}')">✎ Edit Input</button></div>`
+        : ''}</div>`;
     }
     return `
     <tr>
