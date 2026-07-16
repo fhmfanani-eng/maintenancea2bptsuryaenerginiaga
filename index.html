@@ -123,8 +123,6 @@ input, select, textarea{
   padding:9px 10px; border-radius:var(--radius); font-family:'Inter',sans-serif; font-size:13px;
   outline:none; transition:border-color .12s;
 }
-input, select{ text-align:center; text-align-last:center; }
-textarea{ text-align:left; }
 input:focus, select:focus, textarea:focus{ border-color:var(--yellow); }
 input:disabled, select:disabled, textarea:disabled{ opacity:0.65; cursor:not-allowed; background:var(--panel); }
 .field{ margin-bottom:14px; }
@@ -153,6 +151,11 @@ td{ padding:9px 12px; border-bottom:1px solid var(--line); color:var(--text); wh
 tbody tr:hover{ background:rgba(255,255,255,0.02); }
 tbody tr:last-child td{ border-bottom:none; }
 .empty-row td{ text-align:center; color:var(--text-faint); padding:26px; font-style:italic; }
+
+/* Khusus tabel Record Daily Maintenance: teks rata tengah biar rapi.
+   Kolom deskripsi panjang (Breakdown Deskripsi, Repair Action, Keterangan) tetap rata kiri agar mudah dibaca. */
+#daily-record-table th, #daily-record-table td{ text-align:center; }
+#daily-record-table td:nth-child(17), #daily-record-table td:nth-child(18), #daily-record-table td:nth-child(22){ text-align:left; }
 
 .pill{ display:inline-block; padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; font-family:'JetBrains Mono',monospace;}
 .pill.open{ background:rgba(229,72,77,0.15); color:var(--red); }
@@ -613,7 +616,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
         <div class="panel">
           <div class="panel-head"><h2>Record Daily Maintenance</h2></div>
           <div class="table-wrap">
-            <table>
+            <table id="daily-record-table">
               <thead><tr>
                 <th>Code BD</th><th>Tanggal</th><th>Shift</th><th>Equipment Code</th><th>Type</th><th>HM</th>
                 <th>BD Tanggal</th><th>BD Jam</th><th>Repair Start Tgl</th><th>Repair Start Jam</th><th>Repair End Tgl</th><th>Repair End Jam</th>
