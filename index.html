@@ -198,6 +198,9 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 .unit-card .code{ font-family:'JetBrains Mono',monospace; font-size:13px; background:#15171b; display:inline-block; padding:4px 9px; border-radius:2px; color:var(--yellow); border:1px solid var(--line); margin-bottom:10px;}
 .unit-card .stats{ display:flex; gap:16px; margin-top:10px; font-size:11px; color:var(--text-dim); }
 .unit-card .stats b{ color:var(--text); display:block; font-size:15px; font-family:'JetBrains Mono',monospace; font-weight:500;}
+.unit-card .kpi-mini{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px 8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+.unit-card .kpi-mini .kpi-mini-item{ font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.4px; }
+.unit-card .kpi-mini .kpi-mini-item b{ display:block; font-size:13px; font-family:'JetBrains Mono',monospace; margin-top:3px; font-weight:600; }
 
 /* KPI GAUGES */
 .kpi-card{ background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius); padding:18px; text-align:center; }
@@ -396,14 +399,21 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
       <!-- DASHBOARD -->
       <section class="view active" id="view-dashboard">
         <div class="banner">⛭ Data tersimpan otomatis dan dibagikan ke seluruh pengguna panel ini (shared workshop database).</div>
+
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-head" style="margin-bottom:8px;">
+            <h2><span class="tag">FILTER</span> Periode KPI</h2>
+            <div class="toolbar" style="align-items:center;">
+              <div class="field" style="margin-bottom:0; min-width:230px;">
+                <select id="kpi-period-select"></select>
+              </div>
+            </div>
+          </div>
+          <div class="hint" style="margin-bottom:0;">Pilih periode bulan untuk mencari hasil perhitungan KPI (MTBS, MTTR, PMR, Service Accuracy) pada bulan tersebut. MA &amp; PA tetap dihitung dari total data jam operasional yang diupload.</div>
+        </div>
+
         <div class="grid grid-3" id="kpi-grid"></div>
         <div class="hint" style="margin-top:-8px; margin-bottom:6px;">KPI dihitung hanya dari record Daily Maintenance yang sudah berstatus <b>Approved</b> oleh Supervisor. Khusus MA &amp; PA dihitung otomatis dari file jam operasional yang diupload di bawah.</div>
-
-        <div class="section-title">Tren KPI — Mingguan (8 Minggu Terakhir)</div>
-        <div class="grid grid-2" id="kpi-weekly-grid" style="margin-bottom:20px;"></div>
-
-        <div class="section-title">Tren KPI — Bulanan (6 Bulan Terakhir)</div>
-        <div class="grid grid-2" id="kpi-monthly-grid" style="margin-bottom:20px;"></div>
 
         <div class="section-title">Data Sumber MA &amp; PA</div>
         <div class="panel">
@@ -459,6 +469,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
       <!-- DATABASE UNIT -->
       <section class="view" id="view-database">
         <div class="panel-head" style="margin-bottom:16px;"><h2>Master Unit Alat Berat</h2></div>
+        <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy, MA, PA) tiap unit dihitung otomatis dari data Daily Maintenance, Plan Service, dan file jam operasional yang diupload — tidak perlu input manual.</div>
         <div class="grid grid-3" id="unit-cards"></div>
       </section>
 
@@ -1566,12 +1577,57 @@ function pillClass(status){
 }
 
 /* ================= DATABASE UNIT VIEW ================= */
+/* KPI per unit dihitung otomatis dari data yang sudah ada — tidak perlu input manual:
+   - MTBS, MTTR, PMR: dari record Daily Maintenance (approved) milik unit tsb.
+   - Service Accuracy (SA): dari record Plan Service milik unit tsb.
+   - MA & PA: dari baris data jam operasional (upload MA/PA) yang cocok dengan kode unit tsb. */
+function computeUnitKPIs(unitCode){
+  const approvedRecords = dailyRecords.filter(r=>r.unitCode===unitCode && r.approvalStatus==='Approved');
+  const bdCount = approvedRecords.filter(r=>r.category==='Breakdown').length;
+  const hmValues = approvedRecords.map(r=>Number(r.hm)||0).filter(v=>v>0);
+  const totalHM = hmValues.length ? Math.max(...hmValues) - Math.min(...hmValues) : 0;
+  const mtbs = bdCount>0 ? (totalHM / bdCount) : 0;
+
+  const onTimeTarget = 4;
+  const mttrEligible = approvedRecords.filter(r=>r.duration!==null);
+  const mttrOk = mttrEligible.filter(r=>r.duration<=onTimeTarget).length;
+  const mttr = mttrEligible.length ? (mttrOk/mttrEligible.length*100) : 0;
+
+  const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
+  const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
+
+  const today = new Date().toISOString().slice(0,10);
+  const plansForUnit = planRecords.filter(p=>p.unitCode===unitCode);
+  const overdue = plansForUnit.filter(p=>p.status==='Planned' && p.planDate && p.planDate<today).length;
+  const sa = plansForUnit.length ? ((plansForUnit.length-overdue)/plansForUnit.length*100) : 0;
+
+  let ma = 0, pa = 0;
+  if(mapaData && mapaData.rows && mapaData.rows.length){
+    const rows = mapaData.rows.filter(r=>String(r.unit||'').trim().toUpperCase()===unitCode.toUpperCase());
+    if(rows.length){
+      const W = rows.reduce((s,r)=>s+(Number(r.w)||0),0);
+      const S = rows.reduce((s,r)=>s+(Number(r.s)||0),0);
+      const R = rows.reduce((s,r)=>s+(Number(r.r)||0),0);
+      ma = (W+R)>0 ? (W/(W+R)*100) : 0;
+      pa = (W+S+R)>0 ? ((W+S)/(W+S+R)*100) : 0;
+    }
+  }
+  return { mtbs, mttr, pmr, sa, ma, pa };
+}
+
+function kpiMiniItem(label, value, unit, target){
+  const pct = target ? (value/target*100) : 0;
+  const color = pct>=100 ? 'var(--green)' : pct>=75 ? 'var(--yellow)' : 'var(--red)';
+  return `<div class="kpi-mini-item">${label}<b style="color:${color}">${value.toFixed(0)}${unit}</b></div>`;
+}
+
 function renderUnitCards(){
   const wrap = document.getElementById('unit-cards');
   wrap.innerHTML = UNITS.map(u=>{
     const jobs = dailyRecords.filter(r=>r.unitCode===u.code);
     const bd = jobs.filter(r=>r.category==='Breakdown').length;
     const lastHM = jobs.length ? Math.max(...jobs.map(r=>Number(r.hm)||0)) : '—';
+    const k = computeUnitKPIs(u.code);
     return `<div class="unit-card">
       <div class="cat-label">${u.category}</div>
       <div class="type">${u.type}</div>
@@ -1580,6 +1636,14 @@ function renderUnitCards(){
         <div>Total Job<b>${jobs.length}</b></div>
         <div>Breakdown<b style="color:${bd>0?'var(--red)':'var(--text)'}">${bd}</b></div>
         <div>HM Terakhir<b>${lastHM}</b></div>
+      </div>
+      <div class="kpi-mini">
+        ${kpiMiniItem('MTBS', k.mtbs, ' jam', KPI_TARGET.mtbs)}
+        ${kpiMiniItem('MTTR', k.mttr, '%', KPI_TARGET.mttr)}
+        ${kpiMiniItem('PMR', k.pmr, '%', KPI_TARGET.pmr)}
+        ${kpiMiniItem('SA', k.sa, '%', KPI_TARGET.sa)}
+        ${kpiMiniItem('MA', k.ma, '%', KPI_TARGET.ma)}
+        ${kpiMiniItem('PA', k.pa, '%', KPI_TARGET.pa)}
       </div>
     </div>`;
   }).join('');
@@ -2699,37 +2763,9 @@ function renderKPICard(title, value, unit, target, achievedPct, isPercentTarget)
   </div>`;
 }
 
-/* ---- KPI Trend: Mingguan & Bulanan (MTBS, MTTR, PMR, Service Accuracy) ---- */
+/* ---- Util tanggal (dipakai untuk filter periode KPI) ---- */
 function pad2(n){ return String(n).padStart(2,'0'); }
 function toDateStr(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
-
-function getLastNWeeks(n){
-  const periods = [];
-  const now = new Date(); now.setHours(0,0,0,0);
-  const day = now.getDay(); // 0=Minggu
-  const diffToMonday = (day===0 ? -6 : 1-day);
-  const thisMonday = new Date(now);
-  thisMonday.setDate(now.getDate()+diffToMonday);
-  for(let i=n-1;i>=0;i--){
-    const start = new Date(thisMonday); start.setDate(thisMonday.getDate() - 7*i);
-    const end = new Date(start); end.setDate(start.getDate()+6);
-    const label = pad2(start.getDate())+'/'+pad2(start.getMonth()+1);
-    periods.push({ start: toDateStr(start), end: toDateStr(end), label });
-  }
-  return periods;
-}
-
-function getLastNMonths(n){
-  const periods = [];
-  const now = new Date();
-  for(let i=n-1;i>=0;i--){
-    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    const endD = new Date(d.getFullYear(), d.getMonth()+1, 0);
-    const label = d.toLocaleDateString('id-ID', { month:'short', year:'2-digit' });
-    periods.push({ start: toDateStr(d), end: toDateStr(endD), label });
-  }
-  return periods;
-}
 
 function computeKPIsForRange(startStr, endStr){
   const approvedRecords = dailyRecords.filter(r=>r.approvalStatus==='Approved' && r.tanggal && r.tanggal>=startStr && r.tanggal<=endStr);
@@ -2754,6 +2790,52 @@ function computeKPIsForRange(startStr, endStr){
   return { mtbs, mttr, pmr, sa };
 }
 
+/* ---- Filter periode bulan untuk Dashboard KPI ---- */
+function computeKPIsFor(periodValue){
+  // MA & PA tidak dipecah per periode (dihitung dari total file jam operasional yang diupload),
+  // jadi tetap dihitung sama seperti computeKPIs() apapun periodenya.
+  const W = mapaData?.totalW || 0, S = mapaData?.totalS || 0, R = mapaData?.totalR || 0;
+  const ma = (W+R) > 0 ? (W/(W+R)*100) : 0;
+  const pa = (W+S+R) > 0 ? ((W+S)/(W+S+R)*100) : 0;
+
+  if(!periodValue){
+    const k = computeKPIs();
+    return k;
+  }
+  const [y,m] = periodValue.split('-').map(Number);
+  if(!y || !m) return computeKPIs();
+  const start = new Date(y, m-1, 1);
+  const end = new Date(y, m, 0);
+  const base = computeKPIsForRange(toDateStr(start), toDateStr(end));
+  return { ...base, ma, pa };
+}
+
+function getKPIPeriodOptions(){
+  // Kumpulkan periode (YYYY-MM) dari tanggal record Daily Maintenance + 12 bulan terakhir,
+  // supaya dropdown selalu ada isinya walau belum ada data di bulan berjalan.
+  const periods = new Set();
+  dailyRecords.forEach(r=>{ if(r.tanggal) periods.add(r.tanggal.slice(0,7)); });
+  const now = new Date();
+  for(let i=0;i<12;i++){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    periods.add(d.getFullYear()+'-'+pad2(d.getMonth()+1));
+  }
+  return Array.from(periods).sort().reverse();
+}
+
+function populateKPIPeriodSelect(){
+  const sel = document.getElementById('kpi-period-select');
+  if(!sel) return;
+  const prev = sel.value;
+  const periods = getKPIPeriodOptions();
+  sel.innerHTML = '<option value="">Semua Periode</option>' + periods.map(p=>{
+    const [y,m] = p.split('-').map(Number);
+    const label = new Date(y, m-1, 1).toLocaleDateString('id-ID', { month:'long', year:'numeric' });
+    return `<option value="${p}">${label}</option>`;
+  }).join('');
+  sel.value = periods.includes(prev) ? prev : '';
+}
+
 function shadeColor(hex, percent){
   // percent: -100..100, negatif = lebih gelap, positif = lebih terang
   let R = parseInt(hex.substring(1,3),16);
@@ -2764,97 +2846,12 @@ function shadeColor(hex, percent){
   return '#' + R.toString(16).padStart(2,'0') + G.toString(16).padStart(2,'0') + B.toString(16).padStart(2,'0');
 }
 
-function trendChartSVG(labels, values, unit, target, color){
-  // Isometric 3D bar chart — tetap dalam skema warna dashboard (diamond-plate dark theme)
-  const w = 460, h = 168;
-  const padL = 32, padR = 26, padT = 30, padB = 30;
-  const depthX = 14, depthY = -12; // vektor kedalaman balok 3D (kanan-atas)
-  const plotLeft = padL, plotRight = w - padR - depthX;
-  const plotTop = padT - depthY, plotBottom = h - padB;
-  const innerW = plotRight - plotLeft;
-  const scaleH = plotBottom - plotTop;
-  const hasData = values.some(v=>v>0);
-  if(!hasData){
-    return `<div class="hint" style="padding:20px 0;">Belum ada data pada periode ini.</div>`;
-  }
-  const maxVal = Math.max(target||0, ...values, 1) * 1.2;
-  const n = values.length;
-  const slot = innerW / n;
-  const barW = Math.max(6, slot * 0.5);
-
-  const topColor = shadeColor(color, 32);
-  const sideColor = shadeColor(color, -35);
-  const frontColorTop = shadeColor(color, 8);
-
-  const floor = `<polygon points="${plotLeft},${plotBottom} ${plotRight},${plotBottom} ${plotRight+depthX},${plotBottom+depthY} ${plotLeft+depthX},${plotBottom+depthY}" fill="#252932" stroke="#33383f" stroke-width="1"/>`;
-
-  let targetPlane = '';
-  if(target){
-    const ty = plotBottom - Math.min(target,maxVal)/maxVal*scaleH;
-    targetPlane = `<polygon points="${plotLeft},${ty} ${plotRight},${ty} ${plotRight+depthX},${ty+depthY} ${plotLeft+depthX},${ty+depthY}" fill="none" stroke="#9AA0A8" stroke-width="1" stroke-dasharray="4 3"/>`;
-  }
-
-  const bars = values.map((v,i)=>{
-    const x0 = plotLeft + i*slot + (slot-barW)/2;
-    const barH = Math.max(1, Math.min(v,maxVal)/maxVal*scaleH);
-    const yTop = plotBottom - barH, yBase = plotBottom;
-    const front = `<polygon points="${x0},${yTop} ${x0+barW},${yTop} ${x0+barW},${yBase} ${x0},${yBase}" fill="${frontColorTop}"/>`;
-    const top = `<polygon points="${x0},${yTop} ${x0+barW},${yTop} ${x0+barW+depthX},${yTop+depthY} ${x0+depthX},${yTop+depthY}" fill="${topColor}"/>`;
-    const side = `<polygon points="${x0+barW},${yTop} ${x0+barW+depthX},${yTop+depthY} ${x0+barW+depthX},${yBase+depthY} ${x0+barW},${yBase}" fill="${sideColor}"/>`;
-    const valLabel = `<text x="${(x0+barW/2+depthX/2).toFixed(1)}" y="${Math.max(12,(yTop+depthY-6)).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#EDEEF0">${v.toFixed(0)}</text>`;
-    const label = `<text x="${(x0+barW/2).toFixed(1)}" y="${h-8}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5C636B">${labels[i]}</text>`;
-    return top + side + front + valLabel + label;
-  }).join('');
-
-  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="168">
-    ${floor}
-    ${targetPlane}
-    ${bars}
-  </svg>`;
-}
-
-function renderKPITrends(){
-  const weeks = getLastNWeeks(8);
-  const months = getLastNMonths(6);
-  const weeklyData = weeks.map(p=>computeKPIsForRange(p.start, p.end));
-  const monthlyData = months.map(p=>computeKPIsForRange(p.start, p.end));
-  const weekLabels = weeks.map(p=>p.label);
-  const monthLabels = months.map(p=>p.label);
-
-  const defs = [
-    { key:'mtbs', title:'MTBS — Mean Time Between Service', unit:' jam', target:KPI_TARGET.mtbs, color:'#4A90D9' },
-    { key:'mttr', title:'MTTR — Mean Time To Repair', unit:'%', target:KPI_TARGET.mttr, color:'#FFC72C' },
-    { key:'pmr', title:'Planned Maintenance Ratio', unit:'%', target:KPI_TARGET.pmr, color:'#4CAF6D' },
-    { key:'sa', title:'Service Accuracy', unit:'%', target:KPI_TARGET.sa, color:'#FF6B35' },
-  ];
-
-  const weekGrid = document.getElementById('kpi-weekly-grid');
-  if(weekGrid){
-    weekGrid.innerHTML = defs.map(d=>{
-      const values = weeklyData.map(w=>w[d.key]);
-      return `<div class="panel" style="margin-bottom:0;">
-        <div class="panel-head"><h2>${d.title}</h2></div>
-        ${trendChartSVG(weekLabels, values, d.unit, d.target, d.color)}
-        <div class="hint">Per minggu (Senin–Minggu) · target ${d.target}${d.unit}</div>
-      </div>`;
-    }).join('');
-  }
-
-  const monthGrid = document.getElementById('kpi-monthly-grid');
-  if(monthGrid){
-    monthGrid.innerHTML = defs.map(d=>{
-      const values = monthlyData.map(m=>m[d.key]);
-      return `<div class="panel" style="margin-bottom:0;">
-        <div class="panel-head"><h2>${d.title}</h2></div>
-        ${trendChartSVG(monthLabels, values, d.unit, d.target, d.color)}
-        <div class="hint">6 bulan terakhir · target ${d.target}${d.unit}</div>
-      </div>`;
-    }).join('');
-  }
-}
 
 function renderDashboard(){
-  const k = computeKPIs();
+  populateKPIPeriodSelect();
+  const period = document.getElementById('kpi-period-select')?.value || '';
+  const k = computeKPIsFor(period);
+  const globalStats = computeKPIs(); // overdue plan & pending approval selalu snapshot terkini, tidak tergantung filter periode
   const grid = document.getElementById('kpi-grid');
   grid.innerHTML =
     renderKPICard('MTBS — Mean Time Between Service', k.mtbs.toFixed(0), ' jam', KPI_TARGET.mtbs, (k.mtbs/KPI_TARGET.mtbs*100)||0) +
@@ -2868,10 +2865,9 @@ function renderDashboard(){
   const thisMonth = new Date().toISOString().slice(0,7);
   document.getElementById('stat-jobs').textContent = dailyRecords.filter(r=>r.tanggal && r.tanggal.startsWith(thisMonth)).length;
   document.getElementById('stat-open').textContent = dailyRecords.filter(r=>r.status==='Open'||r.status==='Progress').length;
-  document.getElementById('stat-overdue').textContent = k.overduePlans;
-  document.getElementById('stat-pending').textContent = k.pendingApproval;
+  document.getElementById('stat-overdue').textContent = globalStats.overduePlans;
+  document.getElementById('stat-pending').textContent = globalStats.pendingApproval;
   renderMAPAUploadStatus();
-  renderKPITrends();
 }
 
 /* ================= MA / PA — UPLOAD FILE JAM OPERASIONAL ================= */
@@ -2972,6 +2968,8 @@ document.getElementById('mapa-template-btn').addEventListener('click', function(
   XLSX.utils.book_append_sheet(wb, ws, 'Template MA-PA');
   XLSX.writeFile(wb, 'template-ma-pa.xlsx');
 });
+
+document.getElementById('kpi-period-select').addEventListener('change', renderDashboard);
 
 /* ================= RENDER ALL ================= */
 function renderAll(){
