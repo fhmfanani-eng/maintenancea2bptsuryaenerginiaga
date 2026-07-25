@@ -660,11 +660,12 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
     </div>
     <nav class="nav">
       <div class="nav-item active" data-view="dashboard"><span class="num"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span> Dashboard KPI</div>
-      <div class="nav-item" data-view="database"><span class="num"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span> Database Unit</div>
+      <div class="nav-item" data-view="database"><span class="num"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span> Master Unit</div>
+      <div class="nav-item" data-view="preinspection"><span class="num"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span> Pre Inspection</div>
       <div class="nav-item" data-view="p2h"><span class="num"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 3h6v2H9z"></path><path d="M9 12l2 2 4-4"></path></svg></span> P2H (Pemeriksaan Harian)</div>
       <div class="nav-item" data-view="daily"><span class="num"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></span> Daily Maintenance</div>
       <div class="nav-item" data-view="plan"><span class="num"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span> Plan Service</div>
-      <div class="nav-item" data-view="planningsystem"><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span> Planning System<span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
+      <div class="nav-item" data-view="planningsystem"><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span> Plan Shcedule Maintenance<span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
       <div class="nav-item" data-view="history"><span class="num"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span> Historical Report</div>
       <div class="nav-item" data-view="summary"><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> Summary Mechanic</div>
       <div class="nav-item" data-view="hm"><span class="num"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span> Monitoring HM</div>
@@ -778,6 +779,102 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
         </div>
 
         <div class="grid grid-2" id="unit-cards"></div>
+      </section>
+
+      <!-- PRE INSPECTION (PRESERVICE INSPECTION SHEET) -->
+      <section class="view" id="view-preinspection">
+        <div class="banner">⛭ Pre Inspection — pemeriksaan menyeluruh unit sebelum masuk service (Preservice Inspection), mengikuti checklist resmi sesuai tipe unit. Item berkondisi <b>&nbsp;NOT OK&nbsp;</b> otomatis tercatat sebagai temuan pada tabel Defect / Temuan Kerusakan.</div>
+
+        <div class="grid grid-4" id="preins-stat-grid" style="margin-bottom:20px;">
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head"><h2>Total Pre Inspection</h2></div>
+            <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700;" id="preins-stat-total">0</div>
+            <div class="hint">Semua record Pre Inspection tersimpan</div>
+          </div>
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head"><h2>OK</h2></div>
+            <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700; color:var(--green);" id="preins-stat-ok">0</div>
+            <div class="hint">Semua item kondisi OK</div>
+          </div>
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head"><h2>Ada Temuan</h2></div>
+            <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700; color:var(--red);" id="preins-stat-findings">0</div>
+            <div class="hint">Terdapat item kondisi Not OK</div>
+          </div>
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head"><h2>Backlog</h2></div>
+            <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700; color:var(--red);" id="preins-stat-backlog">0</div>
+            <div class="hint">Temuan yang dijadikan Backlog / Waiting Part</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2><span class="tag">INPUT</span> Form Pre Inspection — Preservice Inspection Sheet</h2></div>
+          <form id="form-preins">
+            <div class="grid grid-4">
+              <div class="field"><label>Unit No</label><select id="preins-unitcode" required></select></div>
+              <div class="field"><label>Type Unit</label><input type="text" id="preins-typeunit" disabled></div>
+              <div class="field"><label>HM</label><input type="number" id="preins-hm" min="0" step="1" required></div>
+              <div class="field"><label>Date</label><input type="date" id="preins-tanggal" required></div>
+            </div>
+            <div class="grid grid-3">
+              <div class="field"><label>Check By</label>
+                <select id="preins-checkby" required>
+                  <option value="Robertus G M">Robertus G M</option>
+                  <option value="Alfius S">Alfius S</option>
+                </select>
+              </div>
+              <div class="field"><label>&nbsp;</label><div class="hint" style="margin-top:8px;">Pilih Unit No untuk menampilkan checklist Pre Inspection sesuai tipe unit.</div></div>
+            </div>
+
+            <div class="table-wrap" style="margin-top:6px;">
+              <table>
+                <thead><tr>
+                  <th style="width:34px;">No</th><th>Job Description</th><th style="width:180px;">Condition</th><th>Catatan</th>
+                </tr></thead>
+                <tbody id="preins-checklist-body"></tbody>
+              </table>
+            </div>
+
+            <div class="panel-head" style="margin-top:18px; margin-bottom:8px;">
+              <h2>Defect / Temuan Kerusakan</h2>
+              <div class="toolbar"><button type="button" class="btn small secondary" id="preins-add-defect">＋ Tambah Baris Temuan</button></div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th style="width:34px;">Item</th><th>Defect / Temuan Kerusakan</th><th style="width:140px;">Status</th><th style="width:60px;"></th>
+                </tr></thead>
+                <tbody id="preins-defect-body"><tr class="empty-row"><td colspan="4">Belum ada temuan ditambahkan.</td></tr></tbody>
+              </table>
+            </div>
+
+            <div class="hint">Catatan: Berikan centang (tandai OK) jika defect langsung dikerjakan. Tandai Backlog jika defect dijadikan Backlog/Perbaikan Next Service dan Waiting Part.</div>
+
+            <div class="toolbar" style="margin-top:14px;">
+              <button type="submit" class="btn">＋ Simpan Pre Inspection</button>
+              <button type="reset" class="btn secondary" id="preins-reset">Reset Form</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Riwayat Record Pre Inspection</h2></div>
+          <div class="filters">
+            <select id="preins-filter-unit"><option value="">Semua Unit</option></select>
+            <select id="preins-filter-status"><option value="">Semua Status</option><option value="OK">OK</option><option value="Ada Temuan">Ada Temuan</option></select>
+            <button class="btn small secondary" id="preins-clear-filter">Clear Filter</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Date</th><th>Unit No</th><th>Type</th><th>HM</th><th>Check By</th>
+                <th>Status</th><th>Temuan</th><th>Approval Supervisor</th><th></th>
+              </tr></thead>
+              <tbody id="preins-tbody"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- P2H (PEMERIKSAAN PERAWATAN HARIAN) -->
@@ -1494,6 +1591,7 @@ let dailyRecords = [];
 let planRecords = [];
 let planningSystemRecords = [];
 let p2hRecords = [];
+let preInspectionRecords = [];
 let hmRecords = [];
 let mapaData = null; // { rows:[{unit,w,s,r}], totalW, totalS, totalR, fileName, updatedAt }
 
@@ -1622,6 +1720,10 @@ async function loadData(){
     p2hRecords = p2h ? JSON.parse(p2h.value) : [];
   }catch(e){ p2hRecords = []; }
   try{
+    const pi = await appStorage.get('pre-inspection-records');
+    preInspectionRecords = pi ? JSON.parse(pi.value) : [];
+  }catch(e){ preInspectionRecords = []; }
+  try{
     const hm = await appStorage.get('hm-records');
     hmRecords = hm ? JSON.parse(hm.value) : [];
   }catch(e){ hmRecords = []; }
@@ -1686,6 +1788,10 @@ async function saveP2H(){
   try{ await appStorage.set('p2h-records', JSON.stringify(p2hRecords)); }
   catch(e){ console.error('save p2h failed', e); }
 }
+async function savePreInspection(){
+  try{ await appStorage.set('pre-inspection-records', JSON.stringify(preInspectionRecords)); }
+  catch(e){ console.error('save pre inspection failed', e); }
+}
 async function saveHM(){
   try{ await appStorage.set('hm-records', JSON.stringify(hmRecords)); }
   catch(e){ console.error('save hm failed', e); }
@@ -1695,8 +1801,8 @@ async function saveHM(){
 const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 const titleMap = {
-  dashboard:'Dashboard KPI', database:'Database Unit', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
-  plan:'Plan Service', planningsystem:'Planning System', history:'Historical Report', summary:'Summary Mechanic',
+  dashboard:'Dashboard KPI', database:'Master Unit', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
+  plan:'Plan Service', planningsystem:'Plan Shcedule Maintenance', history:'Historical Report', summary:'Summary Mechanic',
   hm:'Monitoring HM'
 };
 navItems.forEach(item=>{
@@ -1711,6 +1817,7 @@ navItems.forEach(item=>{
     if(item.dataset.view==='history'){ refreshDailyRecords().then(renderHistory); }
     if(item.dataset.view==='summary'){ refreshDailyRecords().then(renderSummary); }
     if(item.dataset.view==='planningsystem') renderPlanningTable();
+    if(item.dataset.view==='preinspection'){ renderPreInspectionChecklist(); renderPreInspectionTable(); }
     if(item.dataset.view==='p2h') renderP2HChecklist();
     if(item.dataset.view==='hm') renderHMTable();
   });
@@ -1944,7 +2051,7 @@ document.getElementById('btn-logout').addEventListener('click', async ()=>{
   showLoginScreen();
 });
 
-const MECHANIC_VISIBLE_VIEWS = ['p2h','daily','plan','planningsystem','hm'];
+const MECHANIC_VISIBLE_VIEWS = ['preinspection','p2h','daily','plan','planningsystem','hm'];
 function updateRoleUI(){
   const isSupervisor = currentRole()==='Supervisor';
   document.body.classList.toggle('role-supervisor', isSupervisor);
@@ -3307,6 +3414,341 @@ window.deleteP2H = async function(id){
   renderP2HTable();
 }
 
+/* ================= PRE INSPECTION (PRESERVICE INSPECTION SHEET) =================
+   Diambil dari form "PRESERVICE INSPECTION SHEET" resmi tiap tipe unit:
+   D85ESS-2A (Bulldozer), PC210-10MO (Excavator), WA500-6R (Wheel Loader). */
+const PRE_INSPECTION_WHEELED_ITEMS = [
+  { section:'ENGINE' },
+  { no:1, component:'Periksa Kebocoran air radiator (Check for water coolant leak)' },
+  { no:2, component:'Periksa kebocoran oli sekitar engine (Check for oil leaks around engine)' },
+  { no:3, component:'Periksa kebocoran sistem fuel (Check for fuel system leaks)' },
+  { no:4, component:'Periksa kondisi hose dan clamp, ganti jika diperlukan (Check for conditions of hoses and clamps, replace when required)' },
+  { no:5, component:'Periksa ketegangan kondisi V-belt (Check tension and condition of V-belt)' },
+  { no:6, component:'Periksa core radiator (Inspect radiator core)' },
+  { no:7, component:'Periksa bearing kipas dan pulley yang longgar (Inspect fan and pulley bearings for looseness)' },
+  { no:8, component:'Periksa kekencangan baut kedudukan mesin (Check engine mount bolts are tight)' },
+  { no:9, component:'Periksa sambungan sistem knalpot yang bocor (Inspect exhaust system joints for leaks)' },
+  { no:10, component:'Periksa sistem udara masuk yang bocor (Inspect air induction system for leaks)' },
+  { no:11, component:'Periksa level indikator saringan udara (Check air filter indicator level)' },
+  { section:'POWER TRAIN' },
+  { no:12, component:'Periksa Transmisi untuk kebocoran oli (Check transmission for oil leaks)' },
+  { no:13, component:'Periksa differential/final drive/wheel hubs untuk kebocoran oli (Check Diff/F.Drive/wheel hubs for oil leaks)' },
+  { no:14, component:'Periksa kondisi propeller shaft & universal depan dan belakang (Check condition front and rear driveline)' },
+  { no:15, component:'Periksa kencangkan baut kedudukan transmisi (Check trans mount bolts are tight)' },
+  { no:16, component:'Periksa semua fitting dan clamp terikat kuat (Check for all fitting and clamps are tight)' },
+  { section:'BRAKE AND WHEEL' },
+  { no:17, component:'Periksa kebocoran oli/angin sekitar rem depan dan belakang (Check all brakes for oil/air leaks)' },
+  { no:18, component:'Periksa kebocoran/aus semua hose rem (Inspect hoses and connection brake system for leaks and worn)' },
+  { section:'HYDRAULIC, FRAME AND ATTACHEMENTS' },
+  { no:19, component:'Periksa kondisi hose, clamp pengikat dan hose yang bersentuhan dengan hose atau barang lain (Inspect condition of hydraulic hoses, clamps and hoses is in contact with other hose/part)' },
+  { no:20, component:'Periksa sistem hidrolik untuk kebocoran oli (Check hydraulic system for leaks)' },
+  { no:21, component:'Periksa kondisi semua steering linkages (Check condition of steering linkages)' },
+  { no:22, component:'Periksa semua rangka dari keretakan (Check all frame for cracks)' },
+  { no:23, component:'Periksa kondisi silinder dan rod (Check for cylinder and rod condition)' },
+  { no:24, component:'Periksa dan bersihkan kotoran di sekitar articulation (Inspect and remove dirty and trash in the articulation area)' },
+  { no:25, component:'Periksa bearing dan pin articulation (Check articulations bearing and pins)' },
+  { no:26, component:'Periksa kerusakan dan keausan pada bucket link (Inspect the bucket linkage for damage or excessive wear)' },
+  { no:27, component:'Periksa kondisi kontrol hidrolik (Check condition of hydraulic control linkages)' },
+  { no:28, component:'Periksa bucket untuk retak dan rusak (Inspect bucket for cracks and damages)' },
+  { no:29, component:'Buang endapan air di tangki udara (Drain water from air tank)' },
+  { section:'CABIN AND GENERAL' },
+  { no:30, component:'Periksa fungsi steering (Check steering function)' },
+  { no:31, component:'Periksa fungsi monitor panel cabin (Check function of cabin panel monitor)' },
+  { no:32, component:'Periksa fungsi wiper & air wiper (Check function of wiper and washer fluid)' },
+  { no:33, component:'Periksa fungsi lampu kerja dan back up alarm (Check function of working lamp and back up alarm)' },
+  { no:34, component:'Periksa pengoperasian pada pintu (Check operation of door catch)' },
+  { no:35, component:'Periksa kondisi sabuk pengaman (Check safety belt condition)' },
+  { no:36, component:'Periksa Kondisi Kursi Operator (Check condition of operator seat)' },
+  { no:37, component:'Periksa Kondisi Jendela Kabin (Check condition of cab windows)' },
+  { section:'SAFETY CHECK AND GENERAL' },
+  { no:38, component:'Periksa semua petunjuk safety tersedia & jelas (Check if safety sign are fitted & clear)' },
+  { no:39, component:'Periksa kondisi braket pemadam api dari retak dan periksa isi pemadam api melalui gauge pemadam api (Check bracket)' },
+  { no:40, component:'Periksa tangga untuk naik operator (Inspect ladder for damaged)' },
+  { no:41, component:'Periksa semua pengaman & pelindung ada dan aman, contoh: Fan (Check that all guards are in place and secure, for example: Fan)' },
+];
+const PRE_INSPECTION_CHECKLIST = {
+  'Bulldozer': [
+    { section:'ENGINE' },
+    { no:1, component:'Periksa kebocoran air (Check for water leaks)' },
+    { no:2, component:'Periksa kebocoran oli sekitar engine (Check for oil leaks around engine)' },
+    { no:3, component:'Periksa kebocoran sistem fuel (Check for fuel system leaks)' },
+    { no:4, component:'Periksa kondisi hose dan clamp (Check for conditions of hoses and clamps, replace when required)' },
+    { no:5, component:'Periksa ketegangan kondisi V-belt (Check tension and condtion of v-belt)' },
+    { no:6, component:'Periksa core radiator (Inspect radiator core)' },
+    { no:7, component:'Periksa bearing kipas dan pulley yang longgar (Inspect fan and pulley bearings for looseness)' },
+    { no:8, component:'Periksa kekencangan baut kedudukan mesin (Check engine mount bolts are tight)' },
+    { no:9, component:'Periksa sambungan sistem knalpot yang bocor (Inspect exhaust system joints for leaks)' },
+    { no:10, component:'Periksa level indikator saringan udara (Check air filter indicator level)' },
+    { section:'POWER TRAIN / TRANSMISSION' },
+    { no:11, component:'Periksa Transmisi untuk kebocoran oli (Check transmission for oil leaks)' },
+    { no:12, component:'Periksa final drive untuk kebocoran oli (Check Diff/F.Drive/wheel hubs for oil leaks)' },
+    { no:13, component:'Periksa kondisi propeller shaft & universal (Check condition driveline)' },
+    { no:14, component:'Periksa kencangkan baut kedudukan transmisi (Check trans mount bolts are tight)' },
+    { no:15, component:'Periksa semua fitting dan clamp terikat kuat (Check for all fitting and clamps are tight)' },
+    { no:16, component:'Periksa kebocoran oli sekitar rem (Check all brakes for oil/ air leaks)' },
+    { no:17, component:'Periksa kebocoran/aus semua hose rem (Inspect hoses and connection brake system for leaks and worn)' },
+    { section:'HYDRAULIC, FRAME ATTACHMENTS, AND UNDERCARRIAGE' },
+    { no:18, component:'Periksa dan kencangkan baut track pad (Check and tighten mounting screws of track pads)' },
+    { no:19, component:'Periksa dan kencangkan baut sideframe (Check and tighten mounting of screws of side frame)' },
+    { no:20, component:'Periksa kebocoran pada idler, carrier and track roller (Check idler, carrier and track rollers for any leaks)' },
+    { no:21, component:'Periksa baut under carriage yg kendor (Check any loose of bolts for undercarriage compartment)' },
+    { no:22, component:'Periksa keretakan pada blade (Check bucket for cracks)' },
+    { no:23, component:'Periksa keretakan pada cylinder blade frame (Check boom frame for cracks)' },
+    { no:24, component:'Periksa keretakan semua bagian frame (Check all parts for cracks)' },
+    { no:25, component:'Periksa keausan pin dan bush pada attachment dengan menggerakanya (Check pin and bush movement on the attachment for wear)' },
+    { no:26, component:'Periksa grease line dan nipplenya (Check all grease line and grease nozzle work properly, advise to service)' },
+    { section:'CABIN AND GENERAL' },
+    { no:27, component:'Periksa pengoperasian pada pintu (Check operation of door catch)' },
+    { no:28, component:'Pastikan tali sabuk pengaman dalam kondisi bagus (Ensure seatbelt straps in good order)' },
+    { no:29, component:'Periksa Kondisi Kursi Operator (Check condition of operator seat)' },
+    { no:30, component:'Periksa Kondisi Lampu (Check condition of the lights)' },
+    { no:31, component:'Periksa Kondisi Jendela Kabin (Check condition of cab windows)' },
+    { section:'ELECTRICAL' },
+    { no:32, component:'Periksa kunci kontak bekerja dengan baik (Check Key switch working properly)' },
+    { no:33, component:'Periksa isolation switch berfungsi (Check isolation switch function)' },
+    { no:34, component:'Periksa semua gauge & control panel indicator berfungsi (Check all gauges & control panel indicators for normal working)' },
+    { no:35, component:'Periksa semua tombol berfungsi (Check all application switches)' },
+    { no:36, component:'Periksa Warning alarm/Buzzer berfungsi (Check warning alarm/buzzer)' },
+    { no:37, component:'Periksa kondisi sekering & pemutus arus (Check condition of fuses & circuit breakers)' },
+    { no:38, component:'Periksa semua lampu penerangan bekerja dengan baik (Check all lightings working properly)' },
+    { no:39, component:'Periksa lampu rotary berfungsi (Check rotary lamp function)' },
+    { no:40, component:'Periksa sistem charging bekerja dengan baik (Check charging system for normal operation)' },
+    { no:41, component:'Periksa sistem starting bekerja dengan baik (Check starting system for normal operation)' },
+    { no:42, component:'Periksa alarm & klakson bekerja dengan baik (Check alarm & horn working properly)' },
+    { no:43, component:'Periksa Radio komunikasi berfungsi dengan baik (Check 2-way radio communication)' },
+    { no:44, component:'Periksa system pendingin bekerja dengan normal (Check air conditioning system for normal operation)' },
+    { no:45, component:'Periksa pembersih kaca berfungsi dengan baik (Check washer wiper function)' },
+    { section:'SAFETY CHECK AND GENERAL' },
+    { no:46, component:'Periksa semua petunjuk safety tersedia & jelas (Check if safety sign are fitted & clear)' },
+    { no:47, component:'Periksa kondisi dan isi pemadam api (Check condition and insert of fire extinguisher)' },
+    { no:48, component:'Periksa tangga untuk naik operator (Inspect ladder for damaged)' },
+    { no:49, component:'Periksa mesin/transmissi yang panas untuk sampah (Inspect engine/transmission hot areas for rags)' },
+    { no:50, component:'Periksa semua tutup & pengaman ada dan lengkap (Check that all guards and covers are in place and secure)' },
+    { no:51, component:'Periksa kondisi ROPS (Inspect condition of ROPS)' },
+  ],
+  'Wheel Loader': PRE_INSPECTION_WHEELED_ITEMS,
+  'Excavator': PRE_INSPECTION_WHEELED_ITEMS,
+};
+
+const preinsUnitSelect = document.getElementById('preins-unitcode');
+fillUnitSelectCodeOnly(preinsUnitSelect);
+preinsUnitSelect.addEventListener('change', ()=>{
+  syncTypeFromUnit(preinsUnitSelect, document.getElementById('preins-typeunit'));
+  renderPreInspectionChecklist();
+});
+syncTypeFromUnit(preinsUnitSelect, document.getElementById('preins-typeunit'));
+document.getElementById('preins-tanggal').value = new Date().toISOString().slice(0,10);
+
+function renderPreInspectionChecklist(){
+  const unit = UNITS.find(u=>u.code===preinsUnitSelect.value);
+  const tbody = document.getElementById('preins-checklist-body');
+  if(!unit || !PRE_INSPECTION_CHECKLIST[unit.category]){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="4">Pilih Unit No untuk menampilkan checklist Pre Inspection sesuai tipe unit.</td></tr>`;
+    return;
+  }
+  const items = PRE_INSPECTION_CHECKLIST[unit.category];
+  tbody.innerHTML = items.map(it=>{
+    if(it.section){
+      return `<tr><td colspan="4" style="background:var(--panel-2); font-family:'Oswald',sans-serif; font-weight:700; letter-spacing:0.5px; color:var(--yellow); font-size:11.5px;">${it.section}</td></tr>`;
+    }
+    const comp = it.component.replace(/"/g,'&quot;');
+    return `
+    <tr data-no="${it.no}" data-component="${comp}">
+      <td>${it.no}</td>
+      <td style="white-space:normal; min-width:260px;">${it.component}</td>
+      <td>
+        <label style="display:inline-flex; align-items:center; gap:4px; margin-right:10px; font-size:11.5px; cursor:pointer;"><input type="radio" name="preins-cond-${it.no}" value="OK" checked> OK</label>
+        <label style="display:inline-flex; align-items:center; gap:4px; font-size:11.5px; cursor:pointer;"><input type="radio" name="preins-cond-${it.no}" value="Not OK"> Not OK</label>
+      </td>
+      <td><input type="text" class="preins-note" placeholder="Catatan (opsional)" style="min-width:160px;"></td>
+    </tr>`;
+  }).join('');
+}
+renderPreInspectionChecklist();
+
+function preinsDefectRowHtml(){
+  return `<tr>
+    <td class="preins-defect-item">1</td>
+    <td><input type="text" class="preins-defect-desc" placeholder="Uraikan defect / temuan kerusakan"></td>
+    <td>
+      <select class="preins-defect-status">
+        <option value="OK">OK</option>
+        <option value="Backlog">Backlog</option>
+      </select>
+    </td>
+    <td><button type="button" class="btn small danger preins-remove-defect">Hapus</button></td>
+  </tr>`;
+}
+function renumberPreinsDefectRows(){
+  document.querySelectorAll('#preins-defect-body tr').forEach((tr,i)=>{
+    const cell = tr.querySelector('.preins-defect-item');
+    if(cell) cell.textContent = i+1;
+  });
+}
+function addPreinsDefectRow(){
+  const tbody = document.getElementById('preins-defect-body');
+  const empty = tbody.querySelector('.empty-row');
+  if(empty) empty.remove();
+  tbody.insertAdjacentHTML('beforeend', preinsDefectRowHtml());
+  renumberPreinsDefectRows();
+}
+document.getElementById('preins-add-defect').addEventListener('click', addPreinsDefectRow);
+document.getElementById('preins-defect-body').addEventListener('click', (e)=>{
+  if(e.target.classList.contains('preins-remove-defect')){
+    e.target.closest('tr').remove();
+    const tbody = document.getElementById('preins-defect-body');
+    if(!tbody.querySelector('tr')){
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="4">Belum ada temuan ditambahkan.</td></tr>`;
+    } else {
+      renumberPreinsDefectRows();
+    }
+  }
+});
+
+document.getElementById('form-preins').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const rows = Array.from(document.querySelectorAll('#preins-checklist-body tr[data-no]'));
+  if(!rows.length){ alert('Pilih Unit No terlebih dahulu agar checklist Pre Inspection tampil.'); return; }
+
+  const checklist = rows.map(tr=>{
+    const no = tr.dataset.no;
+    const component = tr.dataset.component;
+    const checkedInput = tr.querySelector(`input[name="preins-cond-${no}"]:checked`);
+    const condition = checkedInput ? checkedInput.value : 'OK';
+    const note = tr.querySelector('.preins-note').value.trim();
+    return { no:Number(no), component, condition, note };
+  });
+  const findings = checklist.filter(c=>c.condition==='Not OK');
+
+  const defects = Array.from(document.querySelectorAll('#preins-defect-body tr')).filter(tr=>!tr.classList.contains('empty-row')).map((tr,i)=>({
+    item: i+1,
+    desc: tr.querySelector('.preins-defect-desc').value.trim(),
+    status: tr.querySelector('.preins-defect-status').value,
+  })).filter(d=>d.desc);
+
+  const unit = UNITS.find(u=>u.code===preinsUnitSelect.value);
+
+  const record = {
+    id: uid(),
+    tanggal: document.getElementById('preins-tanggal').value,
+    unitCode: unit.code,
+    typeUnit: unit.type,
+    category: unit.category,
+    hm: document.getElementById('preins-hm').value,
+    checkBy: document.getElementById('preins-checkby').value,
+    checklist,
+    findings,
+    defects,
+    status: findings.length ? 'Ada Temuan' : 'OK',
+    approvalStatus: 'Pending',
+    approvedBy: null,
+    approvedAt: null,
+    rejectNote: null,
+    createdBy: currentUserName(),
+  };
+  preInspectionRecords.unshift(record);
+  await savePreInspection();
+  renderPreInspectionTable();
+
+  const keepUnit = preinsUnitSelect.value;
+  document.getElementById('form-preins').reset();
+  document.getElementById('preins-tanggal').value = new Date().toISOString().slice(0,10);
+  document.getElementById('preins-defect-body').innerHTML = `<tr class="empty-row"><td colspan="4">Belum ada temuan ditambahkan.</td></tr>`;
+  preinsUnitSelect.value = keepUnit;
+  syncTypeFromUnit(preinsUnitSelect, document.getElementById('preins-typeunit'));
+  renderPreInspectionChecklist();
+});
+
+const preinsFilterUnit = document.getElementById('preins-filter-unit');
+preinsFilterUnit.innerHTML = '<option value="">Semua Unit</option>' + UNITS.map(u=>`<option value="${u.code}">${u.code}</option>`).join('');
+[preinsFilterUnit, document.getElementById('preins-filter-status')].forEach(el=> el.addEventListener('change', renderPreInspectionTable));
+document.getElementById('preins-clear-filter').addEventListener('click', ()=>{
+  preinsFilterUnit.value = '';
+  document.getElementById('preins-filter-status').value = '';
+  renderPreInspectionTable();
+});
+
+function filterPreinsRows(){
+  const unit = preinsFilterUnit.value;
+  const status = document.getElementById('preins-filter-status').value;
+  return preInspectionRecords.filter(r=>{
+    if(unit && r.unitCode!==unit) return false;
+    if(status && r.status!==status) return false;
+    return true;
+  });
+}
+function preinsApprovalPillHTML(r){
+  const a = r.approvalStatus || 'Pending';
+  const cls = a==='Approved'?'approved':a==='Rejected'?'rejected':'pending';
+  const label = a==='Approved'?'Approved':a==='Rejected'?'Rejected':'Pending Approval';
+  return `<span class="pill ${cls}">${label}</span>`;
+}
+function renderPreInspectionTable(){
+  const rows = filterPreinsRows();
+  const tbody = document.getElementById('preins-tbody');
+  const isSupervisor = currentRole()==='Supervisor';
+  if(!rows.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Belum ada record Pre Inspection.</td></tr>`;
+  } else {
+    tbody.innerHTML = rows.map(r=>{
+      const statusPill = r.status==='Ada Temuan' ? `<span class="pill overdue">Ada Temuan</span>` : `<span class="pill close">OK</span>`;
+      const findingsText = r.findings && r.findings.length ? r.findings.map(f=>f.component).join('; ') : '—';
+      let approvalCell;
+      if(isSupervisor && (r.approvalStatus||'Pending')==='Pending'){
+        approvalCell = `<div class="approval-actions">
+          <button class="btn approve" onclick="approvePreInspection('${r.id}')">✓ Approve</button>
+          <button class="btn reject" onclick="rejectPreInspection('${r.id}')">✕ Reject</button>
+        </div>`;
+      } else {
+        approvalCell = `${preinsApprovalPillHTML(r)}<div class="approval-note">${r.approvedBy?('oleh '+r.approvedBy+(r.approvedAt?'<br>'+r.approvedAt:'')):'menunggu Supervisor'}${r.rejectNote?'<br>alasan: '+r.rejectNote:''}</div>`;
+      }
+      return `
+      <tr>
+        <td>${r.tanggal||'—'}</td>
+        <td>${r.unitCode}</td>
+        <td>${r.typeUnit}</td>
+        <td>${r.hm||'—'}</td>
+        <td>${r.checkBy||'—'}</td>
+        <td>${statusPill}</td>
+        <td style="white-space:normal; min-width:220px; font-size:11px;">${findingsText}</td>
+        <td>${approvalCell}</td>
+        <td><button class="btn danger" onclick="deletePreInspection('${r.id}')">Hapus</button></td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('preins-stat-total').textContent = preInspectionRecords.length;
+  document.getElementById('preins-stat-ok').textContent = preInspectionRecords.filter(r=>r.status==='OK').length;
+  document.getElementById('preins-stat-findings').textContent = preInspectionRecords.filter(r=>r.status==='Ada Temuan').length;
+  document.getElementById('preins-stat-backlog').textContent = preInspectionRecords.reduce((s,r)=>s+((r.defects||[]).filter(d=>d.status==='Backlog').length),0);
+}
+window.deletePreInspection = async function(id){
+  preInspectionRecords = preInspectionRecords.filter(r=>r.id!==id);
+  await savePreInspection();
+  renderPreInspectionTable();
+}
+window.approvePreInspection = async function(id){
+  const r = preInspectionRecords.find(x=>x.id===id);
+  if(!r) return;
+  r.approvalStatus = 'Approved';
+  r.approvedBy = currentUserName();
+  r.approvedAt = new Date().toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'});
+  r.rejectNote = null;
+  await savePreInspection();
+  renderPreInspectionTable();
+}
+window.rejectPreInspection = async function(id){
+  const r = preInspectionRecords.find(x=>x.id===id);
+  if(!r) return;
+  const reason = prompt('Alasan penolakan record ini:','');
+  if(reason===null) return;
+  r.approvalStatus = 'Rejected';
+  r.approvedBy = currentUserName();
+  r.approvedAt = new Date().toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'});
+  r.rejectNote = reason;
+  await savePreInspection();
+  renderPreInspectionTable();
+}
+
 /* ================= HISTORICAL REPORT ================= */
 
 const hUnitSelect = document.getElementById('h-unit');
@@ -4286,6 +4728,7 @@ function renderAll(){
   renderPlanTable();
   renderPlanningTable();
   renderP2HTable();
+  renderPreInspectionTable();
   renderHMTable();
   renderHistory();
   renderSummary();
