@@ -982,13 +982,13 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>Record Daily Maintenance</h2></div>
+          <div class="panel-head"><h2>Record Daily Maintenance</h2><button type="button" class="btn secondary" id="daily-refresh-btn" title="Ambil ulang data terbaru dari database">⟲ Refresh Data</button></div>
           <div class="table-wrap">
             <table id="daily-record-table">
               <thead><tr>
                 <th>Code BD</th><th>Tanggal</th><th>Shift</th><th>Equipment Code</th><th>Type</th><th>HM</th>
                 <th>BD Tanggal</th><th>BD Jam</th><th>Repair Start Tgl</th><th>Repair Start Jam</th><th>Repair End Tgl</th><th>Repair End Jam</th>
-                <th>Total Repair</th><th>Total Breakdown</th><th>Breakdown Category</th><th>Plan/Unplan</th>
+                <th>Total Repair</th><th>Total Breakdown</th><th>Kategori</th><th>Plan/Unplan</th>
                 <th>Breakdown Deskripsi</th><th>Repair Action</th><th>Man Power</th><th>Area</th><th>Status</th><th>Keterangan Part Consumable</th>
                 <th>Approval</th><th></th>
               </tr></thead>
@@ -1656,6 +1656,24 @@ async function saveDaily(){
   try{ await appStorage.set('daily-records', JSON.stringify(dailyRecords)); }
   catch(e){ console.error('save daily failed', e); }
 }
+/* Ambil ulang dailyRecords langsung dari sumbernya (Supabase table / appStorage), TIDAK bergantung
+   pada channel realtime. Realtime Supabase HANYA mengirim perubahan yang terjadi SELAGI koneksi
+   websocket-nya hidup — kalau koneksi sempat putus (laptop sleep, ganti wifi, tab di-background
+   semalaman, dsb) lalu tersambung lagi, perubahan yang terjadi SELAMA putus TIDAK dikirim ulang.
+   Akibatnya sesi yang sudah lama terbuka (mis. dibuka kemarin, dibiarkan menyala) bisa "ketinggalan"
+   record baru dari mekanik walau record itu sudah tersimpan di database. Fungsi ini dipakai sebagai
+   jaring pengaman: dipanggil ulang setiap kali panel Daily Maintenance/Historical/Summary Mechanic
+   dibuka, dan juga berkala lewat polling, supaya data yang tampil selalu sesuai database. */
+async function refreshDailyRecords(){
+  try{
+    if(usingDailyTable()){
+      await loadDailyFromTable();
+    } else {
+      const d = await appStorage.get('daily-records');
+      if(d) dailyRecords = JSON.parse(d.value);
+    }
+  }catch(e){ console.error('refresh daily records gagal', e); }
+}
 async function savePlan(){
   try{ await appStorage.set('plan-records', JSON.stringify(planRecords)); }
   catch(e){ console.error('save plan failed', e); }
@@ -1689,8 +1707,9 @@ navItems.forEach(item=>{
     document.getElementById('view-'+item.dataset.view).classList.add('active');
     document.getElementById('topbar-title').textContent = titleMap[item.dataset.view];
     if(item.dataset.view==='dashboard') renderDashboard();
-    if(item.dataset.view==='history') renderHistory();
-    if(item.dataset.view==='summary') renderSummary();
+    if(item.dataset.view==='daily'){ refreshDailyRecords().then(renderDailyTable); }
+    if(item.dataset.view==='history'){ refreshDailyRecords().then(renderHistory); }
+    if(item.dataset.view==='summary'){ refreshDailyRecords().then(renderSummary); }
     if(item.dataset.view==='planningsystem') renderPlanningTable();
     if(item.dataset.view==='p2h') renderP2HChecklist();
     if(item.dataset.view==='hm') renderHMTable();
@@ -1747,6 +1766,35 @@ async function loadRegisteredUsers(){
 async function saveRegisteredUsers(){
   try{ await appStorage.set('registered-users', JSON.stringify(registeredUsers)); }
   catch(e){ console.error('save registered users failed', e); }
+}
+
+/* Isi ulang dropdown "Man Power" (Daily Maintenance) & "Operator / Mekanik" (P2H) dari daftar
+   user role Mechanic yang sebenarnya (USERS + registeredUsers) — bukan daftar statis 2 nama.
+   Tanpa ini, mekanik yang mendaftar akun baru tidak bisa dipilih/terkunci di field ini,
+   sehingga record yang mereka input tersimpan dengan nama mekanik kosong dan tidak muncul
+   dengan benar di tabel Daily Maintenance, Historical Report, maupun Summary Mechanic. */
+function populateMechanicSelects(){
+  const mechanics = getAllUsers().filter(u=>u.role==='Mechanic');
+  const optsHTML = mechanics.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
+
+  const dMech = document.getElementById('d-mechanic');
+  if(dMech){
+    const prev = dMech.value;
+    dMech.innerHTML = optsHTML;
+    if(mechanics.some(u=>u.name===prev)) dMech.value = prev;
+  }
+  const dMech2 = document.getElementById('d-mechanic2');
+  if(dMech2){
+    const prev = dMech2.value;
+    dMech2.innerHTML = '<option value="">— Tidak ada —</option>' + optsHTML;
+    if(mechanics.some(u=>u.name===prev)) dMech2.value = prev;
+  }
+  const p2hOp = document.getElementById('p2h-operator');
+  if(p2hOp){
+    const prev = p2hOp.value;
+    p2hOp.innerHTML = optsHTML;
+    if(mechanics.some(u=>u.name===prev)) p2hOp.value = prev;
+  }
 }
 
 let loggedInUser = null;
@@ -1925,6 +1973,10 @@ function updateRoleUI(){
 
   renderDailyTable();
 
+  // Isi ulang dropdown Man Power / Operator dari daftar user Mechanic terbaru (termasuk
+  // akun yang baru mendaftar), SEBELUM field dikunci ke nama user yang login di bawah ini.
+  populateMechanicSelects();
+
   // Kunci field "Mechanic" pada form Daily Maintenance ke nama mekanik yang sedang login.
   // Mekanik tidak bisa mengganti/menyamar sebagai mekanik lain; Supervisor tetap bebas memilih.
   const mechanicField = document.getElementById('d-mechanic');
@@ -1983,6 +2035,9 @@ function fmtDur(hrs){
   if(hrs===null||isNaN(hrs)) return '—';
   const h = Math.floor(hrs); const m = Math.round((hrs-h)*60);
   return `${h}j ${m}m`;
+}
+function categoryLabel(cat){
+  return cat==='Daily' ? 'Daily Maintenance' : cat==='Periodical' ? 'Periodical Maintenance' : (cat || '—');
 }
 function pillClass(status){
   return status==='Open'?'open':status==='Progress'?'progress':'close';
@@ -2254,10 +2309,17 @@ function updateDurationPreview(){
 
 /* ---- Code BD otomatis: prefix mengikuti kategori job, nomor urut berjalan per kategori ---- */
 function genRecordCode(category){
-  const prefixMap = { Breakdown:'Brk', Daily:'DM', Periodical:'PM' };
-  const prefix = prefixMap[category] || 'Brk';
-  const countSame = dailyRecords.filter(r=>r.category===category).length + 1;
-  return `${prefix}-${String(countSame).padStart(4,'0')}`;
+  // Ikuti format & urutan Code BD yang SUDAH ADA di data (brk-002, brk-003, ... brk-333, dst) —
+  // bukan format baru per-kategori (DM-0001/Brk-0001/PM-0001). Nomor berikutnya dihitung dari
+  // nomor "brk-NNN" tertinggi yang ada di seluruh dailyRecords saat ini, apa pun kategorinya,
+  // supaya saat mekanik input data terbaru, Code BD-nya otomatis nyambung/lanjut dari file lama.
+  let maxNum = 0;
+  dailyRecords.forEach(r=>{
+    const m = /^brk-(\d+)$/i.exec((r.codeBD||'').trim());
+    if(m){ const n = parseInt(m[1],10); if(n>maxNum) maxNum = n; }
+  });
+  const next = maxNum + 1;
+  return `brk-${String(next).padStart(3,'0')}`;
 }
 function updateCodeBDPreview(){
   document.getElementById('d-codebd').value = genRecordCode(document.getElementById('d-category').value);
@@ -2448,6 +2510,7 @@ function approvalPillHTML(r){
   return `<span class="pill ${cls}">${label}</span>`;
 }
 function renderDailyTable(){
+  updateCodeBDPreview();
   const tbody = document.getElementById('daily-tbody');
   if(!dailyRecords.length){
     tbody.innerHTML = `<tr class="empty-row"><td colspan="24">Belum ada record. Tambahkan lewat form di atas.</td></tr>`;
@@ -2487,18 +2550,29 @@ function renderDailyTable(){
       <td>${r.end||'—'}</td>
       <td>${fmtDur(r.duration)}</td>
       <td>${fmtDur(r.totalBreakdown)}</td>
-      <td>${r.bdCategory||'—'}</td>
+      <td><span class="cat ${r.category}">${categoryLabel(r.category)}</span></td>
       <td><span class="pill ${r.planUnplan==='Plan'?'planned':'overdue'}">${r.planUnplan||'—'}</span></td>
       <td style="white-space:normal; min-width:180px;">${r.jobDesc||'—'}</td>
       <td style="white-space:normal; min-width:180px;">${r.repairAction||'—'}</td>
       <td>${r.mechanic2 ? r.mechanic + ', ' + r.mechanic2 : (r.mechanic||'—')}</td>
       <td>${r.area}</td>
       <td><span class="pill ${pillClass(r.status)}">${r.status==='Progress'?'On Progress':r.status}</span></td>
-      <td style="white-space:normal; min-width:140px;">${r.keterangan||'—'}</td>
+      <td style="white-space:normal; min-width:140px;">${r.bdCategory ? `<b>${r.bdCategory}</b>${r.keterangan?' — '+r.keterangan:''}` : (r.keterangan||'—')}</td>
       <td>${approvalPillHTML(r)}</td>
       <td>${actionCell}<button class="btn danger" style="margin-top:6px;" onclick="deleteDaily('${r.id}')">Hapus</button></td>
     </tr>`;
   }).join('');
+}
+const dailyRefreshBtn = document.getElementById('daily-refresh-btn');
+if(dailyRefreshBtn){
+  dailyRefreshBtn.addEventListener('click', async ()=>{
+    dailyRefreshBtn.disabled = true;
+    dailyRefreshBtn.textContent = '⟲ Memuat...';
+    await refreshDailyRecords();
+    renderAll();
+    dailyRefreshBtn.disabled = false;
+    dailyRefreshBtn.textContent = '⟲ Refresh Data';
+  });
 }
 window.deleteDaily = async function(id){
   const backup = dailyRecords;
@@ -4145,6 +4219,16 @@ function subscribeDailyRealtime(){
     renderAll();
     updateRoleUI();
     subscribeDailyRealtime();
+    // Jaring pengaman: refresh dailyRecords dari database setiap 30 detik.
+    // Ini menjaga data tetap sinkron walau channel realtime sempat putus koneksi
+    // (mis. laptop sleep semalaman) dan tidak mengirim ulang perubahan yang terlewat.
+    setInterval(async ()=>{
+      if(!loggedInUser) return;
+      const before = JSON.stringify(dailyRecords.map(r=>r.id+r.updatedAt));
+      await refreshDailyRecords();
+      const after = JSON.stringify(dailyRecords.map(r=>r.id+r.updatedAt));
+      if(before!==after) renderAll();
+    }, 30000);
   } else {
     showLoginScreen();
   }
