@@ -2327,6 +2327,96 @@ function updateCodeBDPreview(){
 document.getElementById('d-category').addEventListener('change', updateCodeBDPreview);
 updateCodeBDPreview();
 
+/* ---- Migrasi Code BD lama (format DM-xxxx / PM-xxxx dari versi lama panel) ----
+   Beberapa record lama masih tersimpan di database dengan Code BD format DM-/PM-
+   (dibuat sebelum genRecordCode() diseragamkan ke format brk-NNN). Fungsi ini
+   mendeteksi record yang code_bd-nya BUKAN format "brk-NNN", lalu memberi nomor
+   baru secara berurutan (kronologis berdasarkan tanggal, sambung dari nomor
+   brk-NNN tertinggi yang sudah ada), dan menulis ulang ke database supaya semua
+   Code BD konsisten satu format. Idempotent: kalau tidak ada lagi record dengan
+   format lama, fungsi ini tidak melakukan apa-apa. ---- */
+async function migrateLegacyCodeBD(){
+  // Pengunci: pastikan migrasi format lama (DM-/PM- -> brk-NNN) hanya PERNAH
+  // dijalankan sekali seumur hidup aplikasi. Tanpa ini, dua sesi/tab yang
+  // hampir bersamaan membuka panel bisa sama-sama menganggap data lama masih
+  // "belum bermigrasi" dan menjalankan penomoran ulang dua kali, membuat
+  // nomor brk- meloncat lebih jauh dari seharusnya (itu yang terjadi sebelumnya).
+  let alreadyDone = false;
+  try{
+    const flag = await appStorage.get('codebd-legacy-migration-done');
+    alreadyDone = flag ? JSON.parse(flag.value) === true : false;
+  }catch(e){ alreadyDone = false; }
+  if(alreadyDone) return;
+  try{ await appStorage.set('codebd-legacy-migration-done', JSON.stringify(true)); }catch(e){}
+
+  const isBrkFormat = code => /^brk-\d+$/i.test((code||'').trim());
+  const legacy = dailyRecords.filter(r=>!isBrkFormat(r.codeBD));
+  if(legacy.length===0) return;
+
+  let maxNum = 0;
+  dailyRecords.forEach(r=>{
+    const m = /^brk-(\d+)$/i.exec((r.codeBD||'').trim());
+    if(m){ const n = parseInt(m[1],10); if(n>maxNum) maxNum = n; }
+  });
+
+  // Urutkan record lama secara kronologis (tanggal lalu jam) supaya nomor baru
+  // tetap mencerminkan urutan kejadian aslinya, bukan urutan acak dari database.
+  legacy.sort((a,b)=>{
+    const da = `${a.tanggal||''} ${a.start||a.breakdownTime||''}`;
+    const db = `${b.tanggal||''} ${b.start||b.breakdownTime||''}`;
+    return da.localeCompare(db);
+  });
+
+  const canWriteToDb = usingDailyTable();
+  for(const rec of legacy){
+    maxNum += 1;
+    const oldCode = rec.codeBD;
+    rec.codeBD = `brk-${String(maxNum).padStart(3,'0')}`;
+    if(canWriteToDb){
+      const res = await updateDailyRecordDb(rec);
+      if(!res.ok){
+        console.error(`Gagal migrasi Code BD ${oldCode} -> ${rec.codeBD}`, res.error);
+        rec.codeBD = oldCode; // rollback lokal kalau gagal simpan ke server
+        maxNum -= 1;
+      }
+    }
+  }
+  if(!canWriteToDb){ await saveDaily(); }
+}
+
+/* ---- Koreksi satu-kali: migrasi sebelumnya sempat berjalan dobel sehingga
+   3 record hasil migrasi DM-0289/PM-0025/DM-0288 salah dapat nomor
+   brk-336/337/338, padahal seharusnya brk-334/335/336 (lanjutan langsung
+   dari brk-333). Fungsi ini menukar nomornya ke yang benar, sekali saja. ---- */
+async function fixOvershotCodeBD(){
+  let alreadyDone = false;
+  try{
+    const flag = await appStorage.get('codebd-fix-334-335-336-done');
+    alreadyDone = flag ? JSON.parse(flag.value) === true : false;
+  }catch(e){ alreadyDone = false; }
+  if(alreadyDone) return;
+  try{ await appStorage.set('codebd-fix-334-335-336-done', JSON.stringify(true)); }catch(e){}
+
+  const RENAME = { 'brk-336':'brk-334', 'brk-337':'brk-335', 'brk-338':'brk-336' };
+  const targets = dailyRecords.filter(r=>RENAME[(r.codeBD||'').trim().toLowerCase()]);
+  if(targets.length===0) return;
+
+  const canWriteToDb = usingDailyTable();
+  for(const rec of targets){
+    const oldCode = rec.codeBD;
+    const newCode = RENAME[oldCode.trim().toLowerCase()];
+    rec.codeBD = newCode;
+    if(canWriteToDb){
+      const res = await updateDailyRecordDb(rec);
+      if(!res.ok){
+        console.error(`Gagal koreksi Code BD ${oldCode} -> ${newCode}`, res.error);
+        rec.codeBD = oldCode;
+      }
+    }
+  }
+  if(!canWriteToDb){ await saveDaily(); }
+}
+
 /* ---- Edit record (khusus mekanik, sebelum di-approve) ----
    Mekanik hanya boleh mengedit record miliknya sendiri yang masih Pending Approval,
    supaya salah input bisa dikoreksi tanpa perlu menunggu/lewat Supervisor. ---- */
@@ -4216,6 +4306,8 @@ function subscribeDailyRealtime(){
   if(loggedInUser){
     hideLoginScreen();
     await loadData();
+    await migrateLegacyCodeBD();
+    await fixOvershotCodeBD();
     renderAll();
     updateRoleUI();
     subscribeDailyRealtime();
