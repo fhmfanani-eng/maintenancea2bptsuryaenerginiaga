@@ -3456,6 +3456,26 @@ function renderSummaryKPICards(rows, byMech){
     </div>`;
 }
 
+/* ---- Normalisasi nama mekanik khusus untuk Summary Mechanic ----
+   Beberapa record punya nama mekanik yang sebenarnya orang yang sama tapi
+   tertulis beda (typo/variasi penulisan saat input). Supaya rekap di Summary
+   Mechanic tidak pecah jadi baris terpisah, nama-nama berikut digabung ke
+   satu nama baku. Ini HANYA memengaruhi tampilan rekap di panel Summary
+   Mechanic — data mentah di Daily Maintenance/Historical Report tetap
+   menyimpan nama asli yang diinput mekanik. ---- */
+const MECHANIC_NAME_ALIAS = {
+  'robertus': 'Robertus G M',
+  'robertus g': 'Robertus G M',
+  'robertus g m': 'Robertus G M',
+  'alfius': 'Alfius S',
+  'alfius s': 'Alfius S',
+};
+function normalizeMechanicName(name){
+  if(!name) return name;
+  const key = name.trim().toLowerCase();
+  return MECHANIC_NAME_ALIAS[key] || name.trim();
+}
+
 function renderSummary(){
   const month = sMonth.value; // YYYY-MM
   const rows = dailyRecords.filter(r=>r.tanggal && r.tanggal.startsWith(month));
@@ -3473,8 +3493,8 @@ function renderSummary(){
   }
   rows.forEach(r=>{
     // Job dengan 2 Man Power dihitung untuk kedua mekanik (masing-masing tetap dapat kredit penuh atas job tsb).
-    addToMech(r.mechanic || 'Unassigned', r);
-    if(r.mechanic2) addToMech(r.mechanic2, r);
+    addToMech(normalizeMechanicName(r.mechanic) || 'Unassigned', r);
+    if(r.mechanic2) addToMech(normalizeMechanicName(r.mechanic2), r);
   });
 
   renderSummaryKPICards(rows, byMech);
