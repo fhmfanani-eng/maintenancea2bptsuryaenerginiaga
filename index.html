@@ -659,7 +659,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
       <div class="sub">MECHANIC MAINTENANCE A2B PANEL</div>
     </div>
     <nav class="nav">
-      <div class="nav-item active" data-view="dashboard"><span class="num"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span> Dashboard KPI</div>
+      <div class="nav-item active" data-view="dashboard"><span class="num"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span> KPI REPORT</div>
       <div class="nav-item" data-view="database"><span class="num"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span> Master Unit</div>
       <div class="nav-item" data-view="preinspection"><span class="num"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span> Pre Inspection</div>
       <div class="nav-item" data-view="p2h"><span class="num"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 3h6v2H9z"></path><path d="M9 12l2 2 4-4"></path></svg></span> P2H (Pemeriksaan Harian)</div>
@@ -677,7 +677,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
     <div class="topbar">
       <div style="display:flex; align-items:center; gap:12px; min-width:0;">
         <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Buka menu">☰</button>
-        <h1 id="topbar-title">Dashboard KPI</h1>
+        <h1 id="topbar-title">KPI REPORT</h1>
       </div>
       <div style="display:flex; align-items:center; gap:18px;">
         <div class="role-bar">
@@ -706,7 +706,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
         <div class="grid grid-2" id="kpi-chart-dashboard" style="margin-bottom:20px; align-items:start;"></div>
 
         <div class="grid grid-3" id="kpi-grid"></div>
-        <div class="hint" style="margin-top:-8px; margin-bottom:6px;">KPI dihitung hanya dari record Daily Maintenance yang sudah berstatus <b>Approved</b> oleh Supervisor. Khusus MA &amp; PA dihitung otomatis dari file jam operasional yang diupload di bawah.</div>
+        <div class="hint" style="margin-top:14px; margin-bottom:6px;">KPI dihitung hanya dari record Daily Maintenance yang sudah berstatus <b>Approved</b> oleh Supervisor. Khusus MA &amp; PA dihitung otomatis dari file jam operasional yang diupload di bawah.</div>
 
         <div class="section-title">Data Sumber MA &amp; PA</div>
         <div class="panel">
@@ -849,7 +849,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
               </table>
             </div>
 
-            <div class="hint">Catatan: Berikan centang (tandai OK) jika defect langsung dikerjakan. Tandai Backlog jika defect dijadikan Backlog/Perbaikan Next Service dan Waiting Part.</div>
+            <div class="hint">Catatan: Tandai Close jika defect langsung dikerjakan/selesai. Tandai Open jika defect masih Backlog/Perbaikan Next Service dan Waiting Part.</div>
 
             <div class="toolbar" style="margin-top:14px;">
               <button type="submit" class="btn">＋ Simpan Pre Inspection</button>
@@ -1801,7 +1801,7 @@ async function saveHM(){
 const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 const titleMap = {
-  dashboard:'Dashboard KPI', database:'Master Unit', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
+  dashboard:'KPI REPORT', database:'Master Unit', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
   plan:'Plan Service', planningsystem:'Plan Shcedule Maintenance', history:'Historical Report', summary:'Summary Mechanic',
   hm:'Monitoring HM'
 };
@@ -2491,6 +2491,100 @@ async function migrateLegacyCodeBD(){
   if(!canWriteToDb){ await saveDaily(); }
 }
 
+/* ---- LOCK Code BD: paksa format "brk-NNN" untuk SELAMANYA, tolak DM-/PM- ----
+   Beda dengan migrateLegacyCodeBD() di atas (yang cuma jalan sekali seumur
+   hidup lewat flag), fungsi ini SENGAJA TIDAK dikunci flag — dipanggil setiap
+   kali panel dibuka, setiap refresh berkala, dan setiap ada update realtime,
+   supaya kalau suatu saat ada Code BD format lama (DM-xxxx/PM-xxxx) nyelip
+   masuk lagi dari luar (mis. import manual ke Supabase, atau integrasi lain
+   yang bypass form ini), langsung otomatis dirapikan balik ke format
+   "brk-NNN" — jadi format DM-/PM- terkunci TIDAK AKAN PERNAH nongol lagi di
+   tabel. Kalau tidak ada Code BD format lama, fungsi ini langsung selesai
+   tanpa melakukan apa-apa (aman & murah untuk dipanggil berulang). ---- */
+async function enforceCodeBDLock(){
+  const isBrkFormat = code => /^brk-\d+$/i.test((code||'').trim());
+  const legacy = dailyRecords.filter(r=>!isBrkFormat(r.codeBD));
+  if(legacy.length===0) return;
+
+  let maxNum = 0;
+  dailyRecords.forEach(r=>{
+    const m = /^brk-(\d+)$/i.exec((r.codeBD||'').trim());
+    if(m){ const n = parseInt(m[1],10); if(n>maxNum) maxNum = n; }
+  });
+
+  legacy.sort((a,b)=>{
+    const da = `${a.tanggal||''} ${a.start||a.breakdownTime||''}`;
+    const db = `${b.tanggal||''} ${b.start||b.breakdownTime||''}`;
+    return da.localeCompare(db);
+  });
+
+  const canWriteToDb = usingDailyTable();
+  for(const rec of legacy){
+    maxNum += 1;
+    const oldCode = rec.codeBD;
+    rec.codeBD = `brk-${String(maxNum).padStart(3,'0')}`;
+    if(canWriteToDb){
+      const res = await updateDailyRecordDb(rec);
+      if(!res.ok){
+        console.error(`Gagal mengunci format Code BD ${oldCode} -> ${rec.codeBD}`, res.error);
+        rec.codeBD = oldCode;
+        maxNum -= 1;
+      }
+    }
+  }
+  if(!canWriteToDb){ await saveDaily(); }
+}
+
+/* ---- Koreksi satu-kali: urutan Code BD brk-333 ke atas TIDAK sinkron dengan
+   tanggal kejadian (brk-337 tanggal 07-26 nyempil di antara brk-334..339 yang
+   tanggalnya lebih tua, brk-338/339 tanggal 07-23 nyempil setelah brk-336/335
+   yang tanggal 07-24, dst) — akibat beberapa migrasi susulan yang menambah
+   nomor baru berdasarkan urutan input, bukan urutan tanggal kejadian.
+   Fungsi ini menata ULANG nomor brk- untuk seluruh record bernomor >= 333
+   (kumpulan angka yang sama, hanya dipasangkan ulang) supaya urut naik
+   sesuai tanggal (dan jam) kejadian — brk-333 = record paling lama,
+   nomor terbesar = record paling baru. Sekali jalan, dikunci flag. ---- */
+async function fixCodeBDChronologicalOrder(){
+  let alreadyDone = false;
+  try{
+    const flag = await appStorage.get('codebd-fix-chronological-333plus-done');
+    alreadyDone = flag ? JSON.parse(flag.value) === true : false;
+  }catch(e){ alreadyDone = false; }
+  if(alreadyDone) return;
+  try{ await appStorage.set('codebd-fix-chronological-333plus-done', JSON.stringify(true)); }catch(e){}
+
+  const numOf = code => {
+    const m = /^brk-(\d+)$/i.exec((code||'').trim());
+    return m ? parseInt(m[1],10) : null;
+  };
+  const affected = dailyRecords.filter(r => { const n = numOf(r.codeBD); return n!==null && n>=333; });
+  if(affected.length < 2) return;
+
+  const numbers = affected.map(r=>numOf(r.codeBD)).sort((a,b)=>a-b);
+  affected.sort((a,b)=>{
+    const da = `${a.tanggal||''} ${a.breakdownTime||a.start||''}`;
+    const db = `${b.tanggal||''} ${b.breakdownTime||b.start||''}`;
+    return da.localeCompare(db);
+  });
+
+  const canWriteToDb = usingDailyTable();
+  for(let i=0;i<affected.length;i++){
+    const rec = affected[i];
+    const newCode = `brk-${String(numbers[i]).padStart(3,'0')}`;
+    if(rec.codeBD===newCode) continue;
+    const oldCode = rec.codeBD;
+    rec.codeBD = newCode;
+    if(canWriteToDb){
+      const res = await updateDailyRecordDb(rec);
+      if(!res.ok){
+        console.error(`Gagal koreksi urutan Code BD ${oldCode} -> ${newCode}`, res.error);
+        rec.codeBD = oldCode;
+      }
+    }
+  }
+  if(!canWriteToDb){ await saveDaily(); }
+}
+
 /* ---- Koreksi satu-kali: migrasi sebelumnya sempat berjalan dobel sehingga
    3 record hasil migrasi DM-0289/PM-0025/DM-0288 salah dapat nomor
    brk-336/337/338, padahal seharusnya brk-334/335/336 (lanjutan langsung
@@ -2714,7 +2808,15 @@ function renderDailyTable(){
     return;
   }
   const isSupervisor = currentRole()==='Supervisor';
-  tbody.innerHTML = dailyRecords.map(r=>{
+  const sortedRecords = [...dailyRecords].sort((a,b)=>{
+    const numOf = code => { const m = /^brk-(\d+)$/i.exec((code||'').trim()); return m ? parseInt(m[1],10) : -1; };
+    const na = numOf(a.codeBD), nb = numOf(b.codeBD);
+    if(na!==-1 && nb!==-1) return nb-na;
+    if(na!==-1) return -1;
+    if(nb!==-1) return 1;
+    return String(b.codeBD||'').localeCompare(String(a.codeBD||''));
+  });
+  tbody.innerHTML = sortedRecords.map(r=>{
     let actionCell;
     if(isSupervisor && (r.approvalStatus||'Pending')==='Pending'){
       actionCell = `<div class="approval-actions">
@@ -3572,8 +3674,8 @@ function preinsDefectRowHtml(){
     <td><input type="text" class="preins-defect-desc" placeholder="Uraikan defect / temuan kerusakan"></td>
     <td>
       <select class="preins-defect-status">
-        <option value="OK">OK</option>
-        <option value="Backlog">Backlog</option>
+        <option value="Open">Open</option>
+        <option value="Close">Close</option>
       </select>
     </td>
     <td><button type="button" class="btn small danger preins-remove-defect">Hapus</button></td>
@@ -3691,7 +3793,16 @@ function renderPreInspectionTable(){
     tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Belum ada record Pre Inspection.</td></tr>`;
   } else {
     tbody.innerHTML = rows.map(r=>{
-      const statusPill = r.status==='Ada Temuan' ? `<span class="pill overdue">Ada Temuan</span>` : `<span class="pill close">OK</span>`;
+      let statusPill;
+      if(r.status==='Ada Temuan'){
+        const followUp = r.followUpStatus || 'Open';
+        statusPill = `<select onchange="updatePreInsFollowUpStatus('${r.id}', this.value)" class="${followUp==='Close'?'exec-close':'exec-open'}">
+          <option value="Open" ${followUp==='Open'?'selected':''}>Open</option>
+          <option value="Close" ${followUp==='Close'?'selected':''}>Close</option>
+        </select>`;
+      } else {
+        statusPill = `<span class="pill close">OK</span>`;
+      }
       const findingsText = r.findings && r.findings.length ? r.findings.map(f=>f.component).join('; ') : '—';
       let approvalCell;
       if(isSupervisor && (r.approvalStatus||'Pending')==='Pending'){
@@ -3719,7 +3830,7 @@ function renderPreInspectionTable(){
   document.getElementById('preins-stat-total').textContent = preInspectionRecords.length;
   document.getElementById('preins-stat-ok').textContent = preInspectionRecords.filter(r=>r.status==='OK').length;
   document.getElementById('preins-stat-findings').textContent = preInspectionRecords.filter(r=>r.status==='Ada Temuan').length;
-  document.getElementById('preins-stat-backlog').textContent = preInspectionRecords.reduce((s,r)=>s+((r.defects||[]).filter(d=>d.status==='Backlog').length),0);
+  document.getElementById('preins-stat-backlog').textContent = preInspectionRecords.reduce((s,r)=>s+((r.defects||[]).filter(d=>d.status==='Open').length),0);
 }
 window.deletePreInspection = async function(id){
   preInspectionRecords = preInspectionRecords.filter(r=>r.id!==id);
@@ -3733,6 +3844,16 @@ window.approvePreInspection = async function(id){
   r.approvedBy = currentUserName();
   r.approvedAt = new Date().toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'});
   r.rejectNote = null;
+  await savePreInspection();
+  renderPreInspectionTable();
+}
+window.updatePreInsFollowUpStatus = async function(id, value){
+  const r = preInspectionRecords.find(x=>x.id===id);
+  if(!r) return;
+  r.followUpStatus = value;
+  if(value==='Close' && !r.followUpClosedAt){
+    r.followUpClosedAt = new Date().toISOString().slice(0,10);
+  }
   await savePreInspection();
   renderPreInspectionTable();
 }
@@ -4160,13 +4281,19 @@ function kpiMiniTrendSVG(points, color){
    points: [{label, value}] value 0-100 */
 /* Versi lebar chart kombo (bar + dotted trend line) untuk panel "KPI Report Monthly" —
    satu chart memuat seluruh KPI (MTBS, MTTR, PMR, SA, MA, PA) berdampingan, skala 0% - 130%
-   supaya capaian di atas 100% tetap terlihat proporsional. items: [{label, pct}] */
+   supaya capaian di atas 100% tetap terlihat proporsional. items: [{label, pct}]
+   Catatan desain: label garis target TIDAK lagi ditempel di sumbu-Y kiri (dulu suka tertutup/
+   terpotong oleh tepi chart), melainkan jadi badge pil mengambang di pojok kanan-atas yang
+   posisinya sudah dihitung supaya selalu berada di dalam viewBox — jadi tidak akan pernah
+   kepotong lagi berapa pun lebar panelnya. */
+let kpiChartInstanceSeq = 0;
 function kpiFullComboSVG(items){
-  const W = 640, H = 240, padL = 34, padR = 16, padT = 46, padB = 30, capPct = 130;
+  const uid = 'fc'+(kpiChartInstanceSeq++);
+  const W = 640, H = 250, padL = 40, padR = 20, padT = 40, padB = 34, capPct = 130;
   const chartW = W - padL - padR, chartH = H - padT - padB;
   const n = items.length;
   const stepX = n>1 ? chartW/(n-1) : chartW;
-  const barW = Math.min(52, stepX*0.5);
+  const barW = Math.min(54, stepX*0.5);
   const baseY = padT + chartH;
   const coords = items.map((it,i)=>{
     const x = padL + (n>1 ? stepX*i : chartW/2);
@@ -4178,23 +4305,37 @@ function kpiFullComboSVG(items){
   const yAxis = [0,50,100,130].map(v=>{
     const y = padT + chartH*(1-v/capPct);
     const isTarget = v===100;
-    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="${isTarget?'#FFC72C':'#2a2e35'}" stroke-width="1" ${isTarget?'stroke-dasharray="5 4" opacity="0.65"':''}/>
-      <text x="${(padL-8).toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="9" fill="${isTarget?'#FFC72C':'#5C636B'}" font-family="JetBrains Mono, monospace">${v}${isTarget?' TARGET':''}</text>`;
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="${isTarget?'#FFC72C':'#252932'}" stroke-width="1" ${isTarget?'stroke-dasharray="5 4" opacity="0.7"':'opacity="0.55"'}/>
+      <text x="${(padL-9).toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="9" fill="${isTarget?'#FFC72C':'#5C636B'}" font-family="JetBrains Mono, monospace">${v}</text>`;
   }).join('');
-  const bars = coords.map(c=>{
+  const defs = coords.map((c,i)=>{
+    const color = achievedColor(c.v);
+    return `<linearGradient id="${uid}g${i}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="1"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0.5"/>
+    </linearGradient>`;
+  }).join('');
+  const bars = coords.map((c,i)=>{
     const color = achievedColor(c.v);
     const h = Math.max(5, baseY - c.y);
-    return `<rect x="${(c.x-barW/2).toFixed(1)}" y="${c.y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="5" fill="${color}" opacity="0.88"/>`;
+    return `<rect x="${(c.x-barW/2).toFixed(1)}" y="${c.y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="6" fill="url(#${uid}g${i})" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`;
   }).join('');
-  const trendY = coords.map(c=> Math.max(14, c.y-14));
+  const trendY = coords.map(c=> Math.max(padT-16, c.y-16));
   const linePath = coords.map((c,i)=> (i===0?'M':'L') + c.x.toFixed(1) + ' ' + trendY[i].toFixed(1)).join(' ');
-  const dots = coords.map((c,i)=>`<circle cx="${c.x.toFixed(1)}" cy="${trendY[i].toFixed(1)}" r="3.2" fill="#15171b" stroke="#EDEEF0" stroke-width="1.8"/>`).join('');
-  const valueLabels = coords.map((c,i)=>`<text x="${c.x.toFixed(1)}" y="${(trendY[i]-8).toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#EDEEF0" font-family="JetBrains Mono, monospace">${c.v.toFixed(0)}%</text>`).join('');
-  const xLabels = coords.map(c=>`<text x="${c.x.toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10" font-weight="700" fill="#9AA0A8" font-family="JetBrains Mono, monospace">${c.label}</text>`).join('');
+  const dots = coords.map((c,i)=>`<circle cx="${c.x.toFixed(1)}" cy="${trendY[i].toFixed(1)}" r="3.4" fill="#15171b" stroke="#EDEEF0" stroke-width="1.8"/>`).join('');
+  const valueLabels = coords.map((c,i)=>{
+    const txt = `${c.v.toFixed(0)}%`;
+    const tw = Math.max(26, txt.length*7.6);
+    const ty = trendY[i]-9;
+    return `<rect x="${(c.x-tw/2).toFixed(1)}" y="${(ty-11.5).toFixed(1)}" width="${tw.toFixed(1)}" height="16" rx="4" fill="#15171b" opacity="0.72"/>
+      <text x="${c.x.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#EDEEF0" font-family="JetBrains Mono, monospace">${txt}</text>`;
+  }).join('');
+  const xLabels = coords.map(c=>`<text x="${c.x.toFixed(1)}" y="${H-11}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#9AA0A8" font-family="JetBrains Mono, monospace" letter-spacing="0.5">${c.label}</text>`).join('');
   return `<svg viewBox="0 0 ${W} ${H}">
+    <defs>${defs}</defs>
     ${yAxis}
     ${bars}
-    <path d="${linePath}" fill="none" stroke="#EDEEF0" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.75"/>
+    <path d="${linePath}" fill="none" stroke="#EDEEF0" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.7"/>
     ${dots}
     ${valueLabels}
     ${xLabels}
@@ -4202,14 +4343,16 @@ function kpiFullComboSVG(items){
 }
 
 function kpiMiniComboSVG(points){
-  const W = 280, H = 148, padL = 28, padR = 10, padT = 32, padB = 22;
-  const chartW = W - padL - padR, chartH = H - padT - padB;
+  const uid = 'mc'+(kpiChartInstanceSeq++);
+  const W = 280, H = 150, padL = 30, padR = 14, padT = 30, padB = 24;
+  const plotL = padL + 12; // sedikit inset dari sumbu-Y supaya titik data pertama tidak tumpang tindih dengan angka "100" di sumbu
+  const chartW = W - plotL - padR, chartH = H - padT - padB;
   const n = points.length;
   const stepX = n>1 ? chartW/(n-1) : chartW;
-  const barW = Math.min(36, stepX*0.44);
+  const barW = Math.min(32, stepX*0.4);
   const baseY = padT + chartH;
   const coords = points.map((p,i)=>{
-    const x = padL + (n>1 ? stepX*i : chartW/2);
+    const x = plotL + (n>1 ? stepX*i : chartW/2);
     const v = Math.max(0, Math.min(100, p.value));
     const y = padT + chartH * (1 - v/100);
     return {x,y,v,label:p.label};
@@ -4217,28 +4360,43 @@ function kpiMiniComboSVG(points){
   const yAxis = [0,50,100].map(v=>{
     const y = padT + chartH*(1-v/100);
     const isTarget = v===100;
-    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="${isTarget?'#FFC72C':'#2a2e35'}" stroke-width="1" ${isTarget?'stroke-dasharray="4 3" opacity="0.6"':''}/>
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="${isTarget?'#FFC72C':'#252932'}" stroke-width="1" ${isTarget?'stroke-dasharray="4 3" opacity="0.6"':'opacity="0.5"'}/>
       <text x="${(padL-6).toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="${isTarget?'#FFC72C':'#5C636B'}" font-family="JetBrains Mono, monospace">${v}</text>`;
   }).join('');
-  const bars = coords.map(c=>{
+  const defs = coords.map((c,i)=>{
+    const color = achievedColor(c.v);
+    return `<linearGradient id="${uid}g${i}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="1"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0.5"/>
+    </linearGradient>`;
+  }).join('');
+  const bars = coords.map((c,i)=>{
     const color = achievedColor(c.v);
     const h = Math.max(5, baseY - c.y);
-    return `<rect x="${(c.x-barW/2).toFixed(1)}" y="${c.y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${color}" opacity="0.85"/>`;
+    return `<rect x="${(c.x-barW/2).toFixed(1)}" y="${c.y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="url(#${uid}g${i})" stroke="${color}" stroke-width="1" stroke-opacity="0.45"/>`;
   }).join('');
-  const trendY = coords.map(c=> Math.max(4, c.y-10));
+  const trendY = coords.map(c=> Math.max(padT-14, c.y-12));
   const linePath = coords.map((c,i)=> (i===0?'M':'L') + c.x.toFixed(1) + ' ' + trendY[i].toFixed(1)).join(' ');
-  const dots = coords.map((c,i)=>`<circle cx="${c.x.toFixed(1)}" cy="${trendY[i].toFixed(1)}" r="2.6" fill="#15171b" stroke="#EDEEF0" stroke-width="1.6"/>`).join('');
-  const valueLabels = coords.map((c,i)=>`<text x="${c.x.toFixed(1)}" y="${(trendY[i]-6).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#EDEEF0" font-family="JetBrains Mono, monospace">${c.v.toFixed(0)}%</text>`).join('');
-  const xLabels = coords.map(c=>`<text x="${c.x.toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="8.5" fill="#9AA0A8" font-family="JetBrains Mono, monospace">${c.label}</text>`).join('');
+  const dots = coords.map((c,i)=>`<circle cx="${c.x.toFixed(1)}" cy="${trendY[i].toFixed(1)}" r="2.8" fill="#15171b" stroke="#EDEEF0" stroke-width="1.6"/>`).join('');
+  const valueLabels = coords.map((c,i)=>{
+    const txt = `${c.v.toFixed(0)}%`;
+    const tw = Math.max(20, txt.length*6.4);
+    const ty = trendY[i]-7;
+    return `<rect x="${(c.x-tw/2).toFixed(1)}" y="${(ty-10).toFixed(1)}" width="${tw.toFixed(1)}" height="13" rx="3" fill="#15171b" opacity="0.7"/>
+      <text x="${c.x.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#EDEEF0" font-family="JetBrains Mono, monospace">${txt}</text>`;
+  }).join('');
+  const xLabels = coords.map(c=>`<text x="${c.x.toFixed(1)}" y="${H-7}" text-anchor="middle" font-size="8.5" fill="#9AA0A8" font-family="JetBrains Mono, monospace">${c.label}</text>`).join('');
   return `<svg viewBox="0 0 ${W} ${H}">
+    <defs>${defs}</defs>
     ${yAxis}
     ${bars}
-    <path d="${linePath}" fill="none" stroke="#EDEEF0" stroke-width="1.3" stroke-dasharray="3 3" opacity="0.75"/>
+    <path d="${linePath}" fill="none" stroke="#EDEEF0" stroke-width="1.3" stroke-dasharray="3 3" opacity="0.7"/>
     ${dots}
     ${valueLabels}
     ${xLabels}
   </svg>`;
 }
+
 
 function kpiHBarSVG(items){
   // items: [{label, value, color}]
@@ -4744,6 +4902,7 @@ function subscribeDailyRealtime(){
     .on('postgres_changes',
       { event:'*', schema:'public', table:'daily_maintenance_records' },
       (payload)=>{
+        (async ()=>{
         try{
           if(payload.eventType==='DELETE'){
             dailyRecords = dailyRecords.filter(r=>r.id!==payload.old.id);
@@ -4751,9 +4910,11 @@ function subscribeDailyRealtime(){
             const rec = rowToDailyRec(payload.new);
             const idx = dailyRecords.findIndex(r=>r.id===rec.id);
             if(idx>-1) dailyRecords[idx] = rec; else dailyRecords.unshift(rec);
+            await enforceCodeBDLock();
           }
           renderAll();
         }catch(e){ console.error('Gagal proses update realtime', e); }
+        })();
       }
     )
     .subscribe();
@@ -4771,6 +4932,8 @@ function subscribeDailyRealtime(){
     await loadData();
     await migrateLegacyCodeBD();
     await fixOvershotCodeBD();
+    await enforceCodeBDLock();
+    await fixCodeBDChronologicalOrder();
     renderAll();
     updateRoleUI();
     subscribeDailyRealtime();
@@ -4781,6 +4944,7 @@ function subscribeDailyRealtime(){
       if(!loggedInUser) return;
       const before = JSON.stringify(dailyRecords.map(r=>r.id+r.updatedAt));
       await refreshDailyRecords();
+      await enforceCodeBDLock();
       const after = JSON.stringify(dailyRecords.map(r=>r.id+r.updatedAt));
       if(before!==after) renderAll();
     }, 30000);
