@@ -440,6 +440,13 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 .btn.edit-report{ background:transparent; color:var(--yellow); border:1px solid var(--yellow); padding:5px 9px; font-size:10px; }
 .approval-note{ font-size:10.5px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; }
 .approval-note .edit-hint{ margin-top:4px; }
+.edit-dropdown{
+  width:auto; background:transparent; color:var(--yellow); border:1px solid var(--yellow);
+  padding:5px 9px; font-size:10px; font-family:'Inter',sans-serif; border-radius:var(--radius);
+  cursor:pointer;
+}
+.edit-dropdown:focus{ border-color:var(--yellow); }
+.edit-dropdown option{ background-color:#1b1e23; color:var(--text); }
 
 /* LOGIN SCREEN */
 #login-overlay{
@@ -666,7 +673,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
       <div class="nav-item" data-view="daily"><span class="num"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></span> Daily Maintenance</div>
       <div class="nav-item" data-view="plan"><span class="num"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span> Plan Service</div>
       <div class="nav-item" data-view="planningsystem"><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span> Plan Shcedule Maintenance<span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
-      <div class="nav-item" data-view="summary"><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> Summary Mechanic</div>
+      <div class="nav-item" data-view="summary"><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> Mechanic Activity Report</div>
       <div class="nav-item" data-view="hm"><span class="num"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span> Monitoring HM</div>
     </nav>
     <div class="sidebar-foot" id="sidebar-status"><span class="status-dot"></span>SYSTEM ONLINE</div>
@@ -1245,7 +1252,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
       <!-- SUMMARY (termasuk Historical Report yang digabungkan di sini) -->
       <section class="view" id="view-summary">
         <div class="panel-head" style="margin-bottom:16px;">
-          <h2>Summary Mechanic — Ringkasan Report Daily Maintenance</h2>
+          <h2>Mechanic Activity Report — Ringkasan Report Daily Maintenance</h2>
           <input type="month" id="s-month" style="width:auto;">
         </div>
         <div class="hint" style="margin-top:-10px; margin-bottom:6px;">Seluruh angka pada halaman ini dihitung murni dari data Report Daily Maintenance pada bulan yang dipilih.</div>
@@ -1761,7 +1768,7 @@ async function saveDaily(){
    semalaman, dsb) lalu tersambung lagi, perubahan yang terjadi SELAMA putus TIDAK dikirim ulang.
    Akibatnya sesi yang sudah lama terbuka (mis. dibuka kemarin, dibiarkan menyala) bisa "ketinggalan"
    record baru dari mekanik walau record itu sudah tersimpan di database. Fungsi ini dipakai sebagai
-   jaring pengaman: dipanggil ulang setiap kali panel Daily Maintenance/Historical/Summary Mechanic
+   jaring pengaman: dipanggil ulang setiap kali panel Daily Maintenance/Historical/Mechanic Activity Report
    dibuka, dan juga berkala lewat polling, supaya data yang tampil selalu sesuai database. */
 async function refreshDailyRecords(){
   try{
@@ -1799,7 +1806,7 @@ const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 const titleMap = {
   dashboard:'KPI REPORT', database:'Master Unit', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
-  plan:'Plan Service', planningsystem:'Plan Shcedule Maintenance', summary:'Summary Mechanic',
+  plan:'Plan Service', planningsystem:'Plan Shcedule Maintenance', summary:'Mechanic Activity Report',
   hm:'Monitoring HM'
 };
 navItems.forEach(item=>{
@@ -1875,7 +1882,7 @@ async function saveRegisteredUsers(){
    user role Mechanic yang sebenarnya (USERS + registeredUsers) — bukan daftar statis 2 nama.
    Tanpa ini, mekanik yang mendaftar akun baru tidak bisa dipilih/terkunci di field ini,
    sehingga record yang mereka input tersimpan dengan nama mekanik kosong dan tidak muncul
-   dengan benar di tabel Daily Maintenance, Historical Report, maupun Summary Mechanic. */
+   dengan benar di tabel Daily Maintenance, Historical Report, maupun Mechanic Activity Report. */
 function populateMechanicSelects(){
   const mechanics = getAllUsers().filter(u=>u.role==='Mechanic');
   const optsHTML = mechanics.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
@@ -2060,7 +2067,7 @@ function updateRoleUI(){
       : 'Setiap record baru berstatus <b>&nbsp;Pending Approval&nbsp;</b> dan menunggu konfirmasi Supervisor sebelum masuk perhitungan KPI resmi.';
   }
 
-  // Batasi menu untuk role Mechanic: hanya Daily Maintenance, Plan Service, Planning System, Summary Mechanic
+  // Batasi menu untuk role Mechanic: hanya Daily Maintenance, Plan Service, Planning System, Mechanic Activity Report
   navItems.forEach(item=>{
     const view = item.dataset.view;
     const hideForMechanic = !isSupervisor && !MECHANIC_VISIBLE_VIEWS.includes(view);
@@ -2614,17 +2621,24 @@ async function fixOvershotCodeBD(){
   if(!canWriteToDb){ await saveDaily(); }
 }
 
-/* ---- Edit record (khusus mekanik, sebelum di-approve) ----
+/* ---- Edit record ----
    Mekanik hanya boleh mengedit record miliknya sendiri yang masih Pending Approval,
-   supaya salah input bisa dikoreksi tanpa perlu menunggu/lewat Supervisor. ---- */
+   supaya salah input bisa dikoreksi tanpa perlu menunggu/lewat Supervisor.
+   Supervisor boleh mengedit record milik mekanik mana pun yang statusnya sudah
+   Approved (mis. untuk mengoreksi laporan mewakili mekanik ybs) — status/approval
+   yang sudah tercatat (approvedBy/approvedAt) tidak berubah oleh koreksi ini. ---- */
 let editingDailyId = null;
 
 window.editDaily = function(id){
   const r = dailyRecords.find(x=>x.id===id);
   if(!r) return;
   const isOwner = loggedInUser && r.submittedBy===loggedInUser.name;
-  if(currentRole()==='Supervisor' || !isOwner || (r.approvalStatus||'Pending')!=='Pending'){
-    alert('Record ini tidak bisa diedit (bukan milik Anda atau sudah diproses Supervisor).');
+  const isSupervisorUser = currentRole()==='Supervisor';
+  const canEdit = isSupervisorUser
+    ? r.approvalStatus==='Approved'
+    : (isOwner && (r.approvalStatus||'Pending')==='Pending');
+  if(!canEdit){
+    alert('Record ini tidak bisa diedit (bukan milik Anda atau belum/sudah diproses Supervisor).');
     return;
   }
   editingDailyId = id;
@@ -2636,6 +2650,8 @@ window.editDaily = function(id){
   document.getElementById('d-category').value = r.category || 'Breakdown';
   document.getElementById('d-planunplan').value = r.planUnplan || 'Plan';
   document.getElementById('d-bdcategory').value = r.bdCategory || 'Powertrain';
+  const dMechField = document.getElementById('d-mechanic');
+  if(dMechField && !dMechField.disabled){ dMechField.value = r.mechanic || ''; }
   document.getElementById('d-mechanic2').value = r.mechanic2 || '';
   document.getElementById('d-area').value = r.area || 'Workshop';
   document.getElementById('d-status').value = r.status || 'Open';
@@ -2652,7 +2668,11 @@ window.editDaily = function(id){
   updateDurationPreview();
 
   document.getElementById('d-submit-btn').textContent = '✎ Update Record';
-  document.getElementById('d-edit-hint').style.display = '';
+  const editHint = document.getElementById('d-edit-hint');
+  editHint.textContent = isSupervisorUser
+    ? `✎ Mode edit (Supervisor): mengoreksi record milik ${r.mechanic||'mekanik'} yang sudah Approved. Status approval tidak berubah.`
+    : '✎ Mode edit: memperbarui record yang sudah pernah diinput (masih Pending Approval).';
+  editHint.style.display = '';
   document.getElementById('view-daily').scrollIntoView({behavior:'smooth', block:'start'});
 };
 
@@ -2719,8 +2739,14 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   if(editingDailyId){
     const existing = dailyRecords.find(x=>x.id===editingDailyId);
     const isOwner = existing && loggedInUser && existing.submittedBy===loggedInUser.name;
-    if(existing && isOwner && (existing.approvalStatus||'Pending')==='Pending'){
+    const isSupervisorUser = currentRole()==='Supervisor';
+    const canSaveEdit = existing && (isSupervisorUser
+      ? existing.approvalStatus==='Approved'
+      : (isOwner && (existing.approvalStatus||'Pending')==='Pending'));
+    if(canSaveEdit){
       const backup = { ...existing };
+      // Koreksi oleh Supervisor pada record yang sudah Approved TIDAK mengubah
+      // approvalStatus/approvedBy/approvedAt — hanya isi laporannya yang diperbarui.
       Object.assign(existing, fields);
       existing.updatedAt = new Date().toISOString();
       if(usingDailyTable()){
@@ -2729,7 +2755,7 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
       } else { await saveDaily(); }
       wasEditing = true;
     } else {
-      alert('Record ini sudah tidak bisa diedit (sudah diproses Supervisor).');
+      alert('Record ini sudah tidak bisa diedit (bukan milik Anda, belum, atau sudah diproses Supervisor).');
       return;
     }
   }
@@ -2820,13 +2846,21 @@ function renderDailyTable(){
         <button class="btn reject" onclick="rejectDaily('${r.id}')">✕ Reject</button>
       </div>`;
     } else if(r.approvalStatus==='Approved'){
-      actionCell = `<div class="approval-note">oleh ${r.approvedBy||'—'}<br>${r.approvedAt||''}</div>`;
+      actionCell = `<div class="approval-note">oleh ${r.approvedBy||'—'}<br>${r.approvedAt||''}${isSupervisor
+        ? `<div class="edit-hint"><select class="edit-dropdown" onchange="if(this.value==='edit'){editDaily('${r.id}');} this.selectedIndex=0;">
+             <option value="" selected disabled>Aksi ▾</option>
+             <option value="edit">✎ Edit</option>
+           </select></div>`
+        : ''}</div>`;
     } else if(r.approvalStatus==='Rejected'){
       actionCell = `<div class="approval-note">oleh ${r.approvedBy||'—'}${r.rejectNote?'<br>alasan: '+r.rejectNote:''}</div>`;
     } else {
       const isOwner = !isSupervisor && loggedInUser && r.submittedBy===loggedInUser.name;
       actionCell = `<div class="approval-note">menunggu Supervisor${isOwner
-        ? `<div class="edit-hint"><button class="btn edit-report" onclick="editDaily('${r.id}')">✎ Edit Input</button></div>`
+        ? `<div class="edit-hint"><select class="edit-dropdown" onchange="if(this.value==='edit'){editDaily('${r.id}');} this.selectedIndex=0;">
+             <option value="" selected disabled>Aksi ▾</option>
+             <option value="edit">✎ Edit</option>
+           </select></div>`
         : ''}</div>`;
     }
     return `
@@ -4015,7 +4049,7 @@ function renderSummaryKPICards(rows, byMech){
     </div>`;
 }
 
-/* ---- Normalisasi nama mekanik khusus untuk Summary Mechanic ----
+/* ---- Normalisasi nama mekanik khusus untuk Mechanic Activity Report ----
    Beberapa record punya nama mekanik yang sebenarnya orang yang sama tapi
    tertulis beda (typo/variasi penulisan saat input). Supaya rekap di Summary
    Mechanic tidak pecah jadi baris terpisah, nama-nama berikut digabung ke
