@@ -666,7 +666,6 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
       <div class="nav-item" data-view="daily"><span class="num"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></span> Daily Maintenance</div>
       <div class="nav-item" data-view="plan"><span class="num"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span> Plan Service</div>
       <div class="nav-item" data-view="planningsystem"><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span> Plan Shcedule Maintenance<span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
-      <div class="nav-item" data-view="history"><span class="num"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span> Historical Report</div>
       <div class="nav-item" data-view="summary"><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> Summary Mechanic</div>
       <div class="nav-item" data-view="hm"><span class="num"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span> Monitoring HM</div>
     </nav>
@@ -1243,33 +1242,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
         </div>
       </section>
 
-      <!-- HISTORICAL REPORT -->
-      <section class="view" id="view-history">
-        <div class="panel">
-          <div class="panel-head"><h2>Historical Report</h2></div>
-          <div class="filters">
-            <select id="h-unit"><option value="">Semua Unit</option></select>
-            <select id="h-category"><option value="">Semua Kategori</option><option value="Breakdown">Breakdown</option><option value="Daily">Daily Maintenance</option><option value="Periodical">Periodical Maintenance</option></select>
-            <select id="h-status"><option value="">Semua Status</option><option value="Open">Open</option><option value="Progress">On Progress</option><option value="Close">Close</option></select>
-            <select id="h-approval"><option value="">Semua Approval</option><option value="Pending">Pending Approval</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option></select>
-            <input type="date" id="h-from">
-            <input type="date" id="h-to">
-            <button class="btn small secondary" id="h-clear">Clear Filter</button>
-            <button class="btn small" id="h-export">⬇ Export CSV</button>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr>
-                <th>Tanggal</th><th>Unit Code</th><th>Type</th><th>HM</th><th>Kategori</th><th>Job Desc</th>
-                <th>Durasi</th><th>Mechanic</th><th>Area</th><th>Status</th><th>Approval</th><th>Approved By</th>
-              </tr></thead>
-              <tbody id="history-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- SUMMARY -->
+      <!-- SUMMARY (termasuk Historical Report yang digabungkan di sini) -->
       <section class="view" id="view-summary">
         <div class="panel-head" style="margin-bottom:16px;">
           <h2>Summary Mechanic — Ringkasan Report Daily Maintenance</h2>
@@ -1302,6 +1275,30 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
                 <th>Total Durasi (jam)</th><th>Rata² Durasi (jam)</th><th>Job Close</th><th>% Completion</th>
               </tr></thead>
               <tbody id="summary-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section-title">Historical Report</div>
+        <div class="panel">
+          <div class="panel-head"><h2>Historical Report</h2></div>
+          <div class="filters">
+            <select id="h-unit"><option value="">Semua Unit</option></select>
+            <select id="h-category"><option value="">Semua Kategori</option><option value="Breakdown">Breakdown</option><option value="Daily">Daily Maintenance</option><option value="Periodical">Periodical Maintenance</option></select>
+            <select id="h-status"><option value="">Semua Status</option><option value="Open">Open</option><option value="Progress">On Progress</option><option value="Close">Close</option></select>
+            <select id="h-approval"><option value="">Semua Approval</option><option value="Pending">Pending Approval</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option></select>
+            <input type="date" id="h-from">
+            <input type="date" id="h-to">
+            <button class="btn small secondary" id="h-clear">Clear Filter</button>
+            <button class="btn small" id="h-export">⬇ Export CSV</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Tanggal</th><th>Unit Code</th><th>Type</th><th>HM</th><th>Kategori</th><th>Job Desc</th>
+                <th>Durasi</th><th>Mechanic</th><th>Area</th><th>Status</th><th>Approval</th><th>Approved By</th>
+              </tr></thead>
+              <tbody id="history-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -1802,7 +1799,7 @@ const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 const titleMap = {
   dashboard:'KPI REPORT', database:'Master Unit', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
-  plan:'Plan Service', planningsystem:'Plan Shcedule Maintenance', history:'Historical Report', summary:'Summary Mechanic',
+  plan:'Plan Service', planningsystem:'Plan Shcedule Maintenance', summary:'Summary Mechanic',
   hm:'Monitoring HM'
 };
 navItems.forEach(item=>{
@@ -1814,8 +1811,7 @@ navItems.forEach(item=>{
     document.getElementById('topbar-title').textContent = titleMap[item.dataset.view];
     if(item.dataset.view==='dashboard') renderDashboard();
     if(item.dataset.view==='daily'){ refreshDailyRecords().then(renderDailyTable); }
-    if(item.dataset.view==='history'){ refreshDailyRecords().then(renderHistory); }
-    if(item.dataset.view==='summary'){ refreshDailyRecords().then(renderSummary); }
+    if(item.dataset.view==='summary'){ refreshDailyRecords().then(()=>{ renderSummary(); renderHistory(); }); }
     if(item.dataset.view==='planningsystem') renderPlanningTable();
     if(item.dataset.view==='preinspection'){ renderPreInspectionChecklist(); renderPreInspectionTable(); }
     if(item.dataset.view==='p2h') renderP2HChecklist();
