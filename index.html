@@ -1725,14 +1725,59 @@ async function loadDailyFromTable(){
   }
   dailyRecords = (data||[]).map(rowToDailyRec);
 }
+/* Supabase mengembalikan error "Could not find the 'X' column of 'daily_maintenance_records'
+   in the schema cache" kalau kolom di tabel database belum dibuat (mis. kolom mechanic_3 untuk
+   fitur Man Power 3 belum ditambahkan lewat SQL/ALTER TABLE). Supaya Approve/Reject/Simpan tetap
+   bisa jalan walau kolom itu belum ada, kita deteksi error tsb lalu retry sekali tanpa field
+   tersebut (datanya tidak tersimpan sampai kolomnya dibuat, tapi proses lain tidak ikut gagal). */
+function stripMissingSchemaColumn(row, errorMessage){
+  const m = /Could not find the '([^']+)' column/i.exec(errorMessage || '');
+  if(!m) return null;
+  const col = m[1];
+  if(!(col in row)) return null;
+  const copy = { ...row };
+  delete copy[col];
+  return { col, row: copy };
+}
+const _warnedMissingColumns = new Set();
+function warnMissingSchemaColumnOnce(col){
+  if(_warnedMissingColumns.has(col)) return;
+  _warnedMissingColumns.add(col);
+  console.warn(`Kolom '${col}' belum ada di tabel Supabase daily_maintenance_records — data pada field ini belum tersimpan sampai kolomnya ditambahkan.`);
+  const dailyWarn = document.getElementById('daily-sync-warning');
+  if(dailyWarn){
+    dailyWarn.style.display = '';
+    dailyWarn.innerHTML = `⚠ Kolom '<b>${col}</b>' belum ada di tabel database (daily_maintenance_records). Data pada field ini disimpan sementara di aplikasi tapi TIDAK ikut tersimpan ke server sampai kolomnya ditambahkan — minta admin menjalankan: <code>ALTER TABLE daily_maintenance_records ADD COLUMN ${col} text;</code>`;
+  }
+}
 async function insertDailyRecordDb(rec){
-  const { error } = await supabaseRealtimeClient.from('daily_maintenance_records').insert(dailyRecToRow(rec));
-  if(error){ console.error('insert daily_maintenance_records gagal', error); return { ok:false, error }; }
+  let row = dailyRecToRow(rec);
+  let { error } = await supabaseRealtimeClient.from('daily_maintenance_records').insert(row);
+  if(error){
+    const retry = stripMissingSchemaColumn(row, error.message);
+    if(retry){
+      const second = await supabaseRealtimeClient.from('daily_maintenance_records').insert(retry.row);
+      if(second.error){ console.error('insert daily_maintenance_records gagal', second.error); return { ok:false, error:second.error }; }
+      warnMissingSchemaColumnOnce(retry.col);
+      return { ok:true, missingColumn:retry.col };
+    }
+    console.error('insert daily_maintenance_records gagal', error); return { ok:false, error };
+  }
   return { ok:true };
 }
 async function updateDailyRecordDb(rec){
-  const { error } = await supabaseRealtimeClient.from('daily_maintenance_records').update(dailyRecToRow(rec)).eq('id', rec.id);
-  if(error){ console.error('update daily_maintenance_records gagal', error); return { ok:false, error }; }
+  let row = dailyRecToRow(rec);
+  let { error } = await supabaseRealtimeClient.from('daily_maintenance_records').update(row).eq('id', rec.id);
+  if(error){
+    const retry = stripMissingSchemaColumn(row, error.message);
+    if(retry){
+      const second = await supabaseRealtimeClient.from('daily_maintenance_records').update(retry.row).eq('id', rec.id);
+      if(second.error){ console.error('update daily_maintenance_records gagal', second.error); return { ok:false, error:second.error }; }
+      warnMissingSchemaColumnOnce(retry.col);
+      return { ok:true, missingColumn:retry.col };
+    }
+    console.error('update daily_maintenance_records gagal', error); return { ok:false, error };
+  }
   return { ok:true };
 }
 async function deleteDailyRecordDb(id){
