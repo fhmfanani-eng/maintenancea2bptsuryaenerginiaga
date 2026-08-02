@@ -45,7 +45,7 @@ body{
 
 /* SIDEBAR */
 .sidebar{
-  width:230px; flex-shrink:0;
+  width:284px; flex-shrink:0;
   background:#121417;
   border-right:1px solid var(--line);
   display:flex; flex-direction:column;
@@ -68,20 +68,44 @@ body{
 }
 .brand .mark svg{ flex-shrink:0; }
 .brand .sub{ font-size:9.5px; color:var(--text-faint); letter-spacing:1.5px; margin-top:5px; text-transform:uppercase; font-family:'JetBrains Mono',monospace; line-height:1.4;}
-.nav{ flex:1; padding:14px 10px; display:flex; flex-direction:column; gap:2px; }
-.nav-item{
-  display:flex; align-items:center; gap:10px;
-  padding:10px 12px; border-radius:var(--radius);
-  color:var(--text-dim); cursor:pointer; font-size:13px; font-weight:500;
-  border-left:2px solid transparent;
-  transition:background .12s, color .12s;
-  user-select:none;
+.nav{
+  flex:1; padding:16px 14px; overflow-y:auto;
+  display:grid; grid-template-columns:repeat(2, 1fr); gap:10px;
+  align-content:start;
 }
-.nav-item .num{ display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; flex-shrink:0; color:var(--text-faint);}
-.nav-item .num svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-.nav-item:hover{ background:var(--panel-2); color:var(--text); }
-.nav-item.active{ background:linear-gradient(90deg, rgba(255,199,44,0.12), transparent); color:var(--yellow); border-left:2px solid var(--yellow); }
-.nav-item.active .num{ color:var(--yellow); }
+.nav-item{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; text-align:center;
+  padding:14px 8px 12px; border-radius:14px;
+  color:var(--text-dim); cursor:pointer; font-size:11px; font-weight:600; line-height:1.25;
+  border:1px solid transparent;
+  background:rgba(255,255,255,0.015);
+  transition:background .14s, color .14s, border-color .14s, transform .1s;
+  user-select:none;
+  position:relative;
+}
+.nav-item .label{
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden; width:100%;
+}
+.nav-item .num{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:44px; height:44px; flex-shrink:0; border-radius:12px;
+  background:var(--panel-2); color:var(--text-dim);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.03);
+  transition:background .14s, color .14s;
+}
+.nav-item .num svg{ width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.nav-item:hover{ background:var(--panel-2); color:var(--text); border-color:var(--line); transform:translateY(-1px); }
+.nav-item:hover .num{ background:#2c313a; color:var(--text); }
+.nav-item:active{ transform:scale(0.97); }
+.nav-item.active{
+  background:linear-gradient(160deg, rgba(255,199,44,0.16), rgba(255,199,44,0.04));
+  color:var(--yellow); border-color:rgba(255,199,44,0.35);
+  box-shadow:0 2px 10px rgba(255,199,44,0.08);
+}
+.nav-item.active .num{ background:var(--yellow); color:#1b1500; box-shadow:0 0 0 1px rgba(255,199,44,0.5); }
+.nav-item .nav-badge{ position:absolute; top:8px; right:10px; margin-left:0; }
 .sidebar-foot{
   padding:14px 20px; border-top:1px solid var(--line);
   font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; letter-spacing:1px;
@@ -447,6 +471,12 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 }
 .edit-dropdown:focus{ border-color:var(--yellow); }
 .edit-dropdown option{ background-color:#1b1e23; color:var(--text); }
+.edit-text-btn{
+  width:auto; background:transparent; color:var(--yellow); border:1px solid var(--yellow);
+  padding:5px 9px; font-size:10px; font-family:'Inter',sans-serif; border-radius:var(--radius);
+  cursor:pointer; display:inline-block;
+}
+.edit-text-btn:hover{ background:rgba(255,199,44,0.1); }
 
 /* LOGIN SCREEN */
 #login-overlay{
@@ -540,7 +570,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 @media(max-width:860px){
   .app{ display:block; }
   .sidebar{
-    position:fixed; top:0; left:0; z-index:60; width:230px;
+    position:fixed; top:0; left:0; z-index:60; width:280px;
     transform:translateX(-100%);
     transition:transform .2s ease;
     box-shadow:4px 0 24px rgba(0,0,0,0.5);
@@ -666,15 +696,15 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
       <div class="sub">MECHANIC MAINTENANCE A2B PANEL</div>
     </div>
     <nav class="nav">
-      <div class="nav-item active" data-view="dashboard"><span class="num"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span> KPI REPORT</div>
-      <div class="nav-item" data-view="database"><span class="num"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span> Master Unit</div>
-      <div class="nav-item" data-view="preinspection"><span class="num"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span> Pre Inspection</div>
-      <div class="nav-item" data-view="p2h"><span class="num"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 3h6v2H9z"></path><path d="M9 12l2 2 4-4"></path></svg></span> P2H (Pemeriksaan Harian)</div>
-      <div class="nav-item" data-view="daily"><span class="num"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></span> Daily Maintenance</div>
-      <div class="nav-item" data-view="plan"><span class="num"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span> Plan Service</div>
-      <div class="nav-item" data-view="planningsystem"><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span> Plan Shcedule Maintenance<span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
-      <div class="nav-item" data-view="summary"><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> Mechanic Activity Report</div>
-      <div class="nav-item" data-view="hm"><span class="num"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span> Monitoring HM</div>
+      <div class="nav-item active" data-view="dashboard"><span class="num"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span><span class="label">KPI REPORT</span></div>
+      <div class="nav-item" data-view="database"><span class="num"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span><span class="label">Master Unit</span></div>
+      <div class="nav-item" data-view="preinspection"><span class="num"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span><span class="label">Pre Inspection</span></div>
+      <div class="nav-item" data-view="p2h"><span class="num"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 3h6v2H9z"></path><path d="M9 12l2 2 4-4"></path></svg></span><span class="label">P2H (Pemeriksaan Harian)</span></div>
+      <div class="nav-item" data-view="daily"><span class="num"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></span><span class="label">Daily Maintenance</span></div>
+      <div class="nav-item" data-view="plan"><span class="num"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span><span class="label">Plan Service</span></div>
+      <div class="nav-item" data-view="planningsystem"><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span><span class="label">Plan Shcedule Maintenance</span><span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
+      <div class="nav-item" data-view="summary"><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><span class="label">Mechanic Activity Report</span></div>
+      <div class="nav-item" data-view="hm"><span class="num"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span><span class="label">Monitoring HM</span></div>
     </nav>
     <div class="sidebar-foot" id="sidebar-status"><span class="status-dot"></span>SYSTEM ONLINE</div>
   </aside>
@@ -1039,6 +1069,15 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
                   <option value="">— Tidak ada —</option>
                   <option value="Robertus G M">Robertus G M</option>
                   <option value="Alfius S">Alfius S</option>
+                  <option value="Mechanic UT">Mechanic UT</option>
+                </select>
+              </div>
+              <div class="field"><label>Man Power 3 (Opsional)</label>
+                <select id="d-mechanic3">
+                  <option value="">— Tidak ada —</option>
+                  <option value="Robertus G M">Robertus G M</option>
+                  <option value="Alfius S">Alfius S</option>
+                  <option value="Mechanic UT">Mechanic UT</option>
                 </select>
               </div>
               <div class="field"><label>Area</label>
@@ -1624,6 +1663,7 @@ function dailyRecToRow(r){
     total_breakdown: (r.totalBreakdown===null || r.totalBreakdown===undefined || r.totalBreakdown==='') ? null : Number(r.totalBreakdown),
     mechanic: r.mechanic || null,
     mechanic_2: r.mechanic2 || null,
+    mechanic_3: r.mechanic3 || null,
     area: r.area || null,
     status: r.status || null,
     keterangan: r.keterangan || null,
@@ -1658,6 +1698,7 @@ function rowToDailyRec(row){
     totalBreakdown: row.total_breakdown,
     mechanic: row.mechanic,
     mechanic2: row.mechanic_2,
+    mechanic3: row.mechanic_3,
     area: row.area,
     status: row.status,
     keterangan: row.keterangan,
@@ -1896,8 +1937,16 @@ function populateMechanicSelects(){
   const dMech2 = document.getElementById('d-mechanic2');
   if(dMech2){
     const prev = dMech2.value;
-    dMech2.innerHTML = '<option value="">— Tidak ada —</option>' + optsHTML;
-    if(mechanics.some(u=>u.name===prev)) dMech2.value = prev;
+    const extraUT = mechanics.some(u=>u.name==='Mechanic UT') ? '' : '<option value="Mechanic UT">Mechanic UT</option>';
+    dMech2.innerHTML = '<option value="">— Tidak ada —</option>' + optsHTML + extraUT;
+    if(prev==='Mechanic UT' || mechanics.some(u=>u.name===prev)) dMech2.value = prev;
+  }
+  const dMech3 = document.getElementById('d-mechanic3');
+  if(dMech3){
+    const prev = dMech3.value;
+    const extraUT = mechanics.some(u=>u.name==='Mechanic UT') ? '' : '<option value="Mechanic UT">Mechanic UT</option>';
+    dMech3.innerHTML = '<option value="">— Tidak ada —</option>' + optsHTML + extraUT;
+    if(prev==='Mechanic UT' || mechanics.some(u=>u.name===prev)) dMech3.value = prev;
   }
   const p2hOp = document.getElementById('p2h-operator');
   if(p2hOp){
@@ -2653,6 +2702,7 @@ window.editDaily = function(id){
   const dMechField = document.getElementById('d-mechanic');
   if(dMechField && !dMechField.disabled){ dMechField.value = r.mechanic || ''; }
   document.getElementById('d-mechanic2').value = r.mechanic2 || '';
+  document.getElementById('d-mechanic3').value = r.mechanic3 || '';
   document.getElementById('d-area').value = r.area || 'Workshop';
   document.getElementById('d-status').value = r.status || 'Open';
   document.getElementById('d-jobdesc').value = r.jobDesc || '';
@@ -2707,8 +2757,13 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   const category = document.getElementById('d-category').value;
   const mechanic = document.getElementById('d-mechanic').value;
   const mechanic2 = document.getElementById('d-mechanic2').value;
+  const mechanic3 = document.getElementById('d-mechanic3').value;
   if(mechanic2 && mechanic2===mechanic){
     alert('Man Power 2 tidak boleh sama dengan Man Power utama. Pilih mekanik lain atau kosongkan.');
+    return;
+  }
+  if(mechanic3 && (mechanic3===mechanic || mechanic3===mechanic2)){
+    alert('Man Power 3 tidak boleh sama dengan Man Power utama atau Man Power 2. Pilih mekanik lain atau kosongkan.');
     return;
   }
   const duration = calcHoursBetween(startDate, start, endDate, end);
@@ -2727,7 +2782,7 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
     breakdownDate, breakdownTime,
     startDate, start, endDate, end,
     duration, totalBreakdown,
-    mechanic, mechanic2,
+    mechanic, mechanic2, mechanic3,
     area: document.getElementById('d-area').value,
     status: document.getElementById('d-status').value,
     keterangan: document.getElementById('d-keterangan').value,
@@ -2847,20 +2902,14 @@ function renderDailyTable(){
       </div>`;
     } else if(r.approvalStatus==='Approved'){
       actionCell = `<div class="approval-note">oleh ${r.approvedBy||'—'}<br>${r.approvedAt||''}${isSupervisor
-        ? `<div class="edit-hint"><select class="edit-dropdown" onchange="if(this.value==='edit'){editDaily('${r.id}');} this.selectedIndex=0;">
-             <option value="" selected disabled>Aksi ▾</option>
-             <option value="edit">✎ Edit</option>
-           </select></div>`
+        ? `<div class="edit-hint"><span class="edit-text-btn" onclick="editDaily('${r.id}')">Edit</span></div>`
         : ''}</div>`;
     } else if(r.approvalStatus==='Rejected'){
       actionCell = `<div class="approval-note">oleh ${r.approvedBy||'—'}${r.rejectNote?'<br>alasan: '+r.rejectNote:''}</div>`;
     } else {
       const isOwner = !isSupervisor && loggedInUser && r.submittedBy===loggedInUser.name;
       actionCell = `<div class="approval-note">menunggu Supervisor${isOwner
-        ? `<div class="edit-hint"><select class="edit-dropdown" onchange="if(this.value==='edit'){editDaily('${r.id}');} this.selectedIndex=0;">
-             <option value="" selected disabled>Aksi ▾</option>
-             <option value="edit">✎ Edit</option>
-           </select></div>`
+        ? `<div class="edit-hint"><span class="edit-text-btn" onclick="editDaily('${r.id}')">Edit</span></div>`
         : ''}</div>`;
     }
     return `
@@ -2883,7 +2932,7 @@ function renderDailyTable(){
       <td><span class="pill ${r.planUnplan==='Plan'?'planned':'overdue'}">${r.planUnplan||'—'}</span></td>
       <td style="white-space:normal; min-width:180px;">${r.jobDesc||'—'}</td>
       <td style="white-space:normal; min-width:180px;">${r.repairAction||'—'}</td>
-      <td>${r.mechanic2 ? r.mechanic + ', ' + r.mechanic2 : (r.mechanic||'—')}</td>
+      <td>${[r.mechanic, r.mechanic2, r.mechanic3].filter(Boolean).join(', ') || '—'}</td>
       <td>${r.area}</td>
       <td><span class="pill ${pillClass(r.status)}">${r.status==='Progress'?'On Progress':r.status}</span></td>
       <td style="white-space:normal; min-width:140px;">${r.bdCategory ? `<b>${r.bdCategory}</b>${r.keterangan?' — '+r.keterangan:''}` : (r.keterangan||'—')}</td>
@@ -4085,9 +4134,10 @@ function renderSummary(){
     if(r.status==='Close') s.close++;
   }
   rows.forEach(r=>{
-    // Job dengan 2 Man Power dihitung untuk kedua mekanik (masing-masing tetap dapat kredit penuh atas job tsb).
+    // Job dengan lebih dari 1 Man Power dihitung untuk setiap mekanik (masing-masing tetap dapat kredit penuh atas job tsb).
     addToMech(normalizeMechanicName(r.mechanic) || 'Unassigned', r);
     if(r.mechanic2) addToMech(normalizeMechanicName(r.mechanic2), r);
+    if(r.mechanic3) addToMech(normalizeMechanicName(r.mechanic3), r);
   });
 
   renderSummaryKPICards(rows, byMech);
