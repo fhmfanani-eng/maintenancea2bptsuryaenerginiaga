@@ -239,6 +239,17 @@ textarea{ resize:vertical; min-height:56px; }
 
 /* TABLE */
 .table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); }
+/* Scrollbar tambahan di ATAS tabel lebar (mis. Record Daily Maintenance) agar mudah
+   digeser tanpa harus scroll ke bawah dulu. Lebar konten dalamnya disamakan lewat JS
+   dengan lebar asli tabel, dan posisi scroll-nya disinkronkan dua arah. */
+.scroll-top-track{
+  overflow-x:auto; overflow-y:hidden; height:14px;
+  border:1px solid var(--line); border-bottom:none;
+  border-radius:var(--radius) var(--radius) 0 0;
+  background:var(--panel-2);
+}
+.scroll-top-track + .table-wrap{ border-radius:0 0 var(--radius) var(--radius); margin-top:0; }
+.scroll-top-track-inner{ height:1px; }
 table{ width:100%; border-collapse:collapse; font-size:12.5px; min-width:900px; }
 th{
   background:var(--panel-2); text-align:left; padding:10px 12px; font-family:'JetBrains Mono',monospace;
@@ -490,6 +501,57 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 }
 .edit-text-btn:hover{ background:rgba(255,199,44,0.1); }
 
+/* Baris tabel Record Daily Maintenance bisa diklik untuk lihat detail tanpa scroll horizontal */
+#daily-record-table tbody tr:not(.empty-row){ cursor:pointer; }
+#daily-record-table tbody tr:not(.empty-row):hover{ background:rgba(255,199,44,0.06); }
+
+/* DETAIL MODAL — Record Daily Maintenance */
+#daily-detail-overlay{
+  display:none; position:fixed; inset:0; z-index:210;
+  align-items:flex-start; justify-content:center;
+  background:rgba(0,0,0,0.6); padding:26px 16px; overflow-y:auto;
+}
+#daily-detail-overlay.show{ display:flex; }
+.detail-modal{
+  width:100%; max-width:780px; background:var(--panel);
+  border:1px solid var(--line); border-radius:6px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.55);
+  margin:auto; overflow:hidden;
+}
+.detail-modal-head{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:16px 20px; border-bottom:1px solid var(--line); background:var(--panel-2);
+}
+.detail-modal-head h3{
+  font-family:'Oswald',sans-serif; font-size:16px; font-weight:600; letter-spacing:.3px;
+  color:var(--yellow); text-transform:uppercase;
+}
+.detail-modal-close{
+  width:30px; height:30px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  background:transparent; border:1px solid var(--line); border-radius:var(--radius);
+  color:var(--text-dim); font-size:16px; cursor:pointer; line-height:1;
+}
+.detail-modal-close:hover{ color:var(--red); border-color:var(--red); }
+.detail-modal-body{ padding:18px 20px 20px; max-height:76vh; overflow-y:auto; }
+.detail-grid{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 16px;
+}
+@media(max-width:640px){ .detail-grid{ grid-template-columns:1fr; } }
+.detail-item{
+  background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius);
+  padding:9px 11px;
+}
+.detail-item.full{ grid-column:1/-1; }
+.detail-item .dt-label{
+  font-size:10px; letter-spacing:.5px; text-transform:uppercase; color:var(--text-faint);
+  margin-bottom:4px; font-family:'JetBrains Mono',monospace;
+}
+.detail-item .dt-value{ font-size:13px; color:var(--text); word-break:break-word; white-space:pre-wrap; }
+.detail-modal-foot{
+  display:flex; justify-content:flex-end; gap:8px;
+  padding:14px 20px; border-top:1px solid var(--line);
+}
+
 /* LOGIN SCREEN */
 #login-overlay{
   position:fixed; inset:0; top:0; right:0; bottom:0; left:0; z-index:200;
@@ -615,6 +677,21 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 </style>
 </head>
 <body>
+
+<div id="daily-detail-overlay">
+  <div class="detail-modal">
+    <div class="detail-modal-head">
+      <h3 id="daily-detail-title">Detail Record</h3>
+      <button type="button" class="detail-modal-close" id="daily-detail-close" title="Tutup">✕</button>
+    </div>
+    <div class="detail-modal-body">
+      <div class="detail-grid" id="daily-detail-grid"></div>
+    </div>
+    <div class="detail-modal-foot">
+      <button type="button" class="btn secondary" id="daily-detail-close-2">Tutup</button>
+    </div>
+  </div>
+</div>
 
 <div id="login-overlay">
   <div class="login-card diamond-plate">
@@ -1137,7 +1214,8 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 
         <div class="panel">
           <div class="panel-head"><h2>Record Daily Maintenance</h2><button type="button" class="btn secondary" id="daily-refresh-btn" title="Ambil ulang data terbaru dari database">⟲ Refresh Data</button></div>
-          <div class="table-wrap">
+          <div class="scroll-top-track" id="daily-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="daily-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="daily-table-wrap">
             <table id="daily-record-table">
               <thead><tr>
                 <th>Code BD</th><th>Tanggal</th><th>Shift</th><th>Equipment Code</th><th>Type</th><th>HM</th>
@@ -2742,7 +2820,7 @@ window.editDaily = function(id){
   const isSupervisorUser = currentRole()==='Supervisor';
   const canEdit = isSupervisorUser
     ? r.approvalStatus==='Approved'
-    : (isOwner && (r.approvalStatus||'Pending')==='Pending');
+    : (isOwner && (r.approvalStatus||'Pending')!=='Approved');
   if(!canEdit){
     alert('Record ini tidak bisa diedit (bukan milik Anda atau belum/sudah diproses Supervisor).');
     return;
@@ -2778,7 +2856,9 @@ window.editDaily = function(id){
   const editHint = document.getElementById('d-edit-hint');
   editHint.textContent = isSupervisorUser
     ? `✎ Mode edit (Supervisor): mengoreksi record milik ${r.mechanic||'mekanik'} yang sudah Approved. Status approval tidak berubah.`
-    : '✎ Mode edit: memperbarui record yang sudah pernah diinput (masih Pending Approval).';
+    : (r.approvalStatus==='Rejected'
+      ? '✎ Mode edit: memperbaiki record yang ditolak Supervisor. Setelah disimpan, record akan dikirim ulang sebagai Pending Approval.'
+      : '✎ Mode edit: memperbarui record yang sudah pernah diinput (masih Pending Approval).');
   editHint.style.display = '';
   document.getElementById('view-daily').scrollIntoView({behavior:'smooth', block:'start'});
 };
@@ -2854,11 +2934,19 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
     const isSupervisorUser = currentRole()==='Supervisor';
     const canSaveEdit = existing && (isSupervisorUser
       ? existing.approvalStatus==='Approved'
-      : (isOwner && (existing.approvalStatus||'Pending')==='Pending'));
+      : (isOwner && (existing.approvalStatus||'Pending')!=='Approved'));
     if(canSaveEdit){
       const backup = { ...existing };
       // Koreksi oleh Supervisor pada record yang sudah Approved TIDAK mengubah
       // approvalStatus/approvedBy/approvedAt — hanya isi laporannya yang diperbarui.
+      // Kalau mekanik memperbaiki record yang sebelumnya Rejected, kirim ulang
+      // sebagai Pending Approval (alasan penolakan lama dibersihkan).
+      if(!isSupervisorUser && existing.approvalStatus==='Rejected'){
+        existing.approvalStatus = 'Pending';
+        existing.rejectNote = null;
+        existing.approvedBy = null;
+        existing.approvedAt = null;
+      }
       Object.assign(existing, fields);
       existing.updatedAt = new Date().toISOString();
       if(usingDailyTable()){
@@ -2962,7 +3050,10 @@ function renderDailyTable(){
         ? `<div class="edit-hint"><span class="edit-text-btn" onclick="editDaily('${r.id}')">Edit</span></div>`
         : ''}</div>`;
     } else if(r.approvalStatus==='Rejected'){
-      actionCell = `<div class="approval-note">oleh ${r.approvedBy||'—'}${r.rejectNote?'<br>alasan: '+r.rejectNote:''}</div>`;
+      const isOwnerRejected = !isSupervisor && loggedInUser && r.submittedBy===loggedInUser.name;
+      actionCell = `<div class="approval-note">oleh ${r.approvedBy||'—'}${r.rejectNote?'<br>alasan: '+r.rejectNote:''}${isOwnerRejected
+        ? `<div class="edit-hint"><span class="edit-text-btn" onclick="editDaily('${r.id}')">Edit</span></div>`
+        : ''}</div>`;
     } else {
       const isOwner = !isSupervisor && loggedInUser && r.submittedBy===loggedInUser.name;
       actionCell = `<div class="approval-note">menunggu Supervisor${isOwner
@@ -2970,7 +3061,7 @@ function renderDailyTable(){
         : ''}</div>`;
     }
     return `
-    <tr>
+    <tr onclick="openDailyDetail('${r.id}', event)">
       <td>${r.codeBD||'—'}</td>
       <td>${r.tanggal||'—'}</td>
       <td>${r.shift||'—'}</td>
@@ -2997,7 +3088,90 @@ function renderDailyTable(){
       <td>${actionCell}<button class="btn danger" style="margin-top:6px;" onclick="deleteDaily('${r.id}')">Hapus</button></td>
     </tr>`;
   }).join('');
+  syncDailyTopScroll();
 }
+
+/* Scrollbar tambahan di atas tabel Record Daily Maintenance: lebar area geser dalamnya
+   dibuat sama dengan lebar asli tabel, lalu posisi scroll disinkronkan dua arah dengan
+   scrollbar bawaan di bawah tabel supaya menggeser salah satunya menggeser keduanya. */
+function syncDailyTopScroll(){
+  const top = document.getElementById('daily-scroll-top');
+  const inner = document.getElementById('daily-scroll-top-inner');
+  const wrap = document.getElementById('daily-table-wrap');
+  const table = document.getElementById('daily-record-table');
+  if(!top || !inner || !wrap || !table) return;
+  inner.style.width = table.scrollWidth + 'px';
+  if(top.dataset.bound) return;
+  top.dataset.bound = '1';
+  let syncing = false;
+  top.addEventListener('scroll', ()=>{ if(syncing) return; syncing=true; wrap.scrollLeft = top.scrollLeft; syncing=false; });
+  wrap.addEventListener('scroll', ()=>{ if(syncing) return; syncing=true; top.scrollLeft = wrap.scrollLeft; syncing=false; });
+  window.addEventListener('resize', ()=>{ inner.style.width = table.scrollWidth + 'px'; });
+}
+/* ---- Detail Modal Record Daily Maintenance ----
+   Klik baris tabel (di luar tombol aksi) langsung menampilkan seluruh isi
+   record dalam kartu vertikal, jadi tidak perlu geser tabel ke kanan/kiri
+   untuk melihat kolom yang tersembunyi. */
+function escDailyDetail(v){
+  return String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+window.openDailyDetail = function(id, ev){
+  if(ev && ev.target && ev.target.closest('button, select, a, .edit-text-btn, .approval-actions')) return;
+  const r = dailyRecords.find(x=>x.id===id);
+  if(!r) return;
+  const manPower = [r.mechanic, r.mechanic2, r.mechanic3].filter(Boolean).join(', ') || '—';
+  const approvalInfo = (()=>{
+    const status = r.approvalStatus || 'Pending';
+    if(status==='Approved') return `Approved — oleh ${r.approvedBy||'—'} (${r.approvedAt||'—'})`;
+    if(status==='Rejected') return `Rejected — oleh ${r.approvedBy||'—'}${r.rejectNote ? ' — alasan: '+r.rejectNote : ''}`;
+    return 'Menunggu Supervisor (Pending)';
+  })();
+  const items = [
+    ['Code BD', r.codeBD],
+    ['Tanggal', r.tanggal],
+    ['Shift', r.shift],
+    ['Equipment Code', r.unitCode],
+    ['Type', r.typeUnit],
+    ['HM', r.hm],
+    ['BD Tanggal', r.breakdownDate],
+    ['BD Jam', r.breakdownTime],
+    ['Repair Start Tgl', r.startDate],
+    ['Repair Start Jam', r.start],
+    ['Repair End Tgl', r.endDate],
+    ['Repair End Jam', r.end],
+    ['Total Repair', fmtDur(r.duration)],
+    ['Total Breakdown', fmtDur(r.totalBreakdown)],
+    ['Kategori', categoryLabel(r.category)],
+    ['Plan/Unplan', r.planUnplan],
+    ['Man Power', manPower],
+    ['Area', r.area],
+    ['Status', r.status==='Progress' ? 'On Progress' : r.status],
+  ];
+  const fullItems = [
+    ['Breakdown Deskripsi', r.jobDesc],
+    ['Repair Action', r.repairAction],
+    ['Keterangan Part Consumable', r.bdCategory ? `${r.bdCategory}${r.keterangan ? ' — '+r.keterangan : ''}` : (r.keterangan||'—')],
+    ['Approval', approvalInfo],
+  ];
+  const grid = document.getElementById('daily-detail-grid');
+  grid.innerHTML =
+    items.map(([label,val])=>`<div class="detail-item"><div class="dt-label">${escDailyDetail(label)}</div><div class="dt-value">${escDailyDetail(val==null||val===''?'—':val)}</div></div>`).join('')
+    + fullItems.map(([label,val])=>`<div class="detail-item full"><div class="dt-label">${escDailyDetail(label)}</div><div class="dt-value">${escDailyDetail(val==null||val===''?'—':val)}</div></div>`).join('');
+  document.getElementById('daily-detail-title').textContent = `Detail Record — ${r.codeBD || r.unitCode || ''}`;
+  document.getElementById('daily-detail-overlay').classList.add('show');
+}
+function closeDailyDetail(){
+  document.getElementById('daily-detail-overlay').classList.remove('show');
+}
+document.getElementById('daily-detail-close').addEventListener('click', closeDailyDetail);
+document.getElementById('daily-detail-close-2').addEventListener('click', closeDailyDetail);
+document.getElementById('daily-detail-overlay').addEventListener('click', (e)=>{
+  if(e.target.id==='daily-detail-overlay') closeDailyDetail();
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape') closeDailyDetail();
+});
+
 const dailyRefreshBtn = document.getElementById('daily-refresh-btn');
 if(dailyRefreshBtn){
   dailyRefreshBtn.addEventListener('click', async ()=>{
