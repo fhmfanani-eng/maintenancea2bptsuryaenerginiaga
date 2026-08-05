@@ -831,9 +831,10 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
         <div class="grid grid-2" id="kpi-chart-dashboard" style="margin-bottom:20px; align-items:start;"></div>
 
         <div class="grid grid-3" id="kpi-grid"></div>
-        <div class="hint" style="margin-top:14px; margin-bottom:6px;">KPI dihitung hanya dari record Daily Maintenance yang sudah berstatus <b>Approved</b> oleh Supervisor. Khusus MA &amp; PA dihitung otomatis dari file jam operasional yang diupload di bawah.</div>
+        <div class="hint" id="ma-pa-source-status" style="margin-top:10px;"></div>
+        <div class="hint" style="margin-top:14px; margin-bottom:6px;">KPI dihitung hanya dari record Daily Maintenance yang sudah berstatus <b>Approved</b> oleh Supervisor. Khusus MA &amp; PA dihitung otomatis dari data <b>Monitoring HM</b> (fallback ke file jam operasional manual di bawah kalau belum ada data HM).</div>
 
-        <div class="section-title">Data Sumber MA &amp; PA</div>
+        <div class="section-title">Data Sumber MA &amp; PA (fallback manual)</div>
         <div class="panel">
           <div class="panel-head">
             <h2><span class="tag">INPUT</span> Upload Data Jam Operasional</h2>
@@ -843,8 +844,9 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
             </div>
           </div>
           <div class="hint" style="margin-bottom:12px;">
-            Upload file <b>.xlsx / .xls / .csv</b> dengan kolom: <b>Unit</b>, <b>Jam Kerja / Working (W)</b>, <b>Jam Standby (S)</b>, <b>Jam Repair / Breakdown (R)</b> — satu baris per unit per periode.
-            Mechanical Availability (MA) dihitung <span style="font-family:'JetBrains Mono',monospace;">W / (W+R) × 100%</span>, Physical Availability (PA) dihitung <span style="font-family:'JetBrains Mono',monospace;">(W+S) / (W+S+R) × 100%</span> — otomatis dari total seluruh baris pada file.
+            <b>MA &amp; PA kini dihitung otomatis dari data Monitoring HM</b> (Jam Kerja per unit + jam Breakdown yang sudah Approved). Upload di sini <b>hanya dipakai sebagai cadangan</b>, untuk unit/periode yang belum punya data HM sama sekali.
+            Kolom file: <b>Unit</b>, <b>Jam Kerja / Working (W)</b>, <b>Jam Standby (S)</b>, <b>Jam Repair / Breakdown (R)</b> — satu baris per unit per periode.
+            Mechanical Availability (MA) dihitung <span style="font-family:'JetBrains Mono',monospace;">W / (W+R) × 100%</span>, Physical Availability (PA) dihitung <span style="font-family:'JetBrains Mono',monospace;">(W+S) / (W+S+R) × 100%</span>.
           </div>
           <div class="field" style="max-width:420px; margin-bottom:6px;">
             <label>Pilih File</label>
@@ -887,7 +889,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
       <!-- DATABASE UNIT -->
       <section class="view" id="view-database">
         <div class="panel-head" style="margin-bottom:16px;"><h2>Master Unit Alat Berat</h2></div>
-        <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy, MA, PA) tiap unit dihitung otomatis dari data Daily Maintenance, Plan Service, dan file jam operasional yang diupload — tidak perlu input manual.</div>
+        <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy, MA, PA) tiap unit dihitung otomatis dari data Daily Maintenance, Plan Service, dan data Monitoring HM — tidak perlu input manual.</div>
 
         <div class="panel period-panel" style="margin-bottom:16px;">
           <div class="panel-head" style="margin-bottom:8px;">
@@ -900,7 +902,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
               </div>
             </div>
           </div>
-          <div class="hint" style="margin-bottom:0;">Pilih periode minggu (Senin–Minggu) untuk melihat pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy) tiap unit pada minggu tersebut. MA &amp; PA tetap dihitung dari total data jam operasional yang diupload.</div>
+          <div class="hint" style="margin-bottom:0;">Pilih periode minggu (Senin–Minggu) untuk melihat pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy) tiap unit pada minggu tersebut. MA &amp; PA ikut dihitung ulang dari data Monitoring HM pada minggu yang sama.</div>
         </div>
 
         <div class="grid grid-2" id="unit-cards"></div>
@@ -990,8 +992,9 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
             <select id="preins-filter-status"><option value="">Semua Status</option><option value="OK">OK</option><option value="Ada Temuan">Ada Temuan</option></select>
             <button class="btn small secondary" id="preins-clear-filter">Clear Filter</button>
           </div>
-          <div class="table-wrap">
-            <table>
+          <div class="scroll-top-track" id="preins-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="preins-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="preins-table-wrap">
+            <table id="preins-table">
               <thead><tr>
                 <th>Date</th><th>Unit No</th><th>Type</th><th>HM</th><th>Check By</th>
                 <th>Status</th><th>Temuan</th><th>Approval Supervisor</th><th></th>
@@ -1086,8 +1089,9 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
             <select id="p2h-filter-status"><option value="">Semua Status</option><option value="Normal">Normal</option><option value="Ada Temuan">Ada Temuan</option></select>
             <button class="btn small secondary" id="p2h-clear-filter">Clear Filter</button>
           </div>
-          <div class="table-wrap">
-            <table>
+          <div class="scroll-top-track" id="p2h-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="p2h-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="p2h-table-wrap">
+            <table id="p2h-table">
               <thead><tr>
                 <th>Tanggal</th><th>Shift</th><th>Unit Code</th><th>Type</th><th>Operator</th>
                 <th>HM Awal</th><th>HM Akhir</th><th>Status</th><th>Temuan</th><th>Notifikasi WA</th><th></th>
@@ -1273,8 +1277,9 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
             <h2>Jadwal Plan Service <span class="tag">JUL–DES 2026</span></h2>
             <button class="btn small secondary" id="btn-import-plan">⤓ Import dari Excel</button>
           </div>
-          <div class="table-wrap">
-            <table>
+          <div class="scroll-top-track" id="plan-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="plan-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="plan-table-wrap">
+            <table id="plan-table">
               <thead><tr><th>Tgl Rencana</th><th>Unit Code</th><th>Type</th><th>HM Rencana</th><th>Jenis Service</th><th>PIC</th><th>Status</th><th>Status Eksekusi</th><th>Tgl Eksekusi</th><th>Catatan</th><th></th></tr></thead>
               <tbody id="plan-tbody"></tbody>
             </table>
@@ -1366,8 +1371,9 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
             <select id="ps-filter-status"><option value="">Semua Status</option><option value="Open">Open</option><option value="Close">Close</option></select>
             <button class="btn small secondary" id="ps-clear-filter">Clear Filter</button>
           </div>
-          <div class="table-wrap">
-            <table>
+          <div class="scroll-top-track" id="planningsystem-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="planningsystem-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="planningsystem-table-wrap">
+            <table id="planningsystem-table">
               <thead><tr>
                 <th>Unit Code</th><th>Type Unit</th><th>PIC Mechanic</th><th>Job Description</th><th>Component</th><th>No PR</th>
                 <th>Plan Tgl Eksekusi</th><th>Due Date</th><th>Status</th><th></th>
@@ -1404,8 +1410,9 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
           <div class="panel-head">
             <h2>Detail Summary per Mechanic</h2>
           </div>
-          <div class="table-wrap">
-            <table>
+          <div class="scroll-top-track" id="summary-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="summary-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="summary-table-wrap">
+            <table id="summary-table">
               <thead><tr>
                 <th>Mechanic</th><th>Total Job</th><th>Breakdown</th><th>Daily Maint.</th><th>Periodical</th>
                 <th>Total Durasi (jam)</th><th>Rata² Durasi (jam)</th><th>Job Close</th><th>% Completion</th>
@@ -1428,8 +1435,9 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
             <button class="btn small secondary" id="h-clear">Clear Filter</button>
             <button class="btn small" id="h-export">⬇ Export CSV</button>
           </div>
-          <div class="table-wrap">
-            <table>
+          <div class="scroll-top-track" id="history-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="history-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="history-table-wrap">
+            <table id="history-table">
               <thead><tr>
                 <th>Tanggal</th><th>Unit Code</th><th>Type</th><th>HM</th><th>Kategori</th><th>Job Desc</th>
                 <th>Durasi</th><th>Mechanic</th><th>Area</th><th>Status</th><th>Approval</th><th>Approved By</th>
@@ -1442,11 +1450,31 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 
       <!-- MONITORING HM -->
       <section class="view" id="view-hm">
-        <div class="banner">⛭ Panel ini menampilkan riwayat Monitoring HM. Penginputan data dilakukan lewat Google Spreadsheet (integrasi sinkronisasi menyusul) — bukan lewat form di aplikasi ini.</div>
+        <div class="banner">⛭ Data awal diimport dari HM.xlsx. Untuk update, upload ulang file (kolom sama seperti HM.xlsx) di bawah — data lama akan diganti oleh isi file yang diupload. KPI <b>MA</b> &amp; <b>PA</b> di Dashboard otomatis terhitung ulang dari data ini. Integrasi sinkronisasi otomatis lewat Google Spreadsheet menyusul.</div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2><span class="tag">INPUT</span> Upload Data HM</h2>
+            <div class="toolbar">
+              <button type="button" class="btn secondary small" id="hm-template-btn">⬇ Unduh Template</button>
+              <button type="button" class="btn danger" id="hm-clear-btn" style="display:none;">Hapus Semua Data</button>
+            </div>
+          </div>
+          <div class="hint" style="margin-bottom:12px;">
+            Upload file <b>.xlsx / .xls / .csv</b> dengan kolom: <b>Tanggal</b>, <b>User</b>, <b>Kategori</b>, <b>Nama</b>, <b>Shift</b>, <b>Kode Unit</b>, <b>Pekerjaan</b>, <b>HM Awal</b>, <b>HM Akhir</b>, <b>HM Total</b>, <b>Fuel</b>, <b>Keterangan</b> — satu baris per aktivitas. Mengupload file baru akan <b>mengganti seluruh</b> riwayat yang tampil di tabel bawah.
+          </div>
+          <div class="field" style="max-width:420px; margin-bottom:6px;">
+            <label>Pilih File</label>
+            <input type="file" id="hm-file-input" accept=".csv,.xlsx,.xls">
+          </div>
+          <div id="hm-upload-status" class="hint"></div>
+        </div>
+
         <div class="panel">
           <div class="panel-head"><h2>Riwayat Monitoring HM</h2></div>
-          <div class="table-wrap">
-            <table>
+          <div class="scroll-top-track" id="hm-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="hm-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="hm-table-wrap">
+            <table id="hm-table">
               <thead><tr>
                 <th>Tanggal</th><th>User</th><th>Kategori</th><th>Nama</th><th>Shift</th><th>Kode Unit</th>
                 <th>Pekerjaan</th><th>HM Awal</th><th>HM Akhir</th><th>HM Total</th><th>Fuel</th><th>Keterangan</th><th></th>
@@ -1511,6 +1539,1445 @@ const PLAN_SEED = [
     id: 'seed-'+planDate+'-'+unitCode+'-'+hmPlan,
     unitCode, typeUnit: u?u.type:'', planDate, hmPlan, serviceType, mechanic,
     status:'Planned', notes:'Import dari Plan Schedule Next Service Juli-Desember 2026.xlsx'
+  };
+});
+
+// Imported from "HM.xlsx" — Riwayat Monitoring HM (Tanggal, User, Kategori, Nama, Shift, Kode Unit, Pekerjaan, HM Awal, HM Akhir, HM Total, Fuel, Keterangan)
+const HM_SEED = [
+  ['2026-01-01','BC','Langsir','Alief','Siang','SPC-104','Lambung batu',986.7,996.6,9.9,0,'Lambung batu'],
+  ['2026-01-01','BBA','Barging','Miki Mustakim','Siang','SBD-103','Barging',2017,2026.5,9.5,0,'Barging'],
+  ['2026-01-01','BC','Barging','Suntoko','Siang','SWA-102','Barging',2254.5,2264.6,10.1,336,'Barging'],
+  ['2026-01-02','BC','Langsir','Alief','Siang','SPC-104','Lambung batu',996.6,1008,11.4,220,'Lambung batu'],
+  ['2026-01-02','BC','Barging','Hengki Ramadan','Siang','SBD-103','Barging',2026.5,2033,6.5,0,'Barging'],
+  ['2026-01-02','BC','Barging','Jhohan','Siang','SWA-102','BARGING COAL BBA',2264.6,2276.3,11.7,198,'BARGING COAL BBA'],
+  ['2026-01-02','BBA','Barging','Dede Darmawan','Siang','SWA-101','Berging',2371.1,2382.8,11.7,165,'Berging'],
+  ['2026-01-02','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal BC',2033,2041,8,253,'Triming coal BC'],
+  ['2026-01-02','BBA','Barging','Suntoko','Malam','SWA-102','Barging',2276.3,2287.4,11.1,0,'Barging'],
+  ['2026-01-02','BC','Barging','Husen','Malam','SWA-101','Barging',2382.8,2393.8,11,266,'Barging'],
+  ['2026-01-03','SEN','General','Alief','Siang','SPC-104','Lambung pasir dan lambung batu',1008,1019.8,11.8,187,'Lambung pasir dan lambung batu'],
+  ['2026-01-03','BC','Barging','Hengki Ramadan','Siang','SBD-103','Barging',2041,2052,11,285,'Barging'],
+  ['2026-01-03','BC','Barging','Jhohan','Siang','SWA-102','BARGING COAL BC DAN BBA',2287.4,2298.6,11.2,178,'BARGING COAL BC DAN BBA'],
+  ['2026-01-03','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bc dan bba',2393.8,2405.5,11.7,211,'Barging coal bc dan bba'],
+  ['2026-01-03','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming coal BC',2052,2064,12,271,'Triming coal BC'],
+  ['2026-01-03','BC','General','Suntoko','Malam','SWA-102','Barging',2298.6,2309.7,11.1,396,'Barging'],
+  ['2026-01-03','BC','Barging','Husen','Malam','SWA-101','Barging',2405.5,2416.4,10.9,326,'Barging'],
+  ['2026-01-04','BC','Langsir','Alief','Siang','SPC-104','Lambung batu',1019.8,1025.1,5.3,165,'Lambung batu'],
+  ['2026-01-04','BC','General','Suntoko','Siang','SPC-104','General',1025.1,1030.1,5,0,'General'],
+  ['2026-01-04','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal BC',2063.5,2069.3,5.8,143,'Triming coal BC'],
+  ['2026-01-04','BC','Barging','Jhohan','Siang','SWA-102','BARGING COAL BC',2309.7,2315,5.3,0,'BARGING COAL BC'],
+  ['2026-01-04','BC','Barging','Husen','Siang','SWA-102','Barging',2315,2320.9,5.9,0,'Barging'],
+  ['2026-01-04','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bc',2416.4,2421.8,5.4,300,'Barging coal bc'],
+  ['2026-01-04','BC','Barging','Hairul','Siang','SWA-101','Barging',2421.8,2427.9,6.1,250,'Barging'],
+  ['2026-01-04','SEN','General','Alief','Malam','SPC-104','Buat tanggul+aliran air',1030.1,1042.1,12,135,'Buat tanggul+aliran air'],
+  ['2026-01-04','BC','Barging','Hengki Ramadan','Malam','SBD-103','Barging',2069.3,2081.3,12,172,'Barging'],
+  ['2026-01-04','BC','Barging','Jhohan','Malam','SWA-102','BARGING COAL BC',2320.9,2332.1,11.2,336,'BARGING COAL BC'],
+  ['2026-01-04','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging coal bc',2427.9,2439.1,11.2,156,'Barging coal bc'],
+  ['2026-01-05','BC','General','Suntoko','Siang','SPC-104','General',1042.1,1052.5,10.4,110,'General'],
+  ['2026-01-05','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal BC',2081.3,2091.3,10,0,'Triming coal BC'],
+  ['2026-01-05','BC','Barging','Alimuddin','Siang','SWA-102','Barging',2332.1,2342.6,10.5,351,'Barging'],
+  ['2026-01-05','BC','Barging','Hairul','Siang','SWA-101','Barging',2439.1,2449.6,10.5,0,'Barging'],
+  ['2026-01-05','BC','Langsir','Alief','Malam','SPC-104','Lambung batu',1052.5,1064.7,12.2,0,'Lambung batu'],
+  ['2026-01-05','BC','Barging','Hengki Ramadan','Malam','SBD-103','Barging',2091.3,2103.3,12,128,'Barging'],
+  ['2026-01-05','BC','Barging','Jhohan','Malam','SWA-102','BARGING COAL BC',2343,2354.8,11.8,217,'BARGING COAL BC'],
+  ['2026-01-05','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging coal bc',2449.6,2461.8,12.2,244,'Barging coal bc'],
+  ['2026-01-06','BC','General','Suntoko','Siang','SPC-104','General',1064.7,1075,10.3,254,'General'],
+  ['2026-01-06','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal BC',2103.3,2113,9.7,249,'Triming coal BC'],
+  ['2026-01-06','BC','Triming','Alimuddin','Siang','SWA-102','Triming',2354.9,2364.8,9.9,128,'Triming'],
+  ['2026-01-06','BC','Triming','Hairul','Siang','SWA-101','Trimming',2461.8,2471.9,10.1,132,'Trimming'],
+  ['2026-01-06','SEN','General','Alief','Malam','SPC-104','Buat parit+tanggul',1075,1086.7,11.7,89,'Buat parit+tanggul'],
+  ['2026-01-06','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2113,2124.7,11.7,330,'Triming'],
+  ['2026-01-06','BC','Langsir','Jhohan','Malam','SWA-102','LANGSIR COAL BC',2364.8,2376.5,11.7,217,'LANGSIR COAL BC'],
+  ['2026-01-06','BC','Triming','Dede Darmawan','Malam','SWA-101','Triming coal bc',2471.9,2483.7,11.8,244,'Triming coal bc'],
+  ['2026-01-07','BC','General','Suntoko','Siang','SPC-104','General',1086.7,1097.7,11,84,'General'],
+  ['2026-01-07','BC','Triming','Husen','Siang','SBD-103','Treming',2124.7,2135.3,10.6,114,'Treming'],
+  ['2026-01-07','BC','Triming','Alimuddin','Siang','SWA-102','Triming',2376.5,2387.5,11,210,'Triming'],
+  ['2026-01-07','SEN','General','Alief','Malam','SPC-104','Tanggul',1097.7,1109.6,11.9,95,'Tanggul'],
+  ['2026-01-07','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2135.3,2147.1,11.8,132,'Triming'],
+  ['2026-01-07','BC','Triming','Jhohan','Malam','SWA-102','TRIMING COAL BC',2387.5,2399.1,11.6,198,'TRIMING COAL BC'],
+  ['2026-01-07','BC','Triming','Dede Darmawan','Malam','SWA-101','Triming coal bc',2483.7,2496.5,12.8,0,'Triming coal bc'],
+  ['2026-01-08','BC','Barging','Miki Mustakim','Siang','SBD-103','Barging',2147.1,2158.1,11,105,'Barging'],
+  ['2026-01-08','BC','Barging','Alimuddin','Siang','SWA-102','Barging',2399.1,2410.1,11,248,'Barging'],
+  ['2026-01-08','BC','Barging','Husen','Siang','SWA-101','Barging',2496.5,2507.1,10.6,232,'Barging'],
+  ['2026-01-08','BC','Langsir','Alief','Malam','SPC-104','Lambung batu',1109.6,1121.8,12.2,83,'Lambung batu'],
+  ['2026-01-08','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2158.1,2170.1,12,160,'Triming'],
+  ['2026-01-08','BC','Triming','Jhohan','Malam','SWA-102','TRIMING COAL BC',2410.1,2422.1,12,162,'TRIMING COAL BC'],
+  ['2026-01-08','BC','Triming','Dede Darmawan','Malam','SWA-101','Triming coal bc',2507.1,2519.2,12.1,209,'Triming coal bc'],
+  ['2026-01-09','BC','General','Suntoko','Siang','SPC-104','General',1121.8,1131.8,10,106,'General'],
+  ['2026-01-09','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal BC',2170.2,2178.4,8.2,113,'Triming coal BC'],
+  ['2026-01-09','BC','Langsir','Alimuddin','Siang','SWA-102','Rehenling',2422.1,2431.2,9.1,232,'Rehenling'],
+  ['2026-01-09','BC','Triming','Husen','Siang','SWA-101','Treming',2519.5,2525.1,5.6,198,'Treming'],
+  ['2026-01-09','BC','Triming','Alief','Malam','SPC-104','Triming',1131.8,1143.3,11.5,0,'Triming'],
+  ['2026-01-09','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2178.4,2190.5,12.1,0,'Triming'],
+  ['2026-01-09','BC','Triming','Jhohan','Malam','SWA-102','TRIMING COAL BC',2431.2,2442.7,11.5,162,'TRIMING COAL BC'],
+  ['2026-01-09','BC','Triming','Dede Darmawan','Malam','SWA-101','Triming',2525.1,2536.7,11.6,0,'Triming'],
+  ['2026-01-10','BC','General','Suntoko','Siang','SPC-104','General',1143.3,1153.8,10.5,124,'General'],
+  ['2026-01-10','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal BC',2190.5,2200.5,10,213,'Triming coal BC'],
+  ['2026-01-10','BC','Triming','Alimuddin','Siang','SWA-102','Triming',2442.7,2452.7,10,186,'Triming'],
+  ['2026-01-10','BC','Triming','Husen','Siang','SWA-101','Treming',2536.7,2546.9,10.2,203,'Treming'],
+  ['2026-01-10','SEN','General','Alief','Malam','SPC-104','Service jalan area pencucian+buat tanggul',1153.8,1159.4,5.6,0,'Service jalan area pencucian+buat tanggul'],
+  ['2026-01-10','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2200.5,2209.8,9.3,97,'Triming'],
+  ['2026-01-10','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bc',2452.7,2458.1,5.4,0,'Triming coal bc'],
+  ['2026-01-10','BC','Triming','Dede Darmawan','Malam','SWA-101','Triming',2546.9,2558.3,11.4,0,'Triming'],
+  ['2026-01-11','BC','General','Suntoko','Siang','SPC-104','General',1159.4,1163.7,4.3,253,'General'],
+  ['2026-01-11','SEN','General','Alief','Siang','SPC-104','Buat tanggul area stock file+service jalan area pencucian',1163.7,1169.9,6.2,0,'Buat tanggul area stock file+service jalan area pencucian'],
+  ['2026-01-11','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2209.8,2214,4.2,0,'Triming coal'],
+  ['2026-01-11','BBA','Barging','Hengki Ramadan','Siang','SBD-103','Barging',2214,2220.2,6.2,0,'Barging'],
+  ['2026-01-11','BBA','Barging','Alimuddin','Siang','SWA-102','Barging',2458.1,2462.2,4.1,0,'Barging'],
+  ['2026-01-11','BC','Barging','Jhohan','Siang','SWA-102','Barging coal bba',2462.6,2468.7,6.1,319,'Barging coal bba'],
+  ['2026-01-11','BC','Barging','Husen','Siang','SWA-101','Barging',2558.3,2562.7,4.4,0,'Barging'],
+  ['2026-01-11','BBA','Barging','Dede Darmawan','Siang','SWA-101','Barging',2562.7,2568.9,6.2,319,'Barging'],
+  ['2026-01-11','BC','General','Suntoko','Malam','SPC-104','General',1169.9,1181.1,11.2,132,'General'],
+  ['2026-01-11','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2220.2,2230.5,10.3,211,'Triming coal'],
+  ['2026-01-11','BBA','Barging','Alimuddin','Malam','SWA-102','Barging',2468.7,2480,11.3,0,'Barging'],
+  ['2026-01-11','BBA','Barging','Hairul','Malam','SWA-101','Barging',2568.9,2579.2,10.3,0,'Barging'],
+  ['2026-01-12','SEN','General','Alief','Siang','SPC-104','Tanggul+kuras air kolam',1181.1,1192.3,11.2,86,'Tanggul+kuras air kolam'],
+  ['2026-01-12','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2230.5,2241.5,11,142,'Triming'],
+  ['2026-01-12','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bba',2480,2490.7,11,230,'Triming coal bba'],
+  ['2026-01-12','BC','Triming','Husen','Siang','SWA-101','Treming',2579.2,2589.3,10.1,138,'Treming'],
+  ['2026-01-12','BBA','Langsir','Suntoko','Malam','SPC-104','General',1192.3,1203.6,11.3,139,'Laangsir'],
+  ['2026-01-12','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2241.5,2252.5,11,153,'Triming coal'],
+  ['2026-01-12','BBA','Barging','Alimuddin','Malam','SWA-102','Barging',2490.7,2502,11.3,233,'Barging'],
+  ['2026-01-12','BBA','Barging','Hairul','Malam','SWA-101','Barging',2589.3,2600.6,11.3,223,'Barging'],
+  ['2026-01-13','SEN','General','Alief','Siang','SPC-104','Tanggul',1203.6,1214.7,11.1,73,'Tanggul'],
+  ['2026-01-13','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2252.5,2263.7,11.2,125,'Triming'],
+  ['2026-01-13','BBA','Triming','Husen','Siang','SWA-102','Treming',2502.2,2510,7.8,129,'Treming'],
+  ['2026-01-13','BBA','Triming','Dede Darmawan','Siang','SWA-101','Triming',2600.6,2612,11.4,176,'Triming'],
+  ['2026-01-13','BC','General','Suntoko','Malam','SPC-104','Stanby',1214.7,1214.8,0.1,124,'Standby'],
+  ['2026-01-13','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2263.7,2272,8.3,128,'Triming coal'],
+  ['2026-01-13','BBA','Triming','Alimuddin','Malam','SWA-102','Triming',2510,2514.5,4.5,233,'Triming'],
+  ['2026-01-13','BBA','Triming','Hairul','Malam','SWA-101','Trimming',2612,2620.5,8.5,223,'Trimming'],
+  ['2026-01-14','SEN','General','Alief','Siang','SPC-104','Tanggul',1214.8,1225.8,11,0,'Tanggul'],
+  ['2026-01-14','BBA','Triming','Husen','Siang','SBD-103','Treming',2272,2280.1,8.1,85,'Treming'],
+  ['2026-01-14','BBA','Triming','Jhohan','Siang','SWA-102','Triming coal bc dan bba',2514.5,2525.1,10.6,346,'Triming coal bc dan bba'],
+  ['2026-01-14','BBA','Triming','Dede Darmawan','Siang','SWA-101','Triming',2620.5,2630.8,10.3,109,'Triming'],
+  ['2026-01-14','BC','General','Suntoko','Malam','SPC-104','General',1225.8,1236.4,10.6,122,'General'],
+  ['2026-01-14','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming coal BC',2280.1,2291.1,11,91,'Triming coal BC'],
+  ['2026-01-14','BBA','Triming','Alimuddin','Malam','SWA-102','Triming',2525.1,2534.1,9,0,'Triming'],
+  ['2026-01-14','BBA','Triming','Hairul','Malam','SWA-101','Trimming',2630.8,2641.8,11,154,'Trimming'],
+  ['2026-01-15','SEN','General','Alief','Siang','SPC-104','Tanggul, service tempat cuci alat, lambung pasir',1236.4,1247.7,11.3,0,'Tanggul, service tempat cuci alat, lambung pasir'],
+  ['2026-01-15','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2291.1,2301.8,10.7,88,'Triming'],
+  ['2026-01-15','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bc dan bba',2534.1,2545.3,11.2,239,'Triming coal bc dan bba'],
+  ['2026-01-15','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bc dan bba',2641.8,2653.1,11.3,163,'Triming coal bc dan bba'],
+  ['2026-01-15','BC','General','Suntoko','Malam','SPC-104','Pasiran',1247.7,1258.4,10.7,194,'Pasiran'],
+  ['2026-01-15','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming coal BC',2301.8,2311.8,10,186,'Triming coal BC'],
+  ['2026-01-15','BC','Triming','Alimuddin','Malam','SWA-102','Triming',2545.3,2548.8,3.5,114,'Triming'],
+  ['2026-01-15','BBA','Triming','Hairul','Malam','SWA-101','Trimming',2653.1,2664.3,11.2,154,'Trimming'],
+  ['2026-01-16','SEN','General','Alief','Siang','SPC-104','Service tumpukan area MCC, lambung pasir',1258.4,1269.8,11.4,0,'Service tumpukan area MCC, lambung pasir'],
+  ['2026-01-16','BC','Barging','Hengki Ramadan','Siang','SBD-103','Barging',2311.8,2317.8,6,97,'Barging'],
+  ['2026-01-16','BC','Barging','Husen','Siang','SBD-103','Barging',2317.8,2322.8,5,0,'Barging'],
+  ['2026-01-16','BC','Barging','Jhohan','Siang','SWA-102','Barging coal bc',2548.8,2560.3,11.5,287,'Barging coal bc'],
+  ['2026-01-16','BC','Barging','Dede Darmawan','Siang','SWA-101','Triming dan barging',2664.3,2675.8,11.5,191,'Triming dan barging'],
+  ['2026-01-16','SEN','General','Suntoko','Malam','SPC-104','Pasiran',1269.8,1281,11.2,244,'Pasiran'],
+  ['2026-01-16','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming coal BC',2322.8,2333.8,11,196,'Triming coal BC'],
+  ['2026-01-16','BC','Barging','Alimuddin','Malam','SWA-102','Barging',2560.3,2572,11.7,0,'Barging'],
+  ['2026-01-16','BC','Barging','Hairul','Malam','SWA-101','Barging',2675.8,2687.4,11.6,143,'Barging'],
+  ['2026-01-17','SEN','General','Alief','Siang','SPC-104','Lambung pasir, tanggul',1281,1289.2,8.2,0,'Lambung pasir, tanggul'],
+  ['2026-01-17','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2333.8,2344.8,11,157,'Triming'],
+  ['2026-01-17','BBA','Triming','Husen','Siang','SWA-102','Treming',2572,2576.5,4.5,0,'Treming'],
+  ['2026-01-17','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bba',2577,2582.6,5.6,184,'Triming coal bba'],
+  ['2026-01-17','BBA','Triming','Dede Darmawan','Siang','SWA-101','Triming',2687.4,2698.6,11.2,121,'Triming'],
+  ['2026-01-17','SEN','General','Suntoko','Malam','SPC-104','General',1289.2,1297.4,8.2,228,'General'],
+  ['2026-01-17','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming coal BC',2344.8,2356,11.2,122,'Triming coal BC'],
+  ['2026-01-17','BBA','Triming','Alimuddin','Malam','SWA-102','Triming',2582.6,2593.6,11,317,'Triming'],
+  ['2026-01-17','BBA','Triming','Hairul','Malam','SWA-101','Trimming',2698.6,2710,11.4,280,'Trimming'],
+  ['2026-01-18','SEN','General','Suntoko','Siang','SPC-104','General',1297.4,1300.1,2.7,0,'General'],
+  ['2026-01-18','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2356,2360,4,0,'Triming coal'],
+  ['2026-01-18','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2360,2365.2,5.2,66,'Triming coal'],
+  ['2026-01-18','BBA','Barging','Alimuddin','Siang','SWA-102','Barging',2596.9,2598.9,2,195,'Barging'],
+  ['2026-01-18','BBA','Triming','Dede Darmawan','Siang','SWA-101','Triming',2710,2715,5,0,'Triming'],
+  ['2026-01-18','BBA','Barging','Hairul','Siang','SWA-101','Barging',2715,2716.8,1.8,278,'Barging'],
+  ['2026-01-18','BBA','Barging','Husen','Malam','SBD-103','Barging',2365.2,2374.8,9.6,128,'Barging'],
+  ['2026-01-18','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bba',2598.9,2608.5,9.6,0,'Barging coal bba'],
+  ['2026-01-18','BBA','Barging','Dede Darmawan','Malam','SWA-101','Barging',2716.8,2726.8,10,0,'Barging'],
+  ['2026-01-19','SEN','General','Alief','Siang','SPC-104','Lebarkan tempat untuk office, lambung pasir',1300.1,1307.1,7,0,'Lebarkan tempat untuk office, lambung pasir'],
+  ['2026-01-19','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2374.8,2383.2,8.4,165,'Triming coal'],
+  ['2026-01-19','BC','Langsir','Suntoko','Siang','SWA-102','Lambung',2608.5,2613.3,4.8,290,'Lambung'],
+  ['2026-01-19','BBA','Triming','Hairul','Siang','SWA-101','Trimming',2726.8,2734.2,7.4,191,'Trimming'],
+  ['2026-01-19','BC','Triming','Dede Darmawan','Malam','SPC-104','Triming',1307.1,1318.5,11.4,199,'Triming'],
+  ['2026-01-19','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2383.2,2394.4,11.2,301,'Triming'],
+  ['2026-01-19','BC','General','Jhohan','Malam','SWA-102','Stanbay',2613.3,2614.3,1,0,'Stanbay'],
+  ['2026-01-19','BBA','Triming','Husen','Malam','SWA-101','Treming',2734.2,2744.1,9.9,0,'Treming'],
+  ['2026-01-20','SEN','General','Alief','Siang','SPC-104','Buka lahan pembuatan mess',1318.5,1327.8,9.3,0,'Buka lahan pembuatan mess'],
+  ['2026-01-20','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2394.4,2403.6,9.2,0,'Triming coal'],
+  ['2026-01-20','BC','Langsir','Suntoko','Siang','SWA-102','Lambung',2614.3,2623,8.7,203,'Lambung'],
+  ['2026-01-20','BC','Langsir','','Siang','SWA-101','Tidak ada laporan',0,0,0,268,'Tidak ada laporan'],
+  ['2026-01-20','BC','Langsir','','Siang','SWA-101','Tidak ada laporan',0,0,0,268,'Tidak ada laporan'],
+  ['2026-01-20','SEN','General','Jhohan','Malam','SPC-104','Triming pasir',1327.8,1332.8,5,0,'Triming pasir'],
+  ['2026-01-20','SEN','General','Dede Darmawan','Malam','SPC-104','Triming pasir',1332.8,1338.3,5.5,177,'Triming pasir'],
+  ['2026-01-20','SEN','General','Husen','Malam','SBD-103','Standby',2403.6,2403.6,0,215,'Standby'],
+  ['2026-01-21','SEN','General','Alief','Siang','SPC-104','Bantu Pasang lampu, rapikan tanggul area compeyor',1338.3,1345,6.7,0,'Bantu Pasang lampu, rapikan tanggul area compeyor'],
+  ['2026-01-21','BC','Langsir','Alimuddin','Siang','SBD-103','Dozing',2403.6,2406.9,3.3,0,'Dozing'],
+  ['2026-01-22','SEN','General','Alief','Siang','SPC-104','Angkut pipa besi buat saluran air, lambung pasir',1345,1350.8,5.8,0,'Angkut pipa besi buat saluran air, lambung pasir'],
+  ['2026-01-22','BBA','Barging','Husen','Malam','SBD-103','Barging',2407.6,2415,7.4,0,'Barging'],
+  ['2026-01-22','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bba',2623,2630.7,7.7,0,'Barging coal bba'],
+  ['2026-01-22','BBA','Barging','Dede Darmawan','Malam','SWA-101','Barging',2744.4,2752.5,8.1,0,'Barging'],
+  ['2026-01-23','SEN','General','Alief','Siang','SPC-104','Lambung pasir, ratakan tumpukan dekat workshop',1350.8,1359,8.2,250,'Lambung pasir, ratakan tumpukan dekat workshop'],
+  ['2026-01-23','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2415,2418,3,200,'Triming coal'],
+  ['2026-01-23','BC','Langsir','Alimuddin','Siang','SBD-103','General',2418.1,2419.2,1.1,0,'General'],
+  ['2026-01-23','BC','Langsir','Suntoko','Siang','SWA-102','General',2630.7,2633,2.3,0,'General'],
+  ['2026-01-23','BC','Langsir','Hairul','Siang','SWA-101','Langsir',2752.5,2755.6,3.1,185,'Langsir'],
+  ['2026-01-23','BC','Barging','Husen','Malam','SBD-103','Barging',2419.2,2426.6,7.4,140,'Barging'],
+  ['2026-01-23','BC','Barging','Alimuddin','Malam','SWA-102','Barging',2633,2640.7,7.7,259,'Barging'],
+  ['2026-01-23','BC','Barging','Hairul','Malam','SWA-101','Barging',2755.6,2763.2,7.6,0,'Barging'],
+  ['2026-01-24','SEN','General','Alief','Siang','SPC-104','Lambung pasir, pancang',1359,1366.3,7.3,0,'Lambung pasir, pancang'],
+  ['2026-01-24','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2426.9,2434.4,7.5,274,'Triming coal'],
+  ['2026-01-24','BC','Langsir','Suntoko','Siang','SWA-102','Lambung',2640.7,2648.1,7.4,416,'Lambung'],
+  ['2026-01-24','BC','Langsir','Hairul','Siang','SWA-101','Langsir',2763.2,2768.2,5,141,'Langsir'],
+  ['2026-01-24','BC','Langsir','Suntoko','Malam','SWA-102','Barging',2648.1,2651.3,3.2,141,'Barging'],
+  ['2026-01-25','SEN','General','Alief','Siang','SPC-104','Pancang, lambung batu',1366.3,1369.6,3.3,0,'Pancang, lambung batu'],
+  ['2026-01-25','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2434.8,2438.4,3.6,17,'Triming coal'],
+  ['2026-01-25','BC','Barging','Husen','Siang','SWA-102','Barging',2651.3,2655.7,4.4,250,'Barging'],
+  ['2026-01-25','BC','Barging','Hairul','Siang','SWA-101','Barging',2768.2,2771.7,3.5,0,'Barging'],
+  ['2026-01-25','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging',2771.7,2776.1,4.4,228,'Barging'],
+  ['2026-01-25','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2441.8,2447.9,6.1,166,'Triming coal'],
+  ['2026-01-25','BC','Langsir','Suntoko','Malam','SWA-102','Langsi',2655.7,2661,5.3,0,'Langsi'],
+  ['2026-01-26','SEN','General','Alief','Siang','SPC-104','Lambung pasir',1369.6,1376.2,6.6,0,'Lambung pasir'],
+  ['2026-01-26','BC','Langsir','Husen','Siang','SBD-103','Melangsir',2447.9,2453,5.1,64,'Melangsir'],
+  ['2026-01-26','BC','Langsir','Jhohan','Siang','SWA-102','Langsir coal bc',2661,2663.3,2.3,0,'Langsir coal bc'],
+  ['2026-01-26','BC','Triming','Alimuddin','Siang','SWA-101','Triming',2780.1,2782.2,2.1,0,'Triming'],
+  ['2026-01-26','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2453,2461.5,8.5,86,'Triming coal'],
+  ['2026-01-26','BC','Barging','Suntoko','Malam','SWA-102','Barging',2663.3,2673.3,10,210,'Barging'],
+  ['2026-01-26','BBA','Barging','Hairul','Malam','SWA-101','Bargng',2782.2,2791.2,9,152,'Bargng'],
+  ['2026-01-27','SEN','General','Alief','Siang','SPC-104','Lambung pasir, batu',1376.2,1384.3,8.1,0,'Lambung pasir, batu'],
+  ['2026-01-27','BC','Triming','Husen','Siang','SBD-103','Triming',2461.5,2469.4,7.9,153,'Treming'],
+  ['2026-01-27','BBA','Barging','Alimuddin','Siang','SWA-102','Barging',2673.3,2681,7.7,269,'Barging'],
+  ['2026-01-27','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging dan triming',2791.2,2799.3,8.1,0,'Barging dan triming'],
+  ['2026-01-27','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2469.4,2476.6,7.2,96,'Triming coal'],
+  ['2026-01-27','BBA','General','Suntoko','Malam','SWA-102','Barging',2681,2690,9,0,'Barging'],
+  ['2026-01-27','BBA','Barging','Hairul','Malam','SWA-101','Barging',2799.3,2808.4,9.1,174,'Barging'],
+  ['2026-01-28','BC','Triming','Dede Darmawan','Siang','SPC-104','Triming',1384.3,1392.5,8.2,191,'Triming'],
+  ['2026-01-28','BC','General','Husen','Siang','SBD-103','Sekrap jln',2476.6,2479.3,2.7,84,'Sekrap jln'],
+  ['2026-01-28','BC','Langsir','Jhohan','Siang','SWA-102','Langsir coal bc',2690,2693,3,206,'Langsir coal bc'],
+  ['2026-01-28','BBA','Langsir','Alimuddin','Siang','SWA-101','Langsir',2808.4,2810.3,1.9,304,'Langsir'],
+  ['2026-01-28','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2479.3,2487.2,7.9,0,'Triming coal'],
+  ['2026-01-28','BBA','Langsir','Suntoko','Malam','SWA-102','Barging',2693,2699.6,6.6,0,'Barging'],
+  ['2026-01-29','BBA','Triming','Dede Darmawan','Siang','SPC-104','Triming',1392.5,1397,4.5,0,'Triming'],
+  ['2026-01-29','BC','Triming','Husen','Siang','SBD-103','Treming',2487.2,2495.1,7.9,110,'Treming'],
+  ['2026-01-29','BBA','Barging','Alimuddin','Siang','SWA-102','Barging',2699.6,2707.4,7.8,370,'Barging'],
+  ['2026-01-29','BBA','Barging','Dede Darmawan','Siang','SWA-101','Barging',2819.3,2824.1,4.8,0,'Barging'],
+  ['2026-01-29','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2495.1,2502.2,7.1,0,'Triming coal'],
+  ['2026-01-29','BBA','Langsir','Suntoko','Malam','SWA-102','Langsir',2707.4,2715.5,8.1,0,'Langsir'],
+  ['2026-01-29','BC','Triming','Hairul','Malam','SWA-101','Trimming',2824.1,2829.5,5.4,313,'Trimming'],
+  ['2026-01-30','BC','Triming','Dede Darmawan','Siang','SPC-104','Triming',1397,1402.8,5.8,162,'Triming'],
+  ['2026-01-30','BC','Langsir','Jhohan','Siang','SWA-102','Langsir pasir dan triming coal bc',2715.5,2721,5.5,345,'Langsir pasir dan triming coal bc'],
+  ['2026-01-30','BC','Triming','Alimuddin','Siang','SWA-101','Triming',2829.5,2836.3,6.8,206,'Triming'],
+  ['2026-01-30','BBA','Langsir','Suntoko','Malam','SPC-104','Lambung',1402.8,1410.5,7.7,0,'Lambung'],
+  ['2026-01-30','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2502.2,2506.3,4.1,219,'Triming coal'],
+  ['2026-01-30','BC','Triming','Hairul','Malam','SWA-101','Trimming',2836.3,2844.4,8.1,0,'Trimming'],
+  ['2026-01-31','BC','Triming','Dede Darmawan','Siang','SPC-104','Triming',1410.5,1419,8.5,271,'Triming'],
+  ['2026-01-31','BC','General','Alimuddin','Siang','SBD-103','Dozing',2506.3,2507.3,1,75,'Dozing'],
+  ['2026-01-31','BC','Langsir','Jhohan','Siang','SWA-102','Langsir coal bc',2721,2722.7,1.7,0,'Langsir coal bc'],
+  ['2026-01-31','BC','Langsir','Alimuddin','Siang','SWA-102','Langsir',2722.7,2727,4.3,0,'Langsir'],
+  ['2026-02-01','BBA','Barging','Husen','Siang','SBD-103','Barging',2507.6,2511.1,3.5,0,'Barging'],
+  ['2026-02-01','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2511.1,2515.8,4.7,0,'Triming coal'],
+  ['2026-02-01','BBA','Barging','Alimuddin','Siang','SWA-102','Barging',2727,2731,4,0,'Barging'],
+  ['2026-02-01','BBA','Langsir','Suntoko','Siang','SWA-102','Barging',2731,2735.2,4.2,366,'Barging'],
+  ['2026-02-01','BBA','Barging','Dede Darmawan','Siang','SWA-101','Barging',2844.4,2850.5,6.1,307,'Barging'],
+  ['2026-02-01','BBA','Barging','Husen','Malam','SBD-103','Barging',2515.8,2518.5,2.7,216,'Barging'],
+  ['2026-02-01','BBA','Barging','Husen','Malam','SWA-102','Barging',2735.2,2739.3,4.1,0,'Barging'],
+  ['2026-02-01','BBA','Barging','Hairul','Malam','SWA-101','Barging',2850.5,2856.5,6,0,'Barging'],
+  ['2026-02-02','BC','Triming','Dede Darmawan','Siang','SPC-104','Triming',1419,1422.7,3.7,0,'Triming'],
+  ['2026-02-02','BBA','General','Suntoko','Siang','SPC-104','Barging',1422.7,1426.1,3.4,0,'Barging'],
+  ['2026-02-02','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2518.5,2522.5,4,0,'Triming coal'],
+  ['2026-02-02','BBA','Langsir','Suntoko','Siang','SWA-102','Barging',2739.3,2740.5,1.2,0,'Barging'],
+  ['2026-02-02','BBA','Barging','Dede Darmawan','Siang','SWA-101','Barging',2856.5,2862.5,6,0,'Barging'],
+  ['2026-02-02','BBA','Langsir','Hairul','Malam','SPC-104','Langsir',1426.1,1433.5,7.4,0,'Langsir'],
+  ['2026-02-02','BBA','Langsir','Alimuddin','Malam','SWA-102','Langsir',2740.5,2745.5,5,0,'Langsir'],
+  ['2026-02-03','BC','General','Suntoko','Siang','SPC-104','Langsir',1433.5,1440.1,6.6,240,'Langsir'],
+  ['2026-02-03','BC','Langsir','Jhohan','Siang','SWA-102','Langsir coal bc',2745.5,2752.6,7.1,329,'Langsir coal bc'],
+  ['2026-02-03','BC','Triming','Miki Mustakim','Siang','SWA-101','Triming coal',2862.9,2865.7,2.8,387,'Triming coal'],
+  ['2026-02-03','BC','Triming','Dede Darmawan','Malam','SPC-104','Triming',1440.1,1445.5,5.4,0,'Triming'],
+  ['2026-02-03','BC','Langsir','Husen','Malam','SWA-102','Langsir',2752.6,2760.5,7.9,0,'Langsir'],
+  ['2026-02-03','BC','Langsir','Hairul','Malam','SWA-101','Langsir',2865.7,2872.7,7,0,'Langsir'],
+  ['2026-02-04','SEN','General','Dede Darmawan','Malam','SPC-104','General',1445.5,1450.8,5.3,0,'General'],
+  ['2026-02-04','BC','Langsir','Jhohan','Malam','SWA-102','Langsir coal bc',2760.5,2762.7,2.2,366,'Langsir coal bc'],
+  ['2026-02-04','BC','Langsir','Husen','Malam','SWA-101','Langsir',2872.7,2874.8,2.1,244,'Langsir'],
+  ['2026-02-06','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2523.9,2528.9,5,0,'Triming'],
+  ['2026-02-06','BC','Triming','Hairul','Siang','SWA-101','Trimming',2874.8,2880,5.2,0,'Trimming'],
+  ['2026-02-06','SEN','General','Dede Darmawan','Malam','SPC-104','General',1450.8,1455.1,4.3,0,'General'],
+  ['2026-02-06','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',2762.7,2772.7,10,0,'Barging coal bc'],
+  ['2026-02-06','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging coal bc',2880,2888.6,8.6,0,'Barging coal bc'],
+  ['2026-02-07','BC','Barging','Hengki Ramadan','Siang','SBD-103','Barging',2529.6,2538.9,9.3,373,'Barging'],
+  ['2026-02-07','BC','Barging','Alimuddin','Siang','SWA-102','Barging',2772.7,2777.2,4.5,0,'Barging'],
+  ['2026-02-07','BC','Barging','Husen','Siang','SWA-102','Barging',2777.2,2781.8,4.6,435,'Barging'],
+  ['2026-02-07','BC','Barging','Hairul','Siang','SWA-101','Barging',2888.6,2897.4,8.8,499,'Barging'],
+  ['2026-02-07','BC','Barging','Dede Darmawan','Malam','SPC-104','Barging',1458,1463.5,5.5,0,'Barging'],
+  ['2026-02-07','BC','Barging','Miki Mustakim','Malam','SBD-103','Barging',2538.4,2546.8,8.4,202,'Barging'],
+  ['2026-02-07','BC','Barging','Jhohan','Malam','SWA-102','Barging bc',2781.8,2782.8,1,0,'Barging bc'],
+  ['2026-02-07','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging coal bc',2897.4,2901.1,3.7,0,'Barging coal bc'],
+  ['2026-02-07','BC','Barging','Jhohan','Malam','SWA-101','Barging coal bc',2901.1,2907.2,6.1,0,'Barging coal bc'],
+  ['2026-02-08','BC','General','Hairul','Siang','SPC-104','General dan barging',1463.5,1467.7,4.2,0,'General dan barging'],
+  ['2026-02-08','BC','Barging','Hengki Ramadan','Siang','SBD-103','Barging',2546.8,2550.8,4,187,'Barging'],
+  ['2026-02-08','BC','General','Husen','Siang','SBD-103','General',2550.8,2552.5,1.7,0,'General'],
+  ['2026-02-08','BC','Barging','Alimuddin','Siang','SWA-101','Barging',2907.2,2912.9,5.7,367,'Barging'],
+  ['2026-02-09','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2552.5,2554.5,2,0,'Triming'],
+  ['2026-02-09','BC','Langsir','Alimuddin','Siang','SWA-102','Langsir',2783.3,2785.6,2.3,0,'Langsir'],
+  ['2026-02-10','BC','Langsir','Hairul','Siang','SPC-104','Langsir',1467.7,1470.3,2.6,0,'Langsir'],
+  ['2026-02-10','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2557.7,2559.1,1.4,0,'Triming'],
+  ['2026-02-10','BC','General','Husen','Siang','SBD-103','General',2559.1,2560.6,1.5,0,'General'],
+  ['2026-02-10','BC','Langsir','Hairul','Siang','SWA-101','Langsir',2912.9,2919.4,6.5,0,'Langsir'],
+  ['2026-02-11','SEN','General','Alief','Siang','SPC-104','Repair',1472.9,1479.6,6.7,0,'Repair'],
+  ['2026-02-11','BC','General','Husen','Siang','SBD-103','General',2560.6,2567.8,7.2,286,'General'],
+  ['2026-02-11','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bc',2919.4,2920.8,1.4,357,'Triming coal bc'],
+  ['2026-02-12','SEN','General','Alief','Siang','SPC-104','Repair',1479.6,1487.1,7.5,0,'Repair'],
+  ['2026-02-12','BC','General','Husen','Siang','SBD-103','General',2567.8,2575,7.2,162,'General'],
+  ['2026-02-12','BC','Langsir','Jhohan','Siang','SWA-102','Langsir',2785.6,2793,7.4,434,'Langsir'],
+  ['2026-02-12','SEN','Langsir','Dede Darmawan','Siang','SWA-101','Lansir pasir',2920.8,2921.6,0.8,0,'Lansir pasir'],
+  ['2026-02-12','DTJ','Barging','Hairul','Malam','SWA-102','Barging dan langsir',2793,2798.3,5.3,0,'Barging dan langsir'],
+  ['2026-02-13','SEN','Langsir','Alief','Siang','SPC-104','Repair',1487.1,1492.3,5.2,278,'Repair'],
+  ['2026-02-13','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal BC',2575,2579.3,4.3,88,'Triming coal BC'],
+  ['2026-02-13','DTJ','Barging','Husen','Siang','SWA-102','Barging',2798.4,2800.7,2.3,0,'Barging'],
+  ['2026-02-13','DTJ','Barging','Dede Darmawan','Siang','SWA-101','Barging bba',2921.6,2928.3,6.7,224,'Barging bba'],
+  ['2026-02-13','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2579.3,2583.8,4.5,0,'Triming'],
+  ['2026-02-13','BBA','Triming','Alimuddin','Malam','SWA-102','Triming',2800.7,2808.9,8.2,0,'Triming'],
+  ['2026-02-13','DTJ','Barging','Hairul','Malam','SWA-101','Barging',2928.3,2939,10.7,0,'Barging'],
+  ['2026-02-14','SEN','General','Dede Darmawan','Siang','SPC-104','General',1492.3,1494.2,1.9,0,'General'],
+  ['2026-02-14','BBA','Barging','Husen','Siang','SBD-103','Barging',2583.8,2593.3,9.5,174,'Barging'],
+  ['2026-02-14','BC','Barging','Jhohan','Siang','SWA-102','Barging coal bba',2809.9,2818.2,8.3,378,'Barging coal bba'],
+  ['2026-02-14','DTJ','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bba',2939,2941.1,2.1,0,'Barging coal bba'],
+  ['2026-02-14','BBA','Barging','Dede Darmawan','Siang','SWA-101','Barging dan triming coal bba',2941.1,2948.6,7.5,266,'Barging dan triming coal bba'],
+  ['2026-02-14','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2593.3,2601,7.7,0,'Triming'],
+  ['2026-02-14','BBA','Barging','Alimuddin','Malam','SWA-102','Barging',2818.2,2821,2.8,0,'Barging'],
+  ['2026-02-14','BBA','Barging','Hairul','Malam','SWA-101','Barging dan trimming',2948.6,2956.1,7.5,0,'Barging dan trimming'],
+  ['2026-02-15','SEN','General','Alief','Siang','SPC-104','Support erection fuel tank',1494.2,1501.5,7.3,0,'Support erection fuel tank'],
+  ['2026-02-15','BC','Triming','Husen','Siang','SBD-103','Treming',2601,2609.9,8.9,362,'Treming'],
+  ['2026-02-15','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bar bba dan bar bc',2821,2830.1,9.1,298,'Triming coal bar bba dan bar bc'],
+  ['2026-02-15','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bba dan bc',2956.1,2965.5,9.4,350,'Triming coal bba dan bc'],
+  ['2026-02-15','BC','Triming','Hengki Ramadan','Malam','SBD-103','TRIMING',2609.9,2618.5,8.6,0,'TRIMING'],
+  ['2026-02-15','BBA','Barging','Alimuddin','Malam','SWA-102','Barging',2830.1,2837.5,7.4,0,'Barging'],
+  ['2026-02-15','BBA','Barging','Hairul','Malam','SWA-101','Barging',2965.5,2973.1,7.6,0,'Barging'],
+  ['2026-02-16','SEN','General','Alief','Siang','SPC-104','Repair',1501.5,1511,9.5,178,'Repair'],
+  ['2026-02-16','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming',2618.5,2628.1,9.6,298,'Triming'],
+  ['2026-02-16','BC','Barging','Jhohan','Siang','SWA-102','Triming dan barging bba',2837.5,2847.1,9.6,133,'Triming dan barging bba'],
+  ['2026-02-16','BBA','Triming','Dede Darmawan','Siang','SWA-101','Triming dan barging coal bba',2973.1,2983,9.9,182,'Triming dan barging coal bba'],
+  ['2026-02-16','BC','Triming','Hengki Ramadan','Malam','SBD-103','TRIMING',2628.1,2631.7,3.6,194,'TRIMING'],
+  ['2026-02-16','BBA','Barging','Husen','Malam','SBD-103','Barging',2631.7,2638.3,6.6,0,'Barging'],
+  ['2026-02-16','BBA','Barging','Alimuddin','Malam','SWA-102','Barging',2847.1,2856.1,9,250,'Barging'],
+  ['2026-02-16','BBA','Barging','Hairul','Malam','SWA-101','Barging',2983,2991.9,8.9,185,'Barging'],
+  ['2026-02-17','SEN','General','Alief','Siang','SPC-104','Repair',1511,1520,9,137,'Repair'],
+  ['2026-02-17','BBA','Barging','Miki Mustakim','Siang','SBD-103','Barging',2638.3,2646.8,8.5,173,'Barging'],
+  ['2026-02-17','BC','Barging','Jhohan','Siang','SWA-102','BARGING COAL BBA',2856.1,2864.1,8,188,'BARGING COAL BBA'],
+  ['2026-02-17','BBA','Barging','Dede Darmawan','Siang','SWA-101','Triming dan barging coal bba dan bc',2991.9,3000.6,8.7,377,'Triming dan barging coal bba dan bc'],
+  ['2026-02-17','BBA','Triming','Hengki Ramadan','Malam','SBD-103','TRIMING',2646.8,2655.8,9,214,'TRIMING'],
+  ['2026-02-17','BBA','Barging','Husen','Malam','SWA-102','Barging',2864.1,2871.5,7.4,231,'Barging'],
+  ['2026-02-17','BBA','Barging','Hairul','Malam','SWA-101','Barging',3000.6,3008.6,8,0,'Barging'],
+  ['2026-02-18','SEN','General','Alief','Siang','SPC-104','General',1520,1528.2,8.2,0,'General'],
+  ['2026-02-18','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming BBA',2655.8,2664.1,8.3,294,'Triming BBA'],
+  ['2026-02-18','BBA','Triming','Suntoko','Siang','SWA-102','Barging',2871.5,2878.7,7.2,241,'Barging'],
+  ['2026-02-18','BBA','Barging','Alimuddin','Siang','SWA-101','Barging',3008.6,3015.6,7,253,'Barging'],
+  ['2026-02-18','BBA','Triming','Husen','Malam','SWA-102','Treming',2878.7,2883.8,5.1,0,'Treming'],
+  ['2026-02-18','BBA','Triming','Dede Darmawan','Malam','SWA-101','Triming',3015.6,3021.8,6.2,51,'Triming'],
+  ['2026-02-19','BBA','Langsir','Alief','Siang','SPC-104','Lambung batu',1528.2,1535.3,7.1,227,'Lambung batu'],
+  ['2026-02-19','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming bba',2664.1,2666.7,2.6,71,'Triming bba'],
+  ['2026-02-19','BBA','Triming','Alimuddin','Siang','SBD-103','Triming',2666.7,2670,3.3,0,'Triming'],
+  ['2026-02-19','BC','General','Suntoko','Siang','SWA-102','Lambung',2883.8,2890.8,7,205,'Lambung'],
+  ['2026-02-19','SEN','General','Dede Darmawan','Malam','SPC-104','General',1535.3,1536.1,0.8,0,'General'],
+  ['2026-02-19','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming bba',2670,2678.6,8.6,0,'Triming bba'],
+  ['2026-02-19','BBA','Triming','Husen','Malam','SWA-102','Treming',2890.8,2899.1,8.3,0,'Treming'],
+  ['2026-02-19','BBA','Triming','Dede Darmawan','Malam','SWA-101','Triming',3021.8,3030.3,8.5,197,'Triming'],
+  ['2026-02-20','SEN','Langsir','Alief','Siang','SPC-104','General',1536.1,1541.9,5.8,0,'General'],
+  ['2026-02-20','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2678.6,2681,2.4,0,'Triming'],
+  ['2026-02-20','BBA','Langsir','Suntoko','Siang','SWA-102','Lambung',2899.1,2901.7,2.6,380,'Lambung'],
+  ['2026-02-20','BBA','Triming','Alimuddin','Siang','SWA-102','Triming',2901.7,2905,3.3,0,'Triming'],
+  ['2026-02-20','BBA','Triming','Hairul','Siang','SWA-101','Trimming',3030.3,3036.3,6,264,'Trimming'],
+  ['2026-02-21','SEN','Langsir','Alief','Siang','SPC-104','General',1541.9,1548.2,6.3,230,'General'],
+  ['2026-02-21','BBA','Triming','Hairul','Siang','SWA-101','Trimming',3036.3,3039.3,3,0,'Trimming'],
+  ['2026-02-21','BC','Langsir','','Siang','SBD-103','Standby',0,0,0,266,'Tidak ada laporan'],
+  ['2026-02-22','SEN','General','Alief','Siang','SPC-104','General',1548.2,1557.3,9.1,0,'General'],
+  ['2026-02-22','BC','Triming','Alimuddin','Siang','SWA-102','Triming',2907.5,2914.1,6.6,304,'Triming'],
+  ['2026-02-22','BBA','Triming','Hairul','Siang','SWA-101','Trimming',3039.3,3047.3,8,300,'Trimming'],
+  ['2026-02-22','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2684.2,2692.5,8.3,146,'Triming coal'],
+  ['2026-02-22','BBA','Triming','Suntoko','Malam','SWA-102','Triming coal bba dan bc',2914.1,2921.9,7.8,0,'Triming coal bba dan bc'],
+  ['2026-02-22','BBA','Triming','Dede Darmawan','Malam','SWA-101','Triming coal bc dan bba',3047.3,3057.5,10.2,0,'Triming coal bc dan bba'],
+  ['2026-02-23','SEN','Langsir','Alief','Siang','SPC-104','General',1557.3,1563.5,6.2,207,'General'],
+  ['2026-02-23','BBA','General','Hengki Ramadan','Siang','SBD-103','General',2692.5,2699.2,6.7,123,'General'],
+  ['2026-02-23','BBA','Triming','Alimuddin','Siang','SWA-102','Triming',2921.9,2928.9,7,240,'Triming'],
+  ['2026-02-23','BBA','Triming','Hairul','Siang','SWA-101','Trimming',3057.5,3065.5,8,326,'Trimming'],
+  ['2026-02-23','BBA','General','Suntoko','Malam','SPC-104','Evakuasi DT d room',1563.5,1564.5,1,0,'Evakuasi DT d room'],
+  ['2026-02-23','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2699.2,2705.5,6.3,133,'Triming coal'],
+  ['2026-02-23','BC','General','Suntoko','Malam','SWA-102','Triming. Lambung coal BBA BC',2928.9,2937,8.1,0,'Triming. Lambung coal BBA BC'],
+  ['2026-02-24','BBA','Triming','Hengki Ramadan','Siang','SBD-103','TRIMING',2705.5,2712.6,7.1,84,'TRIMING'],
+  ['2026-02-24','BBA','Triming','Alimuddin','Siang','SWA-102','Triming',2937,2940,3,214,'Triming'],
+  ['2026-02-24','BBA','Triming','Hairul','Siang','SWA-101','Trimming',3065.5,3073.3,7.8,202,'Trimming'],
+  ['2026-02-24','SEN','General','Robert','Siang','SPC-104','Standby',0,0,0,89,'Tidak ada laporan'],
+  ['2026-02-24','SEN','General','Robert','Siang','SPC-104','Standby',0,0,0,89,'Tidak ada laporan'],
+  ['2026-02-24','BC','General','Suntoko','Malam','SWA-102','Triming coal bc dan bba',2940,2948.4,8.4,0,'Triming coal bc dan bba'],
+  ['2026-02-25','SEN','General','Alief','Siang','SPC-104','Repair',1564.5,1569.9,5.4,0,'Repair'],
+  ['2026-02-25','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2714.1,2723.4,9.3,216,'Triming'],
+  ['2026-02-25','BBA','Triming','Dede Darmawan','Siang','SWA-102','Triming coal bba',2948.4,2957.5,9.1,142,'Triming coal bba'],
+  ['2026-02-25','BBA','Triming','Hairul','Siang','SWA-101','Trimming',3079.3,3087.6,8.3,245,'Trimming'],
+  ['2026-02-25','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2723.4,2730.6,7.2,0,'Triming coal'],
+  ['2026-02-25','BBA','General','Suntoko','Malam','SWA-102','Barging',2957.5,2965.5,8,277,'Barging'],
+  ['2026-02-25','BBA','Barging','Alimuddin','Malam','SWA-101','Barging',3087.6,3095.3,7.7,0,'Barging'],
+  ['2026-02-26','SEN','General','Alief','Siang','SPC-104','Repair',1569.9,1575,5.1,0,'Repair'],
+  ['2026-02-26','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2730.6,2734.3,3.7,0,'Triming'],
+  ['2026-02-26','BBA','Triming','Alief','Siang','SBD-103','Triming',2734.3,2739,4.7,258,'Triming'],
+  ['2026-02-26','BBA','Barging','Dede Darmawan','Siang','SWA-102','Triming dan barging bba dan bc',2965.5,2975.5,10,266,'Triming dan barging bba dan bc'],
+  ['2026-02-26','DTJ','Barging','Hairul','Siang','SWA-101','Barging',3095.3,3099.3,4,152,'Barging'],
+  ['2026-02-26','BBA','Barging','Hairul','Siang','SWA-101','Barging',3099.3,3104.6,5.3,333,'Barging'],
+  ['2026-02-26','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2739,2748.5,9.5,0,'Triming'],
+  ['2026-02-26','BBA','Triming','Suntoko','Malam','SWA-102','Bargimg',2975.5,2984.9,9.4,140,'Bargimg'],
+  ['2026-02-27','SEN','General','Alief','Siang','SPC-104','General',1575,1582.6,7.6,0,'General'],
+  ['2026-02-27','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2748.5,2755.6,7.1,255,'Triming coal'],
+  ['2026-02-27','BBA','Barging','Dede Darmawan','Siang','SWA-102','Barging coal bba jetty sen',2984.9,2988.3,3.4,164,'Barging coal bba jetty sen'],
+  ['2026-02-27','BBA','Barging','Hairul','Siang','SWA-101','Barging',3114,3117,3,153,'Barging'],
+  ['2026-02-27','DTJ','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bba jetty dtj',3117,3121.3,4.3,279,'Barging coal bba jetty dtj'],
+  ['2026-02-27','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2755.6,2763.6,8,0,'Triming'],
+  ['2026-02-27','BBA','Barging','Alimuddin','Malam','SWA-102','Barging',2988.3,2996.3,8,0,'Barging'],
+  ['2026-02-27','BBA','Barging','Hairul','Malam','SWA-101','Barging',3121.3,3129.3,8,0,'Barging'],
+  ['2026-02-28','SEN','General','Alief','Siang','SPC-104','General',1582.6,1591.5,8.9,283,'General'],
+  ['2026-02-28','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2763.6,2770.2,6.6,220,'Triming coal'],
+  ['2026-02-28','BBA','General','Suntoko','Siang','SWA-102','Barging',2996.3,3005.2,8.9,293,'Barging'],
+  ['2026-02-28','DTJ','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bba (jetty dtj)',3129.3,3131,1.7,0,'Barging coal bba (jetty dtj)'],
+  ['2026-02-28','BBA','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bba (jetty sen)',3131,3138.7,7.7,231,'Barging coal bba (jetty sen)'],
+  ['2026-02-28','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2770.2,2781,10.8,0,'Triming'],
+  ['2026-02-28','BBA','Barging','Alimuddin','Malam','SWA-102','Barging',3005.2,3015.2,10,265,'Barging'],
+  ['2026-02-28','BBA','Barging','Hairul','Malam','SWA-101','Barging',3138.7,3149,10.3,557,'Barging'],
+  ['2026-03-01','SEN','General','Alief','Siang','SPC-104','General',1591.5,1599.3,7.8,0,'General'],
+  ['2026-03-01','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2781,2789.1,8.1,255,'Triming coal'],
+  ['2026-03-01','BBA','General','Suntoko','Siang','SWA-102','Barging',3015.2,3019.9,4.7,378,'Barging'],
+  ['2026-03-01','DTJ','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bba (jetty dtj)',3149,3155.5,6.5,0,'Barging coal bba (jetty dtj)'],
+  ['2026-03-01','BBA','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bba (jetty sen)',3155.5,3158.3,2.8,285,'Barging coal bba (jetty sen)'],
+  ['2026-03-01','BBA','Triming','Alimuddin','Malam','SWA-102','Barging & triming',3019.9,3029.6,9.7,0,'Barging & triming'],
+  ['2026-03-01','BBA','Barging','Hairul','Malam','SWA-101','Barging',3158.3,3166.3,8,365,'Barging'],
+  ['2026-03-01','DTJ','Barging','Hairul','Malam','SWA-101','Barging',3166.3,3168.8,2.5,0,'Barging'],
+  ['2026-03-02','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2789.1,2798.6,9.5,100,'Triming coal'],
+  ['2026-03-02','BBA','Triming','Suntoko','Siang','SWA-102','Barging',3029.6,3039.3,9.7,237,'Barging'],
+  ['2026-03-02','DTJ','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bba (jetty dtj)',3168.8,3179.5,10.7,786,'Barging coal bba (jetty dtj)'],
+  ['2026-03-02','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2798.6,2808.1,9.5,171,'Triming'],
+  ['2026-03-02','BBA','Barging','Alimuddin','Malam','SWA-102','Barging',3039.3,3044.3,5,211,'Barging'],
+  ['2026-03-02','DTJ','Barging','Hairul','Malam','SWA-101','Batging',3179.5,3189.2,9.7,0,'Barging'],
+  ['2026-03-03','BBA','Barging','Alief','Siang','SPC-104','Barging',1599.3,1604.3,5,0,'Barging'],
+  ['2026-03-03','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2808.1,2813.4,5.3,0,'Triming coal'],
+  ['2026-03-03','BC','Triming','Suntoko','Siang','SWA-102','Barging',3044.3,3049.7,5.4,0,'Barging'],
+  ['2026-03-03','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2813.4,2822.8,9.4,216,'Triming'],
+  ['2026-03-03','BBA','Barging','Dede Darmawan','Malam','SWA-102','Barging coal bba (jetty sen)',3049.7,3053.5,3.8,0,'Barging coal bba (jetty sen)'],
+  ['2026-03-03','DTJ','Barging','Dede Darmawan','Malam','SWA-102','Barging coal bba (jetty dtj)',3053.5,3060,6.5,0,'Barging coal bba (jetty dtj)'],
+  ['2026-03-03','BBA','Barging','Hairul','Malam','SWA-101','Barging',3189.2,3193.2,4,0,'Barging'],
+  ['2026-03-03','DTJ','Barging','Hairul','Malam','SWA-101','Barging',3193.2,3200.3,7.1,607,'Barging'],
+  ['2026-03-04','SEN','General','Alief','Siang','SPC-104','General',1604.3,1612.3,8,338,'General'],
+  ['2026-03-04','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2822.8,2831,8.2,170,'Triming coal'],
+  ['2026-03-04','BBA','Langsir','Suntoko','Siang','SWA-102','Lambung',3060,3066.9,6.9,516,'Lambung'],
+  ['2026-03-04','BBA','Triming','Alimuddin','Siang','SWA-101','Triming',3200.3,3208.8,8.5,575,'Triming'],
+  ['2026-03-04','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2831,2839.7,8.7,94,'Triming'],
+  ['2026-03-04','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bba',3066.9,3075.1,8.2,0,'Triming coal bba'],
+  ['2026-03-05','BBA','Langsir','Hairul','Siang','SPC-104','Bantu langsir batu',1612.3,1620.3,8,0,'Bantu langsir batu'],
+  ['2026-03-05','BBA','Triming','Alimuddin','Siang','SBD-103','Triming',2839.7,2847.7,8,128,'Triming'],
+  ['2026-03-05','BBA','Triming','Alief','Siang','SWA-101','Triming',3208.8,3216.8,8,190,'Triming'],
+  ['2026-03-05','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2847.7,2856.9,9.2,178,'Triming coal'],
+  ['2026-03-05','BC','Triming','Dede Darmawan','Malam','SWA-101','Triming coal bba dan bc',3216.8,3226.2,9.4,0,'Triming coal bba dan bc'],
+  ['2026-03-06','SEN','General','Hairul','Siang','SPC-104','Langsir pasir',1620.3,1624.8,4.5,170,'Langsir pasir'],
+  ['2026-03-06','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2856.9,2864.3,7.4,165,'Triming'],
+  ['2026-03-06','BBA','Triming','Alimuddin','Siang','SWA-102','Triming',3075.1,3083.1,8,305,'Triming'],
+  ['2026-03-06','BBA','Triming','Alief','Siang','SWA-101','Triming',3226.2,3231.8,5.6,136,'Triming'],
+  ['2026-03-06','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2864.3,2872.3,8,119,'Triming coal'],
+  ['2026-03-06','BC','Triming','Suntoko','Malam','SWA-102','Barging',3083.1,3092.3,9.2,0,'Barging'],
+  ['2026-03-06','BC','Barging','Jhohan','Malam','SWA-101','Barging coal bc',3231.8,3241.1,9.3,211,'Barging coal bc'],
+  ['2026-03-07','SEN','General','Alief','Siang','SPC-104','General',1624.8,1633.2,8.4,0,'General'],
+  ['2026-03-07','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2872.3,2879.7,7.4,0,'Triming'],
+  ['2026-03-07','BC','Barging','Husen','Siang','SWA-102','Barging',3092.3,3100.6,8.3,445,'Barging'],
+  ['2026-03-07','BC','Barging','Hairul','Siang','SWA-101','Barging',3241.1,3249.1,8,217,'Barging'],
+  ['2026-03-07','BBA','General','Suntoko','Malam','SPC-104','Efakuasi fuel trek',1633.2,1635.3,2.1,0,'Efakuasi fuel trek'],
+  ['2026-03-07','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2879.7,2887.8,8.1,256,'Triming coal'],
+  ['2026-03-07','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bba',3100.6,3108,7.4,0,'Triming coal bba'],
+  ['2026-03-08','SEN','General','Alief','Siang','SPC-104','General',1635.3,1643.7,8.4,217,'General'],
+  ['2026-03-08','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2887.8,2891.5,3.7,109,'Triming'],
+  ['2026-03-08','BBA','Triming','Husen','Siang','SBD-103','Treming',2891.5,2896.4,4.9,0,'Treming'],
+  ['2026-03-08','BBA','Triming','Alimuddin','Siang','SWA-102','Triming',3108,3111.5,3.5,22,'Triming'],
+  ['2026-03-08','BBA','Triming','Hairul','Siang','SWA-101','Trimming',3249.1,3254.1,5,372,'Trimming'],
+  ['2026-03-08','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2896.4,2905.1,8.7,140,'Triming coal'],
+  ['2026-03-08','BBA','General','Suntoko','Malam','SWA-102','Triming coal BBA',3111.5,3121.4,9.9,211,'Triming coal BBA'],
+  ['2026-03-08','BC','Triming','Jhohan','Malam','SWA-101','Triming coAl bba',3254.1,3263.6,9.5,0,'Triming coAl bba'],
+  ['2026-03-09','SEN','General','Alief','Siang','SPC-104','General',1643.7,1651.2,7.5,0,'General'],
+  ['2026-03-09','BBA','Triming','Husen','Siang','SBD-103','Treming',2905,2913.5,8.5,255,'Treming'],
+  ['2026-03-09','BBA','Triming','Hairul','Siang','SWA-101','Trimming',3263.6,3273.2,9.6,462,'Trimming'],
+  ['2026-03-09','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2913.5,2922,8.5,0,'Triming coal'],
+  ['2026-03-09','BBA','General','Suntoko','Malam','SWA-102','Triming coal BBA',3121.4,3131,9.6,160,'Triming coal BBA'],
+  ['2026-03-10','SEN','General','Alief','Siang','SPC-104','General',1651.2,1657.2,6,226,'General'],
+  ['2026-03-10','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2922,2930.1,8.1,165,'Triming'],
+  ['2026-03-10','BBA','Triming','Husen','Siang','SWA-102','Treming',3131.2,3139.4,8.2,220,'Treming'],
+  ['2026-03-10','BBA','Triming','Hairul','Siang','SWA-101','Trimming',3273.2,3281.5,8.3,198,'Trimming'],
+  ['2026-03-10','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming coal',2930.1,2934.8,4.7,0,'Triming coal'],
+  ['2026-03-10','BBA','General','Suntoko','Malam','SWA-102','Triming coal BBA',3139.4,3142.5,3.1,0,'Triming coal BBA'],
+  ['2026-03-10','BC','Triming','Jhohan','Malam','SWA-101','Triming coal bc dan bba',3281.5,3286.3,4.8,0,'Triming coal bc dan bba'],
+  ['2026-03-11','SEN','General','Alief','Siang','SPC-104','Repair',1657.2,1665.3,8.1,81,'Repair'],
+  ['2026-03-11','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2934.8,2940,5.2,220,'Triming'],
+  ['2026-03-11','BC','Triming','Hairul','Siang','SWA-101','Trimming',3286.3,3291.3,5,0,'Trimming'],
+  ['2026-03-12','SEN','General','Alief','Siang','SPC-104','General',1665.3,1673.1,7.8,0,'General'],
+  ['2026-03-12','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',2940,2947.7,7.7,99,'Triming'],
+  ['2026-03-12','BC','Triming','Husen','Siang','SWA-102','Treming',3142.5,3149.7,7.2,155,'Treming'],
+  ['2026-03-12','BC','General','Suntoko','Malam','SWA-102','Triming coal bc dan barging dtj',1349.7,1359.9,10.2,0,'Triming coal bc dan barging dtj'],
+  ['2026-03-12','BC','Triming','Hairul','Malam','SWA-101','Trimming',3291.3,3295.3,4,0,'Trimming'],
+  ['2026-03-12','DTJ','Barging','Hairul','Malam','SWA-101','Barging dtj',3295.3,3301.8,6.5,171,'Barging dtj'],
+  ['2026-03-13','SEN','General','Alief','Siang','SPC-104','General',1673.1,1678.3,5.2,0,'General'],
+  ['2026-03-13','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2947.7,2954.7,7,105,'Triming coal'],
+  ['2026-03-13','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bc',3159.9,3167.5,7.6,183,'Triming coal bc'],
+  ['2026-03-13','BBA','Barging','Husen','Siang','SWA-101','Barging',3301.8,3304.5,2.7,0,'Barging DTJ'],
+  ['2026-03-13','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2954.7,2960.9,6.2,0,'Triming'],
+  ['2026-03-13','BC','Barging','Husen','Malam','SWA-102','Barging',3167.5,3173.4,5.9,212,'Barging'],
+  ['2026-03-13','BC','Barging','Hairul','Malam','SWA-101','Barging bc',3304.5,3310.7,6.2,269,'Barging bc'],
+  ['2026-03-14','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2960.9,2966.9,6,184,'Triming coal'],
+  ['2026-03-14','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2966.9,2975.7,8.8,0,'Triming'],
+  ['2026-03-14','BC','Triming','Husen','Malam','SWA-102','Treming',3173.4,3176.4,3,0,'Treming'],
+  ['2026-03-14','DTJ','Barging','Husen','Malam','SWA-102','Barging',3176.4,3182.1,5.7,185,'Barging DTJ'],
+  ['2026-03-14','BC','Triming','Hairul','Malam','SWA-101','Trimming',3310.7,3312.7,2,0,'Trimming'],
+  ['2026-03-14','BBA','Barging','Hairul','Malam','SWA-101','Barging',3312.7,3319.7,7,315,'Brging'],
+  ['2026-03-14','SEN','General','','','SPC-104','Tidak ada laporan',0,0,0,265,'Tidak ada laporan'],
+  ['2026-03-14','SEN','General','','','SPC-104','Tidak ada laporan',0,0,0,265,'Tidak ada laporan'],
+  ['2026-03-15','SEN','General','Alief','Siang','SPC-104','General',1678.3,1688.9,10.6,0,'General'],
+  ['2026-03-15','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2975.7,2983.9,8.2,281,'Triming coal'],
+  ['2026-03-15','BC','General','Suntoko','Siang','SWA-102','Triming coal bc dan barging',3182.1,3190.2,8.1,183,'Triming coal bc dan barging'],
+  ['2026-03-15','BC','Barging','Jhohan','Siang','SWA-101','Barging coal bc',3319.7,3326,6.3,224,'Barging coal bc'],
+  ['2026-03-15','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2983.9,2990.1,6.2,67,'Triming'],
+  ['2026-03-15','BC','Barging','Husen','Malam','SWA-102','Barging',3190.2,3196.4,6.2,197,'Barging'],
+  ['2026-03-15','BC','Barging','Hairul','Malam','SWA-101','Barging',3326,3332.1,6.1,177,'Barging'],
+  ['2026-03-16','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',2990.1,2995.8,5.7,0,'Triming coal'],
+  ['2026-03-16','BC','General','Suntoko','Siang','SWA-102','Sliperi jalan',3196.4,3197.7,1.3,0,'Sliperi jalan'],
+  ['2026-03-16','BC','Triming','Jhohan','Siang','SWA-101','Triming coal bc',3332.1,3336.1,4,239,'Triming coal bc'],
+  ['2026-03-16','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',2995.8,3004.4,8.6,44,'Triming'],
+  ['2026-03-16','BC','Triming','Husen','Malam','SWA-102','Treming BC',3197.7,3206.5,8.8,206,'Treming BC'],
+  ['2026-03-16','BC','Triming','Hairul','Malam','SWA-101','Trimming',3336.1,3345.1,9,0,'Trimming'],
+  ['2026-03-17','SEN','General','Alief','Siang','SPC-104','Repair',1688.9,1695.6,6.7,0,'Repair'],
+  ['2026-03-17','BC','Langsir','Suntoko','Siang','SWA-102','Triming coal bc',3206.5,3213.6,7.1,214,'Triming coal bc'],
+  ['2026-03-17','BC','Triming','Jhohan','Siang','SWA-101','Triming coal bc',3345.1,3349.7,4.6,218,'Triming coal bc'],
+  ['2026-03-17','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3004.4,3012.8,8.4,74,'Triming'],
+  ['2026-03-17','BC','Triming','Husen','Malam','SWA-102','Treming',3213.6,3221.9,8.3,0,'Treming'],
+  ['2026-03-17','BC','Triming','Hairul','Malam','SWA-101','Trimming',3349.7,3358,8.3,0,'Trimming'],
+  ['2026-03-18','BC','General','Alief','Siang','SPC-104','General',1695.6,1700.3,4.7,255,'General'],
+  ['2026-03-18','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming coal',3012.8,3018.8,6,0,'Triming coal'],
+  ['2026-03-18','BC','General','Suntoko','Siang','SWA-102','Priper jalan dan triming coal Bc',3221.9,3224.1,2.2,0,'Priper jalan dan triming coal Bc'],
+  ['2026-03-18','BC','Triming','','Malam','SBD-103','Triming coal',3019,3025.2,6.2,0,'Triming coal'],
+  ['2026-03-18','BC','Triming','Husen','Malam','SWA-102','Treming BC',3224.1,3227,2.9,0,'Treming BC'],
+  ['2026-03-19','SEN','General','Alief','Siang','SPC-104','General',1700.3,1710.6,10.3,0,'General'],
+  ['2026-03-19','BBA','Triming','Suntoko','Siang','SWA-102','Barging',3227,3236.4,9.4,176,'Barging'],
+  ['2026-03-19','BC','Barging','Jhohan','Siang','SWA-101','Barging coal bba',3358,3367.2,9.2,0,'Barging coal bba'],
+  ['2026-03-19','BBA','Barging','Alfius','Siang','SBD-103','Standby',0,0,0,95,'Standby'],
+  ['2026-03-20','BC','General','Alief','Malam','SPC-104','Prepare batu panas',1710.6,1712.4,1.8,0,'Prepare batu panas'],
+  ['2026-03-24','SEN','General','Alief','Siang','SPC-104','General',1712.4,1720.6,8.2,204,'General'],
+  ['2026-03-24','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3025.2,3034.2,9,85,'Triming'],
+  ['2026-03-24','BC','Barging','Husen','Siang','SWA-102','Barging',3236.4,3245.2,8.8,210,'Barging'],
+  ['2026-03-24','BC','Barging','Hairul','Siang','SWA-101','Barging danteimming',3367.2,3376.3,9.1,717,'Barging danteimming'],
+  ['2026-03-24','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3034.2,3041.1,6.9,0,'Triming'],
+  ['2026-03-24','BC','Triming','Suntoko','Malam','SWA-102','Triming coal bc',3245.2,3254.5,9.3,267,'Triming coal bc'],
+  ['2026-03-25','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3041.1,3048.1,7,206,'Triming'],
+  ['2026-03-25','BC','Triming','Husen','Siang','SWA-102','Treming',3254.5,3258,3.5,213,'Treming'],
+  ['2026-03-25','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bc',3376.3,3379.6,3.3,0,'Triming coal bc'],
+  ['2026-03-25','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3048.1,3056.1,8,0,'Triming'],
+  ['2026-03-25','BC','Triming','Hairul','Malam','SWA-101','Trimming',3379.6,3388.6,9,0,'Trimming'],
+  ['2026-03-26','SEN','General','Alief','Siang','SPC-104','General',1720.6,1729.3,8.7,0,'General'],
+  ['2026-03-26','BC','Triming','Husen','Siang','SBD-103','Treming',3056.1,3061.5,5.4,234,'Treming'],
+  ['2026-03-26','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bc',3258,3262,4,0,'Triming coal bc'],
+  ['2026-03-26','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bc',3388.6,3389.6,1,0,'Triming coal bc'],
+  ['2026-03-26','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3061.5,3069.6,8.1,0,'Triming'],
+  ['2026-03-26','BC','Langsir','Suntoko','Malam','SWA-102','Triming coal',3262,3264,2,0,'Triming coal'],
+  ['2026-03-26','BC','Triming','Hairul','Malam','SWA-101','Trimming',3389.6,3399,9.4,188,'Trimming'],
+  ['2026-03-27','BC','General','Alief','Siang','SPC-104','General',1729.3,1735.5,6.2,263,'General'],
+  ['2026-03-27','BC','Triming','Husen','Siang','SBD-103','Treming',3069.6,3072.9,3.3,132,'Treming'],
+  ['2026-03-27','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bc',3399,3405.4,6.4,0,'Triming coal bc'],
+  ['2026-03-27','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3072.9,3082.1,9.2,0,'Triming'],
+  ['2026-03-27','BC','Triming','Alimuddin','Malam','SWA-102','Triming',3264,3273.4,9.4,0,'Triming'],
+  ['2026-03-27','BC','Triming','Hairul','Malam','SWA-101','Trimming bc dan bba',3405.4,3414.9,9.5,86,'Trimming bc dan bba'],
+  ['2026-03-28','BC','Barging','Husen','Siang','SBD-103','Barging',3082.1,3091.4,9.3,248,'Barging'],
+  ['2026-03-28','BC','General','Suntoko','Siang','SWA-102','Barging',3273.4,3282.7,9.3,282,'Barging'],
+  ['2026-03-28','BC','Barging','Dede Darmawan','Siang','SWA-101','Triming dan barging coal bc',3414.9,3424.2,9.3,314,'Triming dan barging coal bc'],
+  ['2026-03-28','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3091.4,3101,9.6,131,'Triming'],
+  ['2026-03-28','BC','Barging','Alimuddin','Malam','SWA-102','Barging',3282.7,3292.1,9.4,247,'Barging'],
+  ['2026-03-28','BC','Barging','Hairul','Malam','SWA-101','Barging dan trimming',3424.2,3433.8,9.6,251,'Barging dan trimming'],
+  ['2026-03-29','BC','General','Alief','Siang','SPC-104','Padamkan asap, general',1735.5,1744.6,9.1,220,'Padamkan asap, general'],
+  ['2026-03-29','BC','Triming','Husen','Siang','SBD-103','Triming',3101,3109.5,8.5,192,'Triming'],
+  ['2026-03-29','BC','Langsir','Suntoko','Siang','SWA-102','Triming coal bc dan bba',3292.1,3301.2,9.1,205,'Triming coal bc dan bba'],
+  ['2026-03-29','BC','Triming','Jhohan','Siang','SWA-101','Triming coal bc dan bba',3433.8,3442.1,8.3,221,'Triming coal bc dan bba'],
+  ['2026-03-29','SEN','Langsir','Dede Darmawan','Malam','SPC-104','Langsir pasir',1744.6,1754.6,10,0,'Langsir pasir'],
+  ['2026-03-29','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3109.5,3120.1,10.6,46,'Triming'],
+  ['2026-03-29','BC','Barging','Alimuddin','Malam','SWA-102','Barging',3301.2,3312.2,11,147,'Barging'],
+  ['2026-03-29','BC','Barging','Hairul','Malam','SWA-101','Barging',3442.1,3453.2,11.1,216,'Barging'],
+  ['2026-03-30','SEN','General','Alief','Siang','SPC-104','General',1754.6,1760.1,5.5,0,'General'],
+  ['2026-03-30','BC','Barging','Husen','Siang','SBD-103','Barging',3120.1,3130,9.9,222,'Barging'],
+  ['2026-03-30','BC','General','Suntoko','Siang','SWA-102','Barging',3312.2,3322.2,10,327,'Barging'],
+  ['2026-03-30','BC','Barging','Jhohan','Siang','SWA-101','Triming dan barging',3453.2,3463.1,9.9,337,'Triming dan barging'],
+  ['2026-03-30','SEN','Langsir','Dede Darmawan','Malam','SPC-104','Langsir pasir',1760.1,1769.1,9,185,'Langsir pasir'],
+  ['2026-03-30','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3130,3139.8,9.8,153,'Triming'],
+  ['2026-03-30','BC','Barging','Alimuddin','Malam','SWA-102','Barging',3322.2,3332.1,9.9,224,'Barging'],
+  ['2026-03-30','BC','Barging','Hairul','Malam','SWA-101','Barging dan trimming',3463.1,3472.8,9.7,216,'Barging dan trimming'],
+  ['2026-03-31','BC','General','Alief','Siang','SPC-104','General',1769.1,1777.5,8.4,0,'General'],
+  ['2026-03-31','BBA','Barging','Husen','Siang','SBD-103','Barging',3139.8,3149,9.2,70,'Barging'],
+  ['2026-03-31','BBA','Triming','Suntoko','Siang','SWA-102','Barging',3332.1,3342.3,10.2,182,'Barging'],
+  ['2026-03-31','BC','Barging','Jhohan','Siang','SWA-101','Barging dan triming bba',3472.8,3482.4,9.6,310,'Barging dan triming bba'],
+  ['2026-03-31','BC','Barging','Hengki Ramadan','Malam','SBD-103','Barging',3149,3157.6,8.6,147,'Barging'],
+  ['2026-03-31','BC','Barging','Dede Darmawan','Malam','SWA-102','Barging coal bc',3342.3,3350.7,8.4,318,'Barging coal bc'],
+  ['2026-03-31','BC','Barging','Hairul','Malam','SWA-101','Barging',3482.4,3490.9,8.5,201,'Barging'],
+  ['2026-04-01','BC','General','Alief','Siang','SPC-104','General',1777.5,1787.4,9.9,182,'General'],
+  ['2026-04-01','BBA','Barging','Husen','Siang','SBD-103','Barging',3157.6,3165.9,8.3,104,'Barging'],
+  ['2026-04-01','BBA','Triming','Suntoko','Siang','SWA-102','Barging',3350.7,3359.2,8.5,138,'Barging'],
+  ['2026-04-01','BC','Barging','Jhohan','Siang','SWA-101','Barging coal bc',3490.9,3499.8,8.9,192,'Barging coal bc'],
+  ['2026-04-01','BBA','Barging','Hengki Ramadan','Malam','SBD-103','Barging',3165.9,3176,10.1,201,'Barging'],
+  ['2026-04-01','BBA','Barging','Dede Darmawan','Malam','SWA-102','Barging bba',3359.2,3369.4,10.2,242,'Barging bba'],
+  ['2026-04-01','BBA','Barging','Hairul','Malam','SWA-101','Barging',3499.8,3510.1,10.3,239,'Barging'],
+  ['2026-04-02','BC','Triming','Alief','Siang','SBD-103','Triming BBA',3176,3184.8,8.8,256,'Triming BBA'],
+  ['2026-04-02','BBA','Triming','Suntoko','Siang','SWA-102','Barging',3369.4,3379,9.6,346,'Barging'],
+  ['2026-04-02','BC','Barging','Jhohan','Siang','SWA-101','Barging coal bba',3510.1,3516.4,6.3,349,'Barging coal bba'],
+  ['2026-04-02','BBA','Barging','Husen','Malam','SBD-103','Barging',3184.8,3186.5,1.7,270,'Barging'],
+  ['2026-04-02','BBA','Barging','Dede Darmawan','Malam','SWA-102','Barging coal bba',3379,3380.5,1.5,277,'Barging coal bba'],
+  ['2026-04-02','BBA','Barging','Hairul','Malam','SWA-101','Barging bba',3516.4,3517.8,1.4,255,'Barging bba'],
+  ['2026-04-03','BC','Langsir','Alief','Siang','SPC-104','Lambung batu',1787.4,1792.6,5.2,0,'Lambung batu'],
+  ['2026-04-03','BC','Triming','Hengki Ramadan','Siang','SBD-103','Langsir dan triming',3186.5,3193.4,6.9,0,'Langsir dan triming'],
+  ['2026-04-03','BC','Triming','Dede Darmawan','Malam','SPC-104','Triming',1792.6,1801.8,9.2,228,'Triming'],
+  ['2026-04-03','BC','Barging','Husen','Malam','SBD-103','Barging',3193.4,3202.5,9.1,156,'Barging'],
+  ['2026-04-03','BC','Triming','Suntoko','Malam','SWA-102','Barging',3380.6,3390.1,9.5,0,'Barging'],
+  ['2026-04-03','BC','Barging','Hairul','Malam','SWA-101','Barging dan trimming',3517.8,3527.1,9.3,0,'Barging dan trimming'],
+  ['2026-04-04','BC','Langsir','Alief','Siang','SPC-104','Lambung batu',1801.8,1806,4.2,0,'Lambung batu'],
+  ['2026-04-04','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3202.5,3211.5,9,176,'Triming'],
+  ['2026-04-04','BC','Barging','Jhohan','Siang','SWA-102','Barging coal bba',3390.1,3399,8.9,252,'Barging coal bba'],
+  ['2026-04-04','BBA','Barging','Alimuddin','Siang','SWA-101','Barging',3527.1,3536.4,9.3,282,'Barging'],
+  ['2026-04-04','BC','Barging','Husen','Malam','SBD-103','Bargin BC',3211.5,3221.2,9.7,100,'Bargin BC'],
+  ['2026-04-04','BC','Triming','Suntoko','Malam','SWA-102','Triming dan barging',3399,3408.8,9.8,373,'Triming dan barging'],
+  ['2026-04-04','BC','Barging','Dede Darmawan','Malam','SWA-101','Triming dan barging coal bc',3536.4,3547.6,11.2,277,'Triming dan barging coal bc'],
+  ['2026-04-05','BC','Langsir','Alief','Siang','SPC-104','Lambung batu',1806,1814,8,148,'Lambung batu'],
+  ['2026-04-05','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3221.2,3230.5,9.3,120,'Triming'],
+  ['2026-04-05','BC','Barging','Alimuddin','Siang','SWA-102','Barging',3408.8,3416.2,7.4,215,'Barging'],
+  ['2026-04-05','BBA','Barging','Hairul','Siang','SWA-101','Barging dan trimming',3547.6,3557.4,9.8,234,'Barging dan trimming'],
+  ['2026-04-05','BBA','Barging','Husen','Malam','SBD-103','Barging, BBA',3230.5,3240.3,9.8,0,'Barging, BBA'],
+  ['2026-04-05','BBA','Barging','Dede Darmawan','Malam','SWA-101','Barging coal bba',3357.4,3367.9,10.5,261,'Barging coal bba'],
+  ['2026-04-05','BBA','Triming','Suntoko','Malam','SWA-102','Barging',3416.2,3426.8,10.6,252,'Barging'],
+  ['2026-04-06','BBA','Triming','Hairul','Siang','SBD-103','Trimming bc dan bbA',3240.3,3248.6,8.3,245,'Trimming bc dan bbA'],
+  ['2026-04-06','BC','Barging','Alimuddin','Siang','SWA-102','Barging',3426.8,3435.3,8.5,308,'Barging'],
+  ['2026-04-06','BC','Barging','Alief','Siang','SWA-101','BARGING BBA DAN BC',3567.9,3577,9.1,316,'BARGING BBA DAN BC'],
+  ['2026-04-06','BBA','Barging','Husen','Malam','SBD-103','Barging',3248.6,3259.1,10.5,110,'Barging'],
+  ['2026-04-06','BC','Triming','Suntoko','Malam','SWA-102','Barging',3435.3,3446,10.7,185,'Barging'],
+  ['2026-04-06','BC','Barging','Jhohan','Malam','SWA-101','Barging coal bc dan bba',3577,3587.2,10.2,281,'Barging coal bc dan bba'],
+  ['2026-04-07','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3259.1,3268.2,9.1,120,'Triming'],
+  ['2026-04-07','BBA','Barging','Alimuddin','Siang','SWA-102','Barging',3446,3454.4,8.4,310,'Barging'],
+  ['2026-04-07','BC','Barging','Alief','Siang','SWA-101','BARGING BBA DAN TRIMING COAL BC',3587.2,3595,7.8,188,'BARGING BBA DAN TRIMING COAL BC'],
+  ['2026-04-07','BBA','Barging','Husen','Malam','SBD-103','Barging',3268.2,3278.1,9.9,122,'Barging'],
+  ['2026-04-07','BBA','Triming','Suntoko','Malam','SWA-102','Barging',3454.4,3464,9.6,255,'Barging'],
+  ['2026-04-07','BC','Barging','Jhohan','Malam','SWA-101','Barging coal bba',3595,3604.6,9.6,188,'Barging coal bba'],
+  ['2026-04-08','BC','General','Hengki Ramadan','Siang','SPC-104','Langsir',1814.3,1821.7,7.4,0,'Langsir'],
+  ['2026-04-08','BBA','Barging','','Siang','SBD-103','Barging',3278,3280,2,103,'Barging'],
+  ['2026-04-08','BC','Triming','Alief','Siang','SWA-102','Triming BAR BC',3464,3470.5,6.5,212,'Triming BAR BC'],
+  ['2026-04-08','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bc',3604.6,3611.7,7.1,266,'Triming coal bc'],
+  ['2026-04-08','BC','Triming','Alimuddin','Malam','SWA-102','Triming',3470.5,3479.5,9,0,'Triming'],
+  ['2026-04-08','BC','Triming','Jhohan','Malam','SWA-101','Triming coal bc',3611.7,3618.4,6.7,0,'Triming coal bc'],
+  ['2026-04-09','SEN','General','Alief','Siang','SPC-104','General',1821.7,1827.8,6.1,155,'General'],
+  ['2026-04-09','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3279.6,3286,6.4,0,'Triming'],
+  ['2026-04-09','BC','Triming','Husen','Siang','SWA-102','Treming',3479.5,3486.5,7,227,'Treming'],
+  ['2026-04-09','BC','Langsir','Dede Darmawan','Siang','SWA-101','General',3618.4,3621.5,3.1,186,'General'],
+  ['2026-04-09','BC','Triming','Alimuddin','Malam','SBD-103','Triming',3286,3292.6,6.6,0,'Triming'],
+  ['2026-04-09','BC','Triming','Suntoko','Malam','SWA-102','Triming dan Barging',3486.5,3495.3,8.8,0,'Triming dan Barging'],
+  ['2026-04-09','BC','Barging','Jhohan','Malam','SWA-101','Barging coal bc',3621.5,3630.6,9.1,0,'Barging coal bc'],
+  ['2026-04-10','SEN','General','Alief','Siang','SPC-104','General',1827.8,1830.8,3,0,'General'],
+  ['2026-04-10','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3292.6,3295,2.4,214,'Triming'],
+  ['2026-04-10','BC','Barging','Husen','Siang','SWA-102','Barging',3495.3,3495.8,0.5,0,'Barging'],
+  ['2026-04-10','BC','Langsir','Dede Darmawan','Siang','SWA-101','General',3630.6,3633.1,2.5,315,'General'],
+  ['2026-04-10','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3295,3301.6,6.6,0,'Triming'],
+  ['2026-04-10','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bc',3495.8,3497,1.2,0,'Triming coal bc'],
+  ['2026-04-10','BC','Langsir','','Malam','SWA-101','General',3633,3634.6,2,0,'General'],
+  ['2026-04-11','BC','Triming','Dede Darmawan','Siang','SPC-104','Triming',1830.8,1833.8,3,120,'Triming'],
+  ['2026-04-11','BC','Barging','Suntoko','Siang','SWA-102','Barging',3497,3502,5,120,'Barging'],
+  ['2026-04-11','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3301.6,3308.4,6.8,92,'Triming'],
+  ['2026-04-12','BC','General','Alief','Siang','SPC-104','Padamkan batu yg berasap,motong batu',1833.8,1837.2,3.4,0,'Padamkan batu yg berasap,motong batu'],
+  ['2026-04-12','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3308.4,3318,9.6,0,'Triming'],
+  ['2026-04-12','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bba',3501.6,3509,7.4,0,'Barging coal bba'],
+  ['2026-04-12','BBA','Barging','Alimuddin','Malam','SWA-101','Barging',3634.6,3644.3,9.7,0,'Barging'],
+  ['2026-04-13','BC','General','Alief','Siang','SPC-104','Padamkan asap, potong batu',1837.2,1846.5,9.3,222,'Padamkan asap, potong batu'],
+  ['2026-04-13','BBA','Barging','Husen','Siang','SBD-103','Barging',3318,3326.1,8.1,282,'Barging'],
+  ['2026-04-13','BBA','Triming','Suntoko','Siang','SWA-102','Barging',3509,3516.5,7.5,163,'Barging'],
+  ['2026-04-13','BBA','Barging','Dede Darmawan','Siang','SWA-101','Barging',3644.3,3654.6,10.3,265,'Barging'],
+  ['2026-04-13','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3326.1,3335.6,9.5,162,'Triming'],
+  ['2026-04-13','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bba',3516.5,3520.7,4.2,281,'Barging coal bba'],
+  ['2026-04-13','BBA','Barging','Alimuddin','Malam','SWA-101','Barging',3654.6,3659,4.4,288,'Barging'],
+  ['2026-04-14','BC','General','Alief','Siang','SPC-104','Padamkan asap, potong batu',1846.5,1856.1,9.6,0,'Padamkan asap, potong batu'],
+  ['2026-04-14','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3335.6,3345.6,10,100,'Triming'],
+  ['2026-04-14','BBA','Triming','Suntoko','Siang','SWA-102','Barging',3520.7,3530.5,9.8,166,'Barging'],
+  ['2026-04-14','BBA','Barging','Husen','Siang','SWA-101','Barging',3659,3668.8,9.8,140,'Barging'],
+  ['2026-04-14','BC','Barging','Hengki Ramadan','Malam','SBD-103','Barging',3345.6,3355.8,10.2,232,'Barging'],
+  ['2026-04-14','BC','Barging','Dede Darmawan','Malam','SWA-102','Barging',3530.5,3540.5,10,279,'Barging'],
+  ['2026-04-14','BC','Barging','Hairul','Malam','SWA-101','Barging bba dan bc',3668.8,3678.8,10,293,'Barging bba dan bc'],
+  ['2026-04-15','BC','Langsir','Alief','Siang','SPC-104','Lambung batu, padamkan asap',1856.1,1863.8,7.7,215,'Lambung batu, padamkan asap'],
+  ['2026-04-15','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3355.8,3364.8,9,193,'Triming'],
+  ['2026-04-15','BC','Triming','Suntoko','Siang','SWA-102','Barging',3540.5,3549.6,9.1,259,'Barging'],
+  ['2026-04-15','BC','Barging','Alimuddin','Siang','SWA-101','Barging',3678.8,3687.2,8.4,330,'Barging'],
+  ['2026-04-15','BBA','Barging','Hengki Ramadan','Malam','SBD-103','Barging',3364.8,3375.3,10.5,252,'Barging'],
+  ['2026-04-15','BBA','Barging','Husen','Malam','SWA-102','Barging',3549.6,3560.1,10.5,244,'Barging'],
+  ['2026-04-15','BBA','Barging','Hairul','Malam','SWA-101','Barging',3687.2,3697.7,10.5,263,'Barging'],
+  ['2026-04-16','BC','General','Alief','Siang','SPC-104','Lambung batu, padamkan asap, support mekanikal sampling',1863.8,1872.7,8.9,151,'Lambung batu, padamkan asap, support mekanikal sampling'],
+  ['2026-04-16','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming',3375.3,3382.4,7.1,283,'Triming'],
+  ['2026-04-16','BBA','Barging','Suntoko','Siang','SWA-102','Barging dan triming',3560.1,3566.8,6.7,522,'Barging dan triming'],
+  ['2026-04-16','BC','Barging','Jhohan','Siang','SWA-101','Barging dan langsir coal bba',3697.7,3704,6.3,329,'Barging dan langsir coal bba'],
+  ['2026-04-16','BC','Barging','Hengki Ramadan','Malam','SBD-103','Barging',3382.4,3392.6,10.2,132,'Barging'],
+  ['2026-04-16','BBA','Barging','Husen','Malam','SWA-102','Barging',3566.8,3577.4,10.6,0,'Barging'],
+  ['2026-04-16','BBA','Barging','Hairul','Malam','SWA-101','Barging bba',3704,3714.5,10.5,136,'Barging bba'],
+  ['2026-04-17','BBA','General','Alief','Siang','SPC-104','Lambung batu,padamkan asap, support mekanikal sampling',1872.7,1879.4,6.7,0,'Lambung batu,padamkan asap, support mekanikal sampling'],
+  ['2026-04-17','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3392.6,3399,6.4,232,'Triming'],
+  ['2026-04-17','BC','Langsir','Jhohan','Siang','SWA-102','Langsir',3577.4,3583.7,6.3,337,'Langsir'],
+  ['2026-04-17','BC','Barging','','Siang','SWA-101','Barging dan langsir coal bba',3714.5,3723,8.5,300,'Tidak ada laporan'],
+  ['2026-04-17','BC','Barging','Hengki Ramadan','Malam','SBD-103','Barging',3399,3409.2,10.2,0,'Barging'],
+  ['2026-04-17','BC','Triming','Suntoko','Malam','SWA-102','Barging',3583.7,3594,10.3,129,'Barging'],
+  ['2026-04-17','BC','Barging','Husen','Malam','SWA-101','Barging',3723,3733.2,10.2,344,'Barging'],
+  ['2026-04-18','SEN','General','Alief','Siang','SPC-104','Lambung batu, padamkan asap, support mekanikal sampling',1879.4,1888.4,9,194,'Lambung batu, padamkan asap, support mekanikal sampling'],
+  ['2026-04-18','BC','Triming','Hairul','Siang','SBD-103','Trimming',3409.2,3416.2,7,347,'Trimming'],
+  ['2026-04-18','BC','Langsir','Jhohan','Siang','SWA-102','Langsir',3594,3600.3,6.3,263,'Langsir'],
+  ['2026-04-18','BC','Triming','Miki Mustakim','Siang','SWA-101','Triming',3733,3740.5,7.5,307,'Triming'],
+  ['2026-04-18','BC','Triming','Hengki Ramadan','Malam','SBD-103','Trimming',3416.2,3424.8,8.6,0,'Trimming'],
+  ['2026-04-18','BC','Triming','Husen','Malam','SWA-102','Treming',3600.3,3609,8.7,229,'Treming'],
+  ['2026-04-18','BC','Triming','Dede Darmawan','Malam','SWA-101','Triming coal bc',3740.5,3749.5,9,165,'Triming coal bc'],
+  ['2026-04-19','BC','General','Alief','Siang','SPC-104','Lambung batu, padamkan asap, support mekanikal sampling',1888,1897,9,0,'Lambung batu, padamkan asap, support mekanikal sampling'],
+  ['2026-04-19','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3424.8,3430.8,6,319,'Triming'],
+  ['2026-04-19','BC','Langsir','Alimuddin','Siang','SWA-102','Langsir',3609,3615,6,165,'Langsir'],
+  ['2026-04-19','BC','Langsir','Hairul','Siang','SWA-101','Langsit',3749.5,3756.1,6.6,176,'Langsit'],
+  ['2026-04-19','BC','General','Dede Darmawan','Malam','SPC-104','Lambung batu, padamkan asap, support mekanikal sampling',1897,1904.1,7,0,'Lambung batu, padamkan asap, support mekanikal sampling'],
+  ['2026-04-19','BBA','Barging','Husen','Malam','SBD-103','Barging',3430.8,3440.6,9.8,226,'Barging'],
+  ['2026-04-19','BBA','Triming','Suntoko','Malam','SWA-102','Triming dan Barging',3615,3624.9,9.9,197,'Triming dan Barging'],
+  ['2026-04-19','BBA','Barging','Dede Darmawan','Malam','SWA-101','Barging dan triming',3756.1,3766.1,10,105,'Barging dan triming'],
+  ['2026-04-20','BC','Triming','Alimuddin','Siang','SBD-103','Triming',3440.6,3448.7,8.1,119,'Triming'],
+  ['2026-04-20','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bc',3624.9,3633.3,8.4,288,'Triming coal bc'],
+  ['2026-04-20','BC','Triming','Hairul','Siang','SWA-101','Trimming',3766.1,3774.3,8.2,108,'Trimming'],
+  ['2026-04-20','BC','Triming','Dede Darmawan','Malam','SPC-104','Triming coal bc',1904.1,1913.6,9.5,210,'Triming coal bc'],
+  ['2026-04-20','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3448.7,3457,8.3,269,'Triming'],
+  ['2026-04-20','BBA','Triming','Suntoko','Malam','SWA-102','Barging',3633.3,3639.5,6.2,250,'Barging'],
+  ['2026-04-20','BBA','Barging','Husen','Malam','SWA-101','Barging',3774.3,3781.5,7.2,335,'Barging'],
+  ['2026-04-21','BC','Langsir','Alief','Siang','SPC-104','Lambung batu,padamkan asap',1913.6,1921.1,7.5,0,'Lambung batu,padamkan asap'],
+  ['2026-04-21','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3457,3465.7,8.7,104,'Triming'],
+  ['2026-04-21','BC','Barging','Jhohan','Siang','SWA-102','Barging dan langsir',3639.5,3648,8.5,150,'Barging dan langsir'],
+  ['2026-04-21','BBA','Barging','Hairul','Siang','SWA-101','BARGING',3781.5,3790.2,8.7,236,'BARGING'],
+  ['2026-04-21','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3465.7,3474.1,8.4,137,'Triming'],
+  ['2026-04-21','BBA','Triming','Suntoko','Malam','SWA-102','Barging',3648,3657,9,213,'Barging'],
+  ['2026-04-21','BBA','Barging','Husen','Malam','SWA-101','Barging',3790.2,3799.6,9.4,169,'Barging'],
+  ['2026-04-22','BC','General','Alief','Siang','SPC-104','Lambung batu, support perbaikan over',1921.1,1928.5,7.4,0,'Lambung batu, support perbaikan over'],
+  ['2026-04-22','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3474.1,3481.7,7.6,110,'Triming'],
+  ['2026-04-22','BC','Triming','Dede Darmawan','Siang','SWA-102','Triming dan barging',3657,3664.3,7.3,250,'Triming dan barging'],
+  ['2026-04-22','BC','Barging','Hairul','Siang','SWA-101','Barging',3799.6,3806.4,6.8,375,'Barging'],
+  ['2026-04-22','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3481.7,3487.9,6.2,188,'Triming'],
+  ['2026-04-22','BC','Barging','Jhohan','Malam','SWA-102','Barging',3664.3,3670.5,6.2,221,'Barging'],
+  ['2026-04-22','BC','Barging','Alimuddin','Malam','SWA-101','Barging',3806.4,3812,5.6,134,'Barging'],
+  ['2026-04-23','BC','Langsir','Alief','Siang','SPC-104','Lambung batu, padamkan asap',1928.5,1937.5,9,221,'Lambung batu, padamkan asap'],
+  ['2026-04-23','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3487.9,3494.9,7,127,'Triming'],
+  ['2026-04-23','BC','Triming','Husen','Siang','SWA-102','Treming',3670.5,3673.8,3.3,0,'Treming'],
+  ['2026-04-23','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bc',3673.8,3676.9,3.1,0,'Triming coal bc'],
+  ['2026-04-23','BC','Triming','Husen','Siang','SWA-101','Treming',3812,3815.5,3.5,0,'Treming'],
+  ['2026-04-23','BC','Triming','Hairul','Siang','SWA-101','Trimming',3815.5,3819.5,4,0,'Trimming'],
+  ['2026-04-23','BC','General','Suntoko','Malam','SPC-104','Padamkan api',1937.5,1939.6,2.1,0,'PadamkAn api'],
+  ['2026-04-23','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3494.9,3502.6,7.7,168,'Triming'],
+  ['2026-04-23','BC','Triming','Suntoko','Malam','SWA-102','Triming coal BC',3676.9,3680,3.1,0,'Triming coal BC'],
+  ['2026-04-24','BBA','Langsir','Alief','Siang','SPC-104','Lambung batu, support perbaikan over',1939.6,1946.1,6.5,269,'Lambung batu, support perbaikan over'],
+  ['2026-04-24','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3502.6,3507,4.4,175,'Triming'],
+  ['2026-04-24','BC','Triming','Husen','Siang','SWA-102','Treming',3680,3686.4,6.4,150,'Treming'],
+  ['2026-04-24','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bc',3819.5,3824.2,4.7,212,'Triming coal bc'],
+  ['2026-04-24','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3507,3515.1,8.1,0,'Triming'],
+  ['2026-04-24','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bc',3686.4,3694.2,7.8,155,'Triming coal bc'],
+  ['2026-04-24','BC','Triming','Hairul','Malam','SWA-101','Trimming',3824.2,3833.2,9,0,'Trimming'],
+  ['2026-04-25','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3515.1,3525.2,10.1,158,'Triming'],
+  ['2026-04-25','BC','Triming','Suntoko','Siang','SWA-102','Triming dan Barging',3694.2,3704.4,10.2,221,'Triming dan Barging'],
+  ['2026-04-25','BC','Barging','Husen','Siang','SWA-101','Barging',3833.2,3843.1,9.9,280,'Barging'],
+  ['2026-04-25','BC','Langsir','Hairul','Malam','SPC-104','Langsir material yg berasap',1948.2,1957.6,9.4,0,'Langsir material yg berasap'],
+  ['2026-04-25','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3525.2,3533.3,8.1,176,'Triming'],
+  ['2026-04-25','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',3704.4,3711,6.6,211,'Barging coal bc'],
+  ['2026-04-25','BC','Barging','Alimuddin','Malam','SWA-101','Barging',3843.1,3850.9,7.8,165,'Barging'],
+  ['2026-04-26','BC','General','Alief','Siang','SPC-104','Service area pencucian dan workshop, barging',1957.6,1966,8.4,238,'Service area pencucian dan workshop, barging'],
+  ['2026-04-26','BC','Triming','Husen','Siang','SBD-103','Treming, Barging, BC',3533.3,3536.8,3.5,200,'Treming, Barging, BC'],
+  ['2026-04-26','BC','Barging','Hengki Ramadan','Siang','SBD-103','Barging',3536.8,3543,6.2,200,'Barging'],
+  ['2026-04-26','BC','Triming','Suntoko','Siang','SWA-102','Barging',3711,3720.2,9.2,217,'Barging'],
+  ['2026-04-26','BC','Barging','Dede Darmawan','Siang','SWA-101','Triming dan barging coal bc',3850.9,3859.9,9,268,'Triming dan barging coal bc'],
+  ['2026-04-26','BC','Langsir','Hairul','Malam','SPC-104','Langsir',1966,1974.7,8.7,0,'Langsir'],
+  ['2026-04-26','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3543,3551,8,129,'Triming'],
+  ['2026-04-26','BBA','Triming','Alimuddin','Malam','SWA-102','Triming',3720.2,3727.8,7.6,166,'Triming'],
+  ['2026-04-27','BBA','Triming','Husen','Siang','SBD-103','Treming',3551,3557.6,6.6,152,'Treming'],
+  ['2026-04-27','BC','Triming','Suntoko','Siang','SWA-102','Triming coal BC',3727.8,3735.1,7.3,211,'Triming coal BC'],
+  ['2026-04-27','BC','Barging','Alief','Siang','SWA-101','Triming dan barging coal bc',3859.9,3867.6,7.7,268,'Triming dan barging coal bc'],
+  ['2026-04-27','BC','Langsir','Dede Darmawan','Malam','SPC-104','Lansir batu panas',1976.2,1986.2,10,0,'Lansir batu panas'],
+  ['2026-04-27','BBA','Triming','Alimuddin','Malam','SBD-103','Barging & triming',3557.6,3567.2,9.6,0,'Barging & triming'],
+  ['2026-04-27','BC','Triming','Alimuddin','Malam','SWA-102','Triming coal BC',3735.1,3744.7,9.6,0,'Triming coal BC'],
+  ['2026-04-27','BC','Barging','Hairul','Malam','SWA-101','Barging',3867.6,3877.3,9.7,0,'Barging'],
+  ['2026-04-28','BC','General','Suntoko','Siang','SPC-104','General',1986.2,1990.6,4.4,261,'General'],
+  ['2026-04-28','BC','Langsir','Miki Mustakim','Siang','SBD-103','Langsir pasir',3567.2,3574.6,7.4,255,'Langsir pasir'],
+  ['2026-04-28','BC','Triming','Suntoko','Siang','SWA-102','Triming',3744.7,3748.3,3.6,412,'Triming'],
+  ['2026-04-28','BBA','Triming','Husen','Siang','SWA-101','Treming',3877.3,3884.5,7.2,291,'Treming'],
+  ['2026-04-28','BC','Langsir','Dede Darmawan','Malam','SPC-104','Lansir material panas',1990.6,1997.8,7.2,0,'Lansir material panas'],
+  ['2026-04-28','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3574.6,3585,10.4,119,'Triming'],
+  ['2026-04-28','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',3748.3,3758.4,10.1,0,'Barging coal bc'],
+  ['2026-04-28','BC','Barging','Hairul','Malam','SWA-101','Barging',3884.5,3894.5,10,174,'Barging'],
+  ['2026-04-29','BC','General','Alief','Siang','SPC-104','Service area Jetty, padamkan asap, loading over',1997.8,2006,8.2,0,'Service area Jetty, padamkan asap, loading over'],
+  ['2026-04-29','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3585,3594.7,9.7,255,'Triming'],
+  ['2026-04-29','BC','Triming','Suntoko','Siang','SWA-102','Barging',3758.4,3767.3,8.9,368,'Barging'],
+  ['2026-04-29','BC','Barging','Alimuddin','Siang','SWA-101','Barging',3894.5,3903.8,9.3,306,'Barging'],
+  ['2026-04-29','BC','Langsir','Dede Darmawan','Malam','SPC-104','Lansir material panas',2006,2016,10,228,'Lansir material panas'],
+  ['2026-04-29','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3594.7,3604.7,10,140,'Triming'],
+  ['2026-04-29','BC','Barging','Husen','Malam','SWA-102','Barging',3767.3,3777.2,9.9,0,'Barging'],
+  ['2026-04-29','BC','Barging','Hairul','Malam','SWA-101','Barging',3903.8,3913.8,10,193,'Barging'],
+  ['2026-04-30','SEN','Langsir','Miki Mustakim','Siang','SBD-103','Langsir',3604.7,3611.9,7.2,193,'Langsir'],
+  ['2026-04-30','BC','Triming','Suntoko','Siang','SWA-102','Triming coal',3777.2,3784.2,7,340,'Triming coal'],
+  ['2026-04-30','BC','Triming','Alief','Siang','SWA-101','Triming',3913.8,3920.8,7,363,'Triming'],
+  ['2026-04-30','BC','Langsir','Dede Darmawan','Malam','SPC-104','Lansir material panas',2016,2025.5,9.5,0,'Lansir material panas'],
+  ['2026-04-30','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3611.9,3621.7,9.8,0,'Triming'],
+  ['2026-04-30','BC','Barging','Husen','Malam','SWA-102','Barging',3784.2,3793.1,8.9,0,'Barging'],
+  ['2026-04-30','BC','Barging','Hairul','Malam','SWA-101','Barging',3920.8,3930.3,9.5,286,'Barging'],
+  ['2026-05-01','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3621.7,3627.3,5.6,235,'Triming'],
+  ['2026-05-01','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bba dan bc',3793.1,3795.7,2.6,362,'Triming coal bba dan bc'],
+  ['2026-05-01','BC','Triming','Alief','Siang','SWA-101','Triming',3930.3,3933.3,3,269,'Triming'],
+  ['2026-05-01','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3627.3,3637.7,10.4,0,'Triming'],
+  ['2026-05-01','BC','Triming','Suntoko','Malam','SWA-102','Barging',3795.7,3805.8,10.1,0,'Barging'],
+  ['2026-05-01','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging dan triming',3933.3,3943.3,10,0,'Barging dan triming'],
+  ['2026-05-02','BC','General','Alief','Siang','SPC-104','Padamkan batu berasap, service area pencucian A2B',2025.5,2031.8,6.3,238,'Padamkan batu berasap, service area pencucian A2B'],
+  ['2026-05-02','BC','Triming','Alimuddin','Siang','SBD-103','Triming',3637.7,3646.7,9,247,'Triming'],
+  ['2026-05-02','BC','Barging','Jhohan','Siang','SWA-102','Barging coal bc',3805.8,3815.2,9.4,244,'Barging coal bc'],
+  ['2026-05-02','BC','Barging','Hairul','Siang','SWA-101','Barging',3943.3,3951.5,8.2,372,'Barging'],
+  ['2026-05-02','BC','Triming','Husen','Malam','SBD-103','Treming',3646.7,3656.1,9.4,0,'Treming'],
+  ['2026-05-02','BC','General','Suntoko','Malam','SWA-102','Barging dan triming',3815.2,3824.7,9.5,250,'Barging dan triming'],
+  ['2026-05-02','BC','Barging','Dede Darmawan','Malam','SWA-101','Triming dan barging coal bc',3951.5,3959.8,8.3,220,'Triming dan barging coal bc'],
+  ['2026-05-03','BC','General','Alief','Siang','SPC-104','Padamkan batu yg terbakar dan berasap',2031.8,2036,4.2,0,'Padamkan batu yg terbakar dan berasap'],
+  ['2026-05-03','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3656.1,3663.9,7.8,0,'Triming'],
+  ['2026-05-03','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bc',3824.7,3832.8,8.1,385,'Triming coal bc'],
+  ['2026-05-03','BC','Langsir','Dede Darmawan','Malam','SPC-104','Lansir material panas',2036,2041.1,5.1,0,'Lansir material panas'],
+  ['2026-05-04','BC','Barging','Alimuddin','Siang','SBD-103','Barging',3663.9,3672.1,8.2,302,'Barging'],
+  ['2026-05-04','BC','Barging','Alief','Siang','SWA-102','Barging',3832.8,3841.6,8.8,0,'Barging'],
+  ['2026-05-04','BC','Barging','Hairul','Siang','SWA-101','Barging',3959.8,3969.4,9.6,400,'Barging'],
+  ['2026-05-04','BC','Langsir','Dede Darmawan','Malam','SPC-104','Lansir batu panas',2041.1,2051.1,10,272,'Lansir batu panas'],
+  ['2026-05-04','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3672.2,3680.2,8,176,'Triming'],
+  ['2026-05-04','BC','Triming','Suntoko','Malam','SWA-102','Barging',3841.6,3851.1,9.5,0,'Barging'],
+  ['2026-05-04','BC','Barging','Husen','Malam','SWA-101','Barging',3969.4,3978.3,8.9,0,'Barging'],
+  ['2026-05-05','SEN','General','Alief','Siang','SPC-104','Pancang, dan pemasangan tiang tower lamp',2051.1,2056.1,5,0,'Pancang, dan pemasangan tiang tower lamp'],
+  ['2026-05-05','BC','Langsir','Alief','Siang','SWA-102','Langsing Batu',3851.1,3857.2,6.1,220,'Langsing Batu'],
+  ['2026-05-05','BC','Barging','Hairul','Siang','SWA-101','Barging dan langsir',3978.3,3985.6,7.3,256,'Barging dan langsir'],
+  ['2026-05-05','BC','General','Alimuddin','Malam','SPC-104','General',2056.1,2062.2,6.1,0,'General'],
+  ['2026-05-05','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3680.2,3687.8,7.6,0,'Triming'],
+  ['2026-05-05','BC','Triming','Suntoko','Malam','SWA-102','Barging',3857.2,3864,6.8,267,'Barging'],
+  ['2026-05-05','BC','Barging','Husen','Malam','SWA-101','Barging',3985.6,3994.1,8.5,173,'Barging'],
+  ['2026-05-06','BC','Langsir','Alief','Siang','SPC-104','Lambung batu, padamkan asap',2062.2,2071.8,9.6,269,'Lambung batu, padamkan asap'],
+  ['2026-05-06','BC','Barging','Hairul','Siang','SBD-103','Barging',3687.8,3697,9.2,178,'Barging'],
+  ['2026-05-06','BC','Barging','Jhohan','Siang','SWA-102','Barging coal bc',3864,3873.1,9.1,186,'Barging coal bc'],
+  ['2026-05-06','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bc dan bba',3994.1,4004.1,10,225,'Barging coal bc dan bba'],
+  ['2026-05-06','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3597,3606.6,9.6,211,'Triming'],
+  ['2026-05-06','BBA','Triming','Suntoko','Malam','SWA-102','Barging',3873.1,3883.5,10.4,208,'Barging'],
+  ['2026-05-06','BBA','Barging','Alimuddin','Malam','SWA-101','Barging',4004.1,4014.6,10.5,351,'Barging'],
+  ['2026-05-07','BC','Barging','Husen','Siang','SBD-103','Barging',3706.6,3716.6,10,198,'Barging'],
+  ['2026-05-07','BC','Barging','Dede Darmawan','Siang','SWA-102','Barging coal bc dan bba',3883.5,3893.7,10.2,267,'Barging coal bc dan bba'],
+  ['2026-05-07','BC','Barging','Hairul','Siang','SWA-101','Barging',4014.6,4024.8,10.2,325,'Barging'],
+  ['2026-05-07','BC','General','Alimuddin','Malam','SPC-104','General',2071.8,2078,6.2,0,'General'],
+  ['2026-05-07','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3716.6,3725.4,8.8,198,'Triming'],
+  ['2026-05-07','BBA','Triming','Suntoko','Malam','SWA-102','Barging',3893.7,3903.8,10.1,267,'Barging'],
+  ['2026-05-07','BC','Barging','Jhohan','Malam','SWA-101','Barging coal bc dan bba',4024.8,4034.4,9.6,356,'Barging coal bc dan bba'],
+  ['2026-05-08','BC','Langsir','Dede Darmawan','Siang','SPC-104','Bersihkan aliran parit dan lansir material',2079,2089.6,10.6,233,'Bersihkan aliran parit dan lansir material'],
+  ['2026-05-08','BC','Barging','Husen','Siang','SBD-103','Barging',3725.4,3733.3,7.9,175,'Barging'],
+  ['2026-05-08','BC','Barging','Hairul','Siang','SWA-102','Barging, bba da bc',3903.8,3911.8,8,290,'Barging, bba da bc'],
+  ['2026-05-08','BC','Triming','Miki Mustakim','Malam','SPC-104','Triming',2089.6,2098.8,9.2,233,'Triming'],
+  ['2026-05-08','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc dan bba',3911.8,3919,7.2,246,'Barging coal bc dan bba'],
+  ['2026-05-09','BC','Langsir','Dede Darmawan','Siang','SPC-104','Lansir batu',2098.8,2109.1,10.3,137,'Lansir batu'],
+  ['2026-05-09','BBA','Barging','Husen','Siang','SBD-103','Barging',3733.3,3743.4,10.1,192,'Barging'],
+  ['2026-05-09','BBA','Triming','Suntoko','Siang','SWA-102','Barging',3919,3929,10,246,'Barging'],
+  ['2026-05-09','BC','Barging','Hairul','Siang','SWA-101','Barging bba dan bc',4045.3,4055.3,10,227,'Barging bba dan bc'],
+  ['2026-05-09','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3743.4,3753.4,10,192,'Triming'],
+  ['2026-05-09','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',3929,3936.5,7.5,274,'Barging coal bc'],
+  ['2026-05-09','BC','Barging','Alimuddin','Malam','SWA-101','Barging',4055.3,4065.3,10,362,'Barging'],
+  ['2026-05-10','BC','Langsir','Dede Darmawan','Siang','SPC-104','Lansir batu dan general',2109.1,2119.1,10,0,'Lansir batu dan general'],
+  ['2026-05-10','BC','Barging','Husen','Siang','SBD-103','Barging',3753.4,3762.5,9.1,179,'Barging'],
+  ['2026-05-10','BC','Triming','Suntoko','Siang','SWA-102','Barging',3936.5,3947.1,10.6,31.7,'Barging'],
+  ['2026-05-10','BC','Barging','Hairul','Siang','SWA-101','Barging',4065.3,4075.6,10.3,261,'Barging'],
+  ['2026-05-10','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3762.5,3771.5,9,179,'Triming'],
+  ['2026-05-10','BC','Barging','Jhohan','Malam','SWA-102','Barging dan triming coal bba',3947.1,3953.4,6.3,268,'Barging dan triming coal bba'],
+  ['2026-05-10','BBA','Barging','Alimuddin','Malam','SWA-101','Barging',4075.6,4080.4,4.8,0,'Barging'],
+  ['2026-05-11','BC','Langsir','Husen','Siang','SBD-103','Langsir matrial',3771.5,3780.6,9.1,231,'Langsir matrial'],
+  ['2026-05-11','BC','Langsir','Suntoko','Siang','SWA-102','Triming',3953.4,3961,7.6,289,'Triming'],
+  ['2026-05-11','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bc',4080.4,4089.4,9,279,'Triming coal bc'],
+  ['2026-05-11','BC','Langsir','Alimuddin','Malam','SBD-103','Langsir',3780.6,3789.4,8.8,0,'Langsir'],
+  ['2026-05-11','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bba',3961,3969.7,8.7,0,'Barging coal bba'],
+  ['2026-05-11','BBA','Barging','Hairul','Malam','SWA-101','Barging',4089.4,4099.4,10,0,'Barging'],
+  ['2026-05-12','BC','General','Dede Darmawan','Siang','SPC-104','Genaral',2119.6,2122.1,2.5,0,'Genaral'],
+  ['2026-05-12','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3789.4,3796.3,6.9,107,'Triming'],
+  ['2026-05-12','BC','Triming','Suntoko','Siang','SWA-102','Triming dan Barging',3969.7,3977.3,7.6,291,'Triming dan Barging'],
+  ['2026-05-12','BC','Barging','Husen','Siang','SWA-101','Barging',4099.4,4107.7,8.3,237.168,'Barging'],
+  ['2026-05-12','BC','Langsir','Dede Darmawan','Malam','SPC-104','Lansir batu panas',2122.1,2132.6,10.5,0,'Lansir batu panas'],
+  ['2026-05-12','BC','Barging','Jhohan','Malam','SWA-102','Barging',3977.3,3981.5,4.2,174,'Barging'],
+  ['2026-05-12','BC','Barging','Hairul','Malam','SWA-101','Barging',4107.7,4117.3,9.6,168,'Barging'],
+  ['2026-05-13','BC','General','Suntoko','Siang','SPC-104','Padamkan api',2132.6,2134.7,2.1,0,'Padamkan api'],
+  ['2026-05-13','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3796.3,3805,8.7,109,'Triming'],
+  ['2026-05-13','BC','Triming','Suntoko','Siang','SWA-102','Triming dan Barging',3981.5,3989.7,8.2,120,'Triming dan Barging'],
+  ['2026-05-13','BC','Barging','Alimuddin','Siang','SWA-101','Barging',4117.3,4126.3,9,242,'Barging'],
+  ['2026-05-13','BC','General','','Malam','SPC-104','Padamkan api',2134.7,2140,5.3,0,'tidak ada laporan'],
+  ['2026-05-13','BC','Langsir','Husen','Malam','SBD-103','Langsir matrial',3805,3814.6,9.6,0,'Langsir matrial'],
+  ['2026-05-13','BC','Barging','Dede Darmawan','Malam','SWA-102','Barging dan triming coal bc',3989.7,3999.7,10,189,'Barging dan triming coal bc'],
+  ['2026-05-13','BC','Barging','Hairul','Malam','SWA-101','Barging',4126.3,4136.1,9.8,207,'Barging'],
+  ['2026-05-14','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3814.6,3821.7,7.1,154,'Triming'],
+  ['2026-05-14','BC','Langsir','Suntoko','Siang','SWA-102','Langsir dan triming',3999.7,4006.8,7.1,252,'Langsir dan triming'],
+  ['2026-05-14','BC','Triming','Alimuddin','Siang','SWA-101','Triming',4136.1,4143.1,7,218,'Triming'],
+  ['2026-05-14','BC','Langsir','Husen','Malam','SBD-103','Langsir matrial',3821.7,3830.6,8.9,0,'Langsir matrial'],
+  ['2026-05-14','BC','Triming','Dede Darmawan','Malam','SWA-102','Triming dan lansir',4006.8,4015.9,9.1,190,'Triming dan lansir'],
+  ['2026-05-14','BC','Triming','Hairul','Malam','SWA-101','Trimming',4143.1,4152.2,9.1,179,'Trimming'],
+  ['2026-05-15','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3830.6,3838,7.4,0,'Triming'],
+  ['2026-05-15','BC','Triming','Alimuddin','Siang','SWA-101','Triming',4152.2,4160,7.8,343,'Triming'],
+  ['2026-05-15','BC','Langsir','Husen','Malam','SBD-103','Langsir matrial',3838,3847.2,9.2,0,'Langsir matrial'],
+  ['2026-05-15','BC','Langsir','Suntoko','Malam','SWA-102','Triming',4016,4018.7,2.7,0,'Triming'],
+  ['2026-05-15','BC','Langsir','Dede Darmawan','Malam','SWA-101','Triming',4160,4169.6,9.6,0,'Triming'],
+  ['2026-05-16','BC','Barging','Miki Mustakim','Siang','SBD-103','Barging',3847.2,3857.3,10.1,265,'Barging'],
+  ['2026-05-16','BBA','Barging','Hairul','Siang','SWA-101','Barging danlangsir',4169.6,4179.9,10.3,277,'Barging danlangsir'],
+  ['2026-05-16','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3857.3,3867.2,9.9,107,'Triming'],
+  ['2026-05-16','BBA','Barging','Alimuddin','Malam','SWA-102','Barging',4018.7,4029.2,10.5,289,'Barging'],
+  ['2026-05-16','BBA','Barging','Husen','Malam','SWA-102','Barging BBA',4029.2,4038.6,9.4,0,'Barging BBA'],
+  ['2026-05-16','BBA','Barging','Dede Darmawan','Malam','SWA-101','Barging',4179.9,4184.9,5,184,'Barging'],
+  ['2026-05-17','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',3867.2,3877.2,10,198,'Triming'],
+  ['2026-05-17','BBA','Barging','Alimuddin','Siang','SWA-102','Barging',4038.6,4048.9,10.3,322,'Barging'],
+  ['2026-05-17','BBA','Barging','Hairul','Siang','SWA-101','Barging',4184.9,4195.4,10.5,237,'Barging'],
+  ['2026-05-17','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',3877.2,3886.2,9,159,'Triming'],
+  ['2026-05-17','BC','Barging','Husen','Malam','SWA-102','Barging',4048.9,4058.3,9.4,0,'Barging'],
+  ['2026-05-17','BC','Barging','Jhohan','Malam','SWA-101','Barging bba',4195.4,4204.1,8.7,332,'Barging bba'],
+  ['2026-05-18','BBA','Barging','Alimuddin','Siang','SWA-102','Barging',4058.3,4068,9.7,198,'Barging'],
+  ['2026-05-18','BC','Triming','Hairul','Siang','SWA-101','Trimming',4204.1,4213.5,9.4,187,'Trimming'],
+  ['2026-05-18','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3888.3,3898,9.7,0,'Triming'],
+  ['2026-05-18','BBA','Barging','Husen','Malam','SWA-102','Barging, BBA',4068,4078.2,10.2,0,'Barging, BBA'],
+  ['2026-05-18','BC','Triming','Dede Darmawan','Malam','SWA-101','Triming',4213.5,4215.7,2.2,0,'Triming'],
+  ['2026-05-18','BC','Barging','Jhohan','Malam','SWA-101','Barging coal bba',4215.7,4221.4,5.7,0,'Barging coal bba'],
+  ['2026-05-19','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3898,3907.5,9.5,232,'Triming'],
+  ['2026-05-19','BBA','Barging','Dede Darmawan','Siang','SWA-102','Triming dan barging',4078.2,4086.9,8.7,317,'Triming dan barging'],
+  ['2026-05-19','BBA','Barging','Hairul','Siang','SWA-101','Barging',4221.4,4230.5,9.1,305,'Barging'],
+  ['2026-05-19','BC','Langsir','Alimuddin','Malam','SPC-104','Langsir matrial',2140,2149,9,0,'Langsir matrial'],
+  ['2026-05-19','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3907.5,3916.5,9,135,'Triming'],
+  ['2026-05-19','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bba',4086.9,4095.4,8.5,183,'Barging coal bba'],
+  ['2026-05-19','BBA','Barging','Husen','Malam','SWA-101','Barging, BBA',4230.6,4242.4,11.8,202,'Barging, BBA'],
+  ['2026-05-20','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3916.5,3926.8,10.3,212,'Triming'],
+  ['2026-05-20','BBA','Barging','Dede Darmawan','Siang','SWA-102','Triming dan barging',4095.4,4105.7,10.3,204,'Triming dan barging'],
+  ['2026-05-20','BBA','Barging','Hairul','Siang','SWA-101','Barging',4242.4,4252.6,10.2,202,'Barging'],
+  ['2026-05-20','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3926.8,3936,9.2,90,'Triming'],
+  ['2026-05-20','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bba',4105.7,4113.4,7.7,250,'Barging coal bba'],
+  ['2026-05-20','BBA','Barging','Alimuddin','Malam','SWA-101','Barging',4252.6,4261.4,8.8,333,'Barging'],
+  ['2026-05-21','BC','General','Dede Darmawan','Siang','SPC-104','General dan lansir batu',2149,2160.8,11.8,255,'General dan lansir batu'],
+  ['2026-05-21','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3936,3946,10,134,'Triming'],
+  ['2026-05-21','BBA','Barging','Husen','Siang','SWA-102','Barging',4113.4,4123.6,10.2,216,'Barging'],
+  ['2026-05-21','BBA','Barging','Hairul','Siang','SWA-101','Barging',4261.4,4271.4,10,256,'Barging'],
+  ['2026-05-21','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3946,3955.4,9.4,126,'Triming'],
+  ['2026-05-21','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bba',4123.6,4133.7,10.1,216,'Barging coal bba'],
+  ['2026-05-21','BBA','Barging','Alimuddin','Malam','SWA-101','Barging',4271.4,4281.8,10.4,230,'Barging'],
+  ['2026-05-22','BBA','Langsir','Dede Darmawan','Siang','SPC-104','Lansir batu dan ngumpan crusher di jetty dtj',2160.8,2170.8,10,0,'Lansir batu dan ngumpan crusher di jetty dtj'],
+  ['2026-05-22','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3955.4,3965.4,10,125,'Triming'],
+  ['2026-05-22','BBA','Barging','Husen','Siang','SWA-102','Barging',4133.7,4141.3,7.6,314.189,'Barging'],
+  ['2026-05-22','BBA','Barging','Hairul','Siang','SWA-101','Barging',4281.8,4289.4,7.6,280,'Barging'],
+  ['2026-05-22','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',3965.4,3974.1,8.7,147,'Triming'],
+  ['2026-05-22','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bba',4141.3,4146.5,5.2,189,'Barging coal bba'],
+  ['2026-05-22','BBA','Barging','Alimuddin','Malam','SWA-101','Barging',4289.4,4294.1,4.7,198,'Barging'],
+  ['2026-05-23','BBA','Langsir','Dede Darmawan','Siang','SPC-104','Lansir batu di jetty dtj dan general di jetty sen',2170.8,2179.8,9,180,'Lansir batu di jetty dtj dan general di jetty sen'],
+  ['2026-05-23','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3974.1,3982.9,8.8,126,'Triming'],
+  ['2026-05-23','BBA','Langsir','Husen','Siang','SWA-102','Langsir matrial',4146.5,4155.7,9.2,289,'Langsir matrial'],
+  ['2026-05-23','BBA','Triming','Hairul','Siang','SWA-101','Trimming',4294.1,4303.5,9.4,252,'Trimming'],
+  ['2026-05-23','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming',3982.9,3990.5,7.6,149,'Triming'],
+  ['2026-05-23','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bba',4155.7,4159.4,3.7,0,'Triming coal bba'],
+  ['2026-05-23','BBA','Triming','Alimuddin','Malam','SWA-101','Triming',4303.5,4311.8,8.3,0,'Triming'],
+  ['2026-05-24','BC','General','Dede Darmawan','Siang','SPC-104','Pembuatan jalan dt',2179.8,2188.8,9,191,'Pembuatan jalan dt'],
+  ['2026-05-24','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',3990.5,3999.7,9.2,0,'Triming'],
+  ['2026-05-24','BBA','Langsir','Husen','Siang','SWA-102','Langsir matrial',4159.4,4168.2,8.8,323,'Langsir matrial'],
+  ['2026-05-24','BBA','Triming','Hairul','Siang','SWA-101','Trimming',4311.8,4321,9.2,362,'Trimming'],
+  ['2026-05-24','BC','General','Alimuddin','Malam','SPC-104','General',2188.8,2194.6,5.8,0,'General'],
+  ['2026-05-24','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming',3999.7,4004.1,4.4,278,'Triming'],
+  ['2026-05-24','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bba',4168.2,4173.2,5,0,'Triming coal bba'],
+  ['2026-05-24','BBA','Triming','Miki Mustakim','Malam','SWA-101','Triming',4321,4322.4,1.4,0,'Triming'],
+  ['2026-05-25','BC','General','Dede Darmawan','Siang','SPC-104','Perbaikan jalan dan lansir',2194.6,2200.7,6.1,0,'Perbaikan jalan dan lansir'],
+  ['2026-05-25','BBA','Langsir','Husen','Siang','SWA-102','Langsir matrial',4173.2,4179.5,6.3,262,'Langsir matrial'],
+  ['2026-05-25','BBA','Langsir','Hairul','Siang','SWA-101','Langsir',4322.4,4329.8,7.4,250,'Langsir'],
+  ['2026-05-25','BBA','Dredging','Denri','Siang','PC-07Long','Travelling & setcast spoil BAR',6136,6144,8,0,''],
+  ['2026-05-26','BC','General','Hairul','Siang','SPC-104','General',2200.7,2205.7,5,0,'General'],
+  ['2026-05-26','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming',4004.3,4011.1,6.8,0,'Triming'],
+  ['2026-05-26','BBA','Langsir','Husen','Siang','SWA-102','Langsir matrial',4179.5,4185.7,6.2,0,'Langsir matrial'],
+  ['2026-05-26','BBA','Langsir','Hairul','Siang','SWA-101','Langsir',4329.8,4331.1,1.3,0,'Langsir'],
+  ['2026-05-26','BBA','Dredging','Denri','Siang','PC-07Long','setcast spoil BAR',6144,6153.3,9.3,0,''],
+  ['2026-05-27','BC','Langsir','Dede Darmawan','Malam','SPC-104','Lansir material lama',2205.7,2214.7,9,187,'Lansir material lama'],
+  ['2026-05-27','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4011.1,4020.1,9,234,'Triming'],
+  ['2026-05-27','BC','Triming','Husen','Malam','SWA-102','Treming, BBA, BC',4185.7,4194.6,8.9,246,'Treming, BBA, BC'],
+  ['2026-05-27','BC','Triming','Hairul','Malam','SWA-101','Trimming',4331.1,4340.1,9,0,'Trimming'],
+  ['2026-05-27','BBA','Dredging','Herman','Malam','PC-07Long','setcast spoil BAR',6153.3,6161.8,8.5,0,''],
+  ['2026-05-28','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming',4020.1,4027.5,7.4,0,'Triming'],
+  ['2026-05-28','BBA','Dredging','Denri','Siang','PC-07Long','setcast spoil BAR',6161.8,6171.2,9.4,0,''],
+  ['2026-05-28','BBA','Langsir','Dede Darmawan','Malam','SPC-104','Lansir material lama',2214.7,2224.8,10.1,0,'Lansir material lama'],
+  ['2026-05-28','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4027.5,4037.7,10.2,277,'Triming'],
+  ['2026-05-28','BBA','Barging','Husen','Malam','SWA-102','Barging BBA',4202.3,4212.7,10.4,356,'Barging BBA'],
+  ['2026-05-28','BBA','Barging','Hairul','Malam','SWA-101','Barging',4340.1,4350.5,10.4,174,'Barging'],
+  ['2026-05-28','BBA','Dredging','Herman','Malam','PC-07Long','setcast spoil BAR',6171.2,6181.1,9.9,0,''],
+  ['2026-05-29','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming',4037.7,4045,7.3,90,'Triming'],
+  ['2026-05-29','BBA','Barging','Rahmadi','Siang','SWA-102','Barging BBA',4212.7,4218.6,5.9,290,'Barging BBA'],
+  ['2026-05-29','BBA','Barging','','Siang','SWA-101','Barging',4350.5,4356.2,5.7,0,'tidak ada laporan'],
+  ['2026-05-29','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4045,4055.6,10.6,70,'Triming'],
+  ['2026-05-29','BBA','Barging','Husen','Malam','SWA-102','Barging BBA',4218.6,4229.5,10.9,91,'Barging BBA'],
+  ['2026-05-29','BBA','Barging','Dede Darmawan','Malam','SWA-101','Barging',4356.2,4367,10.8,317,'Barging'],
+  ['2026-05-29','BBA','Dredging','Denri','Malam','PC-07Long','setcast spoil BAR',6181.1,6189.4,8.3,0,''],
+  ['2026-05-30','BC','General','Hairul','Siang','SPC-104','General',2224.8,2234.4,9.6,180,'General'],
+  ['2026-05-30','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming',4055.6,4064.8,9.2,0,'Triming'],
+  ['2026-05-30','BC','Barging','Jhohan','Siang','SWA-102','Barging coal bba',4229.5,4239,9.5,302,'Barging coal bba'],
+  ['2026-05-30','BBA','Barging','Alimuddin','Siang','SWA-101','Barging',4367,4376.1,9.1,368,'Barging'],
+  ['2026-05-30','BBA','Dredging','Herman','Siang','PC-07Long','setcast spoil BAR',6189.4,6195.1,5.7,0,''],
+  ['2026-05-30','BBA','Langsir','Dede Darmawan','Malam','SPC-104','Lansir material panas',2234.4,2242.8,8.4,0,'Lansir material panas'],
+  ['2026-05-30','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4064.8,4074.8,10,138,'Triming'],
+  ['2026-05-30','BBA','Triming','Suntoko','Malam','SWA-102','Barging',4239,4248.7,9.7,1063,'Barging'],
+  ['2026-05-30','BBA','Barging','Husen','Malam','SWA-101','Barging, BBA',4376.2,4383.6,7.4,223,'Barging, BBA'],
+  ['2026-05-30','BBA','Dredging','Denri','Malam','PC-07Long','setcast spoil BAR',6195.1,6204.8,9.7,0,''],
+  ['2026-05-31','BC','General','Alief','Siang','SPC-104','General',2242.8,2250.7,7.9,264,'General'],
+  ['2026-05-31','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',4074.8,4083.8,9,198,'Triming'],
+  ['2026-05-31','BC','Barging','Jhohan','Siang','SWA-102','Barging coal bba',4248.7,4258.5,9.8,295,'Barging coal bba'],
+  ['2026-05-31','BBA','Barging','Hairul','Siang','SWA-101','Barging',4383.6,4393.1,9.5,337,'Barging'],
+  ['2026-05-31','BBA','Dredging','Herman','Siang','PC-07Long','setcast spoil BAR',6204.9,6214.7,9.8,0,''],
+  ['2026-05-31','BBA','Langsir','Dede Darmawan','Malam','SPC-104','Lansir material lama',2250.7,2260,9.3,0,'Lansir material lama'],
+  ['2026-05-31','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4083.8,4094,10.2,92,'Triming'],
+  ['2026-05-31','BBA','Triming','Suntoko','Malam','SWA-102','Barging',4258.5,4269.1,10.6,254,'Barging'],
+  ['2026-05-31','BBA','Barging','Husen','Malam','SWA-101','Barging',4393.1,4403.7,10.6,200,'Barging'],
+  ['2026-05-31','BBA','Dredging','Denri','Malam','PC-07Long','setcast spoil BAR',6214.7,6224.5,9.8,0,''],
+  ['2026-06-01','SEN','General','Alief','Siang','SPC-104','General',2260,2267.2,7.2,0,'General'],
+  ['2026-06-01','BC','Triming','Alimuddin','Siang','SBD-103','Triming',4094,4102,8,175,'Triming'],
+  ['2026-06-01','BC','Triming','Hairul','Siang','SWA-101','Trimming',4403.7,4411.7,8,341,'Trimming'],
+  ['2026-06-01','BBA','Dredging','Herman','Siang','PC-07Long','setcast spoil BAR',6224.5,6231.6,7.1,0,''],
+  ['2026-06-01','BBA','Barging','Miki Mustakim','Malam','SBD-103','Barging',4102,4109.2,7.2,140,'Barging'],
+  ['2026-06-01','BBA','Triming','Suntoko','Malam','SWA-102','Barging',4272.3,4280.3,8,0,'Barging'],
+  ['2026-06-01','BBA','Barging','Dede Darmawan','Malam','SWA-101','Barging bba',4411.7,4420.8,9.1,0,'Barging bba'],
+  ['2026-06-01','BBA','Dredging','Denri','Malam','PC-07Long','setcast spoil BAR',6231.6,6239.4,7.8,0,''],
+  ['2026-06-02','SEN','General','Alief','Siang','SPC-104','General',2267.3,2276.7,9.4,204,'General'],
+  ['2026-06-02','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4109.2,4119.1,9.9,111,'Triming'],
+  ['2026-06-02','BC','Barging','Jhohan','Siang','SWA-102','Barging coal bba',4280.3,4288.7,8.4,334,'Barging coal bba'],
+  ['2026-06-02','BBA','Barging','Hairul','Siang','SWA-101','Barging',4420.8,4430.5,9.7,249,'Barging'],
+  ['2026-06-02','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming',4119.1,4128.7,9.6,168,'Triming'],
+  ['2026-06-02','BC','General','Suntoko','Malam','SWA-102','Triming coal Bc.. BBA',4288.7,4297.7,9,130,'Triming coal Bc.. BBA'],
+  ['2026-06-02','BBA','Triming','Husen','Malam','SWA-101','TremingBC, BBA',4430.5,4440.3,9.8,146,'TremingBC, BBA'],
+  ['2026-06-03','BC','General','Alief','Siang','SPC-104','General , barging',2276.7,2285.2,8.5,0,'General , barging'],
+  ['2026-06-03','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4128.7,4138.7,10,90,'Triming'],
+  ['2026-06-03','BC','Triming','Hairul','Siang','SWA-101','Trimming dan barging',4440.3,4450.5,10.2,146,'Trimming dan barging'],
+  ['2026-06-03','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',4138.7,4141.9,3.2,147,'Triming'],
+  ['2026-06-03','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bba',4297.7,4301.9,4.2,0,'Barging coal bba'],
+  ['2026-06-03','BBA','Barging','Husen','Malam','SWA-101','Barging',4450.5,4452.6,2.1,0,'Barging'],
+  ['2026-06-04','SEN','General','Alief','Siang','SPC-104','General',2285.2,2293.1,7.9,234,'General'],
+  ['2026-06-04','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4141.9,4150.2,8.3,0,'Triming'],
+  ['2026-06-04','BC','Triming','Suntoko','Siang','SWA-102','Barging',4301.9,4310.4,8.5,304,'Barging'],
+  ['2026-06-04','BC','Barging','Hairul','Siang','SWA-101','Barging',4452.6,4461.3,8.7,291,'Barging'],
+  ['2026-06-04','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',4150.2,4157.2,7,174,'Triming'],
+  ['2026-06-04','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bc',4310.4,4317.7,7.3,0,'Triming coal bc'],
+  ['2026-06-04','BC','Triming','Husen','Malam','SWA-101','TeremingBC',4461.3,4469.8,8.5,0,'TeremingBC'],
+  ['2026-06-05','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4157.2,4164.2,7,0,'Triming'],
+  ['2026-06-05','BC','General','Suntoko','Siang','SWA-102','Triming coal Bc',4317.7,4323.7,6,122,'Triming coal Bc'],
+  ['2026-06-05','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',4164.2,4172.2,8,0,'Triming'],
+  ['2026-06-05','BC','Barging','Alimuddin','Malam','SWA-102','Barging',4323.7,4329.5,5.8,256,'Barging'],
+  ['2026-06-05','BC','Barging','Hairul','Malam','SWA-101','Barging',4469.8,4479.5,9.7,319,'Barging'],
+  ['2026-06-05','BBA','Dredging','Herman','Malam','PC-07Long','setcast spoil BAR',6239.4,6248.2,8.8,0,''],
+  ['2026-06-06','SEN','General','Alief','Siang','SPC-104','General dan pindahkan alat DTJ',2300.1,2304.3,4.2,178,'General dan pindahkan alat DTJ'],
+  ['2026-06-06','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4172.2,4179.7,7.5,154,'Triming'],
+  ['2026-06-06','BC','General','Suntoko','Siang','SWA-102','Triming coal BC',4329.5,4334.1,4.6,0,'Triming coal BC'],
+  ['2026-06-06','BC','Langsir','Husen','Siang','SWA-101','Langsir matrial',4479.5,4483.9,4.4,71,'Langsir matrial'],
+  ['2026-06-06','BBA','Dredging','Denri','Siang','PC-07Long','setcast spoil BAR',6248.2,6257.5,9.3,0,''],
+  ['2026-06-06','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',4179.7,4188.7,9,118,'Triming'],
+  ['2026-06-06','BBA','Barging','Hairul','Malam','SWA-101','Barging',4483.9,4494.4,10.5,165,'Barging'],
+  ['2026-06-06','BBA','Dredging','Herman','Malam','PC-07Long','setcast spoil BAR',6257.5,6266.1,8.6,0,''],
+  ['2026-06-07','SEN','General','Alief','Siang','SPC-104','General',2304.3,2311.9,7.6,0,'General'],
+  ['2026-06-07','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4188.7,4195.9,7.2,106,'Triming'],
+  ['2026-06-07','BBA','General','Suntoko','Siang','SWA-102','Barging dan triming',4338.8,4346,7.2,170,'Barging dan triming'],
+  ['2026-06-07','BBA','Barging','Husen','Siang','SWA-101','Barging',4494.4,4502.3,7.9,189,'Barging'],
+  ['2026-06-07','BBA','Dredging','Denri','Siang','PC-07Long','setcast spoil BAR',6266.1,6275.5,9.4,0,''],
+  ['2026-06-07','BBA','Langsir','Hairul','Malam','SPC-104','Langsir',2311.9,2320.9,9,0,'Langsir'],
+  ['2026-06-07','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',4195.9,4203.4,7.5,111,'Triming'],
+  ['2026-06-07','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bc',4346,4355,9,0,'Triming coal bc'],
+  ['2026-06-07','BBA','Dredging','Herman','Malam','PC-07Long','setcast spoil BAR',6275.5,6284.1,8.6,0,''],
+  ['2026-06-08','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4203.4,4211,7.6,0,'Triming'],
+  ['2026-06-08','BC','General','Suntoko','Siang','SWA-102','Langsir dan triming',4355,4362.1,7.1,323,'Langsir dan triming'],
+  ['2026-06-08','BC','Triming','Husen','Siang','SWA-101','Treming',4502.3,4510.6,8.3,160,'Treming'],
+  ['2026-06-08','BBA','Dredging','Denri','Siang','PC-07Long','setcast spoil BAR',6284.1,6293.5,9.4,0,''],
+  ['2026-06-08','BC','Barging','Jhohan','Malam','SWA-102','Barging dan triming coal bc',4362.1,4367.2,5.1,0,'Barging dan triming coal bc'],
+  ['2026-06-08','BC','Barging','Hairul','Malam','SWA-101','Barging',4510.6,4521.2,10.6,0,'Barging'],
+  ['2026-06-08','BBA','Dredging','Herman','Malam','PC-07Long','setcast spoil BAR',6293.5,6302.1,8.6,0,''],
+  ['2026-06-09','SEN','General','Alief','Siang','SPC-104','General',2320.9,2331.2,10.3,340,'General'],
+  ['2026-06-09','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',4221.2,4231,9.8,0,'Triming'],
+  ['2026-06-09','BC','Triming','Suntoko','Siang','SWA-102','Barging',4367.2,4377.5,10.3,333,'Barging'],
+  ['2026-06-09','BC','Barging','Husen','Siang','SWA-101','Barging',4521.2,4531.7,10.5,334,'Barging'],
+  ['2026-06-09','BBA','Dredging','Denri','Siang','PC-07Long','setcast spoil BAR',6302.1,6310.7,8.6,0,''],
+  ['2026-06-09','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4231,4241,10,289,'Triming'],
+  ['2026-06-09','BC','Barging','Jhohan','Malam','SWA-102','Barging',4377.5,4388.6,11.1,0,'Barging'],
+  ['2026-06-09','BBA','Barging','Hairul','Malam','SWA-101','Barging',4531.7,4542.1,10.4,0,'Barging'],
+  ['2026-06-09','BBA','Dredging','Herman','Malam','PC-07Long','setcast spoil BAR',6310.7,6318.9,8.2,0,''],
+  ['2026-06-10','SEN','General','Iqbal','Siang','SWA-102','barging',1662,1672,10,0,'barging'],
+  ['2026-06-10','SEN','General','Alief','Siang','SPC-104','General',2331.2,2339.6,8.4,0,'General'],
+  ['2026-06-10','BC','General','Muh. Alief Palulun','Siang','SPC-104','Langsir material',2331.2,2339.6,8.4,0,'General'],
+  ['2026-06-10','BBA','Barging','Alimuddin','Siang','SWA-102','Barging',4388.6,4395.6,7,332,'Barging'],
+  ['2026-06-10','BBA','Dredging','Denri','Siang','PC-07Long','setcast spoil BAR',6318.9,6328,9.1,0,''],
+  ['2026-06-10','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4248.4,4260,11.6,119,'Triming'],
+  ['2026-06-10','BC','Triming','Suntoko','Malam','SWA-102','Barging',4395.6,4407,11.5,156,'Barging'],
+  ['2026-06-10','BC','Barging','Hairul','Malam','SWA-101','Barging',4548.6,4560.4,11.8,168,'Barging'],
+  ['2026-06-10','BC','Barging','Hairul Fadly','Malam','SWA-101','Barging',4548.6,4560.4,11.8,168,'Barging'],
+  ['2026-06-10','BBA','Dredging','Herman','Malam','PC-07Long','Dredging',6328,6329.8,1.8,0,'Dredging'],
+  ['2026-06-11','BC','General','Muh. Alief Palulun','Siang','SPC-104','Langsir material',2339.6,2350.2,10.6,207,'Lambung batu'],
+  ['2026-06-11','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming',4260,4269,9,220,'Triming'],
+  ['2026-06-11','BBA','Barging','Alimudin','Siang','SWA-102','Barging',4407,4417,10,474,'Barging'],
+  ['2026-06-11','BBA','Barging','Husen L','Siang','SWA-101','Barging',4560.4,4571.1,10.7,413,'Barging'],
+  ['2026-06-11','BBA','Dredging','Denri','Siang','PC-07Long','setcast spoil BAR',6329.8,6337,7.2,0,''],
+  ['2026-06-11','BC','Langsir','Hengki Ramadan','Malam','SBD-103','Langsir',4269.3,4281,11.7,298,'Langsir'],
+  ['2026-06-11','BBA','Barging','Suntoko','Malam','SWA-102','Barging',4417,4428,11,372,'Barging'],
+  ['2026-06-11','BC','Barging','Hairul Fadly','Malam','SWA-101','Barging',4571.1,4582.9,11.8,493,'Barging'],
+  ['2026-06-11','BBA','Dredging','Herman','Malam','PC-07Long','setcast spoil BAR',6337,6344.1,7.1,0,''],
+  ['2026-06-12','BC','General','Muh. Alief Palulun','Siang','SPC-104','Langsir material',2350.2,2354.2,4,0,'General'],
+  ['2026-06-12','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming',4281,4289,8,201,'Triming'],
+  ['2026-06-12','BC','Barging','Alimudin','Siang','SWA-102','Barging',4428.6,4438.4,9.8,203,'Barging'],
+  ['2026-06-12','BC','Barging','Husen L','Siang','SWA-101','Barging',4582.9,4586.1,3.2,321,'Barging'],
+  ['2026-06-12','BC','Barging','Muh. Alief Palulun','Siang','SWA-101','Barging',4586.1,4593.8,7.7,0,'Barging'],
+  ['2026-06-12','BC','Langsir','Hengki Ramadan','Malam','SBD-103','Langsir',4289.3,4300.9,11.6,208,'Langsir'],
+  ['2026-06-12','BC','Barging','Suntoko','Malam','SWA-102','Barging',4438.4,4449.8,11.4,120,'Barging'],
+  ['2026-06-12','BC','Barging','Husen L','Malam','SWA-101','Barging',4593.9,4604.6,10.7,384,'Barging'],
+  ['2026-06-13','BC','Langsir','Muh. Alief Palulun','Siang','SPC-104','Langsir material',2354.2,2364.3,10.1,195,'Lambung batu'],
+  ['2026-06-13','BC','Langsir','Miki Mustakim','Siang','SBD-103','Langsir',4300.9,4311.2,10.3,251,'Langsir'],
+  ['2026-06-13','BC','Barging','Alimudin','Siang','SWA-102','Barging',4449.8,4460.5,10.7,342,'Barging'],
+  ['2026-06-13','BBA','Barging','Hairul Fadly','Siang','SWA-101','Barging',4604.6,4615.6,11,332,'Barging'],
+  ['2026-06-13','BC','Langsir','Hengki Ramadan','Malam','SBD-103','Langsir',4311.2,4316.2,5,214,'Langsir'],
+  ['2026-06-13','BBA','Barging','Suntoko','Malam','SWA-102','Barging',4460.5,4472,11.5,344,''],
+  ['2026-06-13','BC','Barging','Husen L','Malam','SWA-101','Barging',4615.6,4627.1,11.5,360,'Barging'],
+  ['2026-06-14','SEN','General','Muh. Alief Palulun','Siang','SPC-104','General',2364.4,2375,10.6,0,'General'],
+  ['2026-06-14','BC','Langsir','Miki Mustakim','Siang','SBD-103','Langsir',4316.2,4324.9,8.7,111,'Langsir'],
+  ['2026-06-14','BC','Barging','Alimudin','Siang','SWA-102','Barging',4472,4483.3,11.3,313,'Barging'],
+  ['2026-06-14','BC','Barging','Hairul Fadly','Siang','SWA-101','Barging BC',4627.1,4638.4,11.3,355,''],
+  ['2026-06-14','BBA','Langsir','Hengki Ramadan','Malam','SBD-103','Langsir',4324.9,4336.3,11.4,169,'Langsir'],
+  ['2026-06-14','BC','Barging','Suntoko','Malam','SWA-102','Barging',4483.3,4491.8,8.5,265,''],
+  ['2026-06-14','BBA','Barging','Husen L','Malam','SWA-101','Barging',4638.4,4646.7,8.3,293,'Barging'],
+  ['2026-06-15','SEN','General','Muh. Alief Palulun','Siang','SPC-104','General',2375.3,2383.1,7.8,260,'Rehandling'],
+  ['2026-06-15','BC','Langsir','Alimudin','Siang','SBD-103','Langsir',4336.3,4338.7,2.4,0,'Langsir'],
+  ['2026-06-15','BC','Langsir','Muh. Alief Palulun','Siang','SBD-103','Langsir',4338.7,4339.7,1,0,'Langsir'],
+  ['2026-06-15','BC','Langsir','Muh. Alief Palulun','Siang','SWA-102','Langsir',4491.8,4493.8,2,0,'Langsir'],
+  ['2026-06-15','BC','Barging','Alimudin','Siang','SWA-102','Barging',4493.8,4502.8,9,334,'Barging'],
+  ['2026-06-15','BBA','Barging','Hairul Fadly','Siang','SWA-101','Barging BBA',4647.7,4657.2,9.5,0,''],
+  ['2026-06-15','BC','Langsir','Miki Mustakim','Malam','SBD-103','Langsir',4339.7,4350.5,10.8,0,'Langsir'],
+  ['2026-06-15','BC','Barging','Suntoko','Malam','SWA-102','Barging',4502.8,4513.7,10.9,0,''],
+  ['2026-06-15','BBA','Barging','Husen L','Malam','SWA-101','Barging',4657.2,4668.3,11.1,241,'Barging'],
+  ['2026-06-16','SEN','General','Muh. Alief Palulun','Siang','SPC-104','General',2383.1,2393.2,10.1,0,'Rehandling'],
+  ['2026-06-16','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4350.5,4361.1,10.6,321,'Triming'],
+  ['2026-06-16','BBA','Barging','Alimudin','Siang','SWA-102','Barging',4513.7,4522.9,9.2,248,'Barging'],
+  ['2026-06-16','BBA','Barging','Hairul Fadly','Siang','SWA-101','Barging BBA',4668.3,4678.8,10.5,334,''],
+  ['2026-06-16','BBA','Dredging','Herman','Siang','PC-07Long','Dredging',6344.1,6352.9,8.8,0,'Dredging'],
+  ['2026-06-16','BBA','Triming','Dede Darmawan','Malam','SPC-104','Triming',2393.2,2404,10.8,0,''],
+  ['2026-06-16','BC','Langsir','Miki Mustakim','Malam','SBD-103','Langsir',4361.8,4371.6,9.8,206,'Barging'],
+  ['2026-06-16','BBA','Barging','Suntoko','Malam','SWA-102','Barging',4522.9,4534.1,11.2,316,''],
+  ['2026-06-16','BBA','Barging','Husen L','Malam','SWA-101','Barging',4678.8,4689.7,10.9,257,'Barging'],
+  ['2026-06-16','BBA','Dredging','Denri','Malam','PC-07Long','Dredging',6352.9,6357.3,4.4,0,'Dredging'],
+  ['2026-06-17','BC','General','Muh. Alief Palulun','Siang','SPC-104','General',2404,2408,4,267,'General'],
+  ['2026-06-17','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4371.8,4381.8,10,331,'Triming'],
+  ['2026-06-17','BC','Barging','Muh. Alief Palulun','Siang','SWA-102','Barging',4534.1,4540.5,6.4,185,'Barging'],
+  ['2026-06-17','BBA','Barging','Hairul Fadly','Siang','SWA-101','Barging BBA',4689.7,4700.4,10.7,263,''],
+  ['2026-06-17','BC','Barging','Miki Mustakim','Malam','SBD-103','Barging',4381.8,4391.6,9.8,0,'Barging'],
+  ['2026-06-17','BC','Barging','Husen L','Malam','SWA-102','Barging',4540.5,4550.7,10.2,344,'Barging'],
+  ['2026-06-17','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging',4700.4,4710.8,10.4,259,''],
+  ['2026-06-18','SEN','General','Muh. Alief Palulun','Siang','SPC-104','General',2408.6,2417.3,8.7,0,'Rehandling'],
+  ['2026-06-18','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4391.6,4401.6,10,329,'Triming'],
+  ['2026-06-18','BBA','Barging','Suntoko','Siang','SWA-102','Barging',4550.7,4560.1,9.4,200,''],
+  ['2026-06-18','BBA','Barging','Hairul Fadly','Siang','SWA-101','Barging BBA',4710.7,4720.4,9.7,200,''],
+  ['2026-06-18','BC','Barging','Husen L','Malam','SWA-102','Barging',4560.1,4570.7,10.6,228,''],
+  ['2026-06-18','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging',4720.4,4731.3,10.9,313,''],
+  ['2026-06-19','BC','Langsir','Muh. Alief Palulun','Siang','SPC-104','Rehenling',2417.3,2423.9,6.6,200,''],
+  ['2026-06-19','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4411.9,4418,6.1,158,''],
+  ['2026-06-19','','Triming','Suntoko','Siang','SWA-102','Triming',4570.7,4577,6.3,226,''],
+  ['2026-06-19','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',4418,4420.6,2.6,126,''],
+  ['2026-06-19','BC','Triming','Dede Darmawan','Malam','SWA-102','Triming',4577,4578.6,1.6,167,''],
+  ['2026-06-19','BC','Triming','Hairul Fadly','Malam','SWA-101','Trimming',4731.3,4735.4,4.1,260,''],
+  ['2026-06-20','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4420.6,4430.6,10,0,''],
+  ['2026-06-20','','Barging','Suntoko','Siang','SWA-102','Barging',4578.6,4588.7,10.1,79,''],
+  ['2026-06-20','BC','Barging','Husen L','Siang','SWA-101','Barging',4735.4,4745.6,10.2,63,''],
+  ['2026-06-20','BC','Barging','Miki Mustakim','Malam','SBD-103','Barging',4430.6,4441,10.4,210,''],
+  ['2026-06-20','BBA','Barging','Dede Darmawan','Malam','SWA-102','Triming dan barging bba',4588.7,4599.7,11,213,''],
+  ['2026-06-20','BBA','Barging','Hairul Fadly','Malam','SWA-101','Barging',4745.6,4756.6,11,237,''],
+  ['2026-06-21','BC','General','Denri','Siang','SPC-104','General',2423.9,2434.6,10.7,257,'Tidak ada laporan'],
+  ['2026-06-21','BBA','Barging','Hengki Ramadan','Siang','SBD-103','Barging',4441,4450.4,9.4,153,''],
+  ['2026-06-21','BC','Barging','Muh. Alief Palulun','Siang','SWA-102','Barging',4599.7,4608.9,9.2,347,''],
+  ['2026-06-21','BC','Barging','Husen L','Siang','SWA-101','Barging',4756.6,4766.9,10.3,290,''],
+  ['2026-06-21','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming',4450.4,4459,8.6,206,''],
+  ['2026-06-21','BBA','Triming','Dede Darmawan','Malam','SWA-102','Triming coal bc',4608.9,4617.6,8.7,267,''],
+  ['2026-06-21','BC','Barging','Hairul Fadly','Malam','SWA-101','Barging dantrimming',4766.9,4775.6,8.7,201,''],
+  ['2026-06-22','BC','General','Denri','Siang','SPC-104','General',2434.6,2442.4,7.8,108,''],
+  ['2026-06-22','BBA','Triming','Husen L','Siang','SBD-103','Triming',4459,4464.8,5.8,155,''],
+  ['2026-06-22','','Triming','Suntoko','Siang','SWA-102','Triming',4617.6,4624.7,7.1,0,''],
+  ['2026-06-22','BC','Triming','Muh. Alief Palulun','Siang','SWA-101','Triming BBA& BC',4775.6,4783.4,7.8,420,''],
+  ['2026-06-22','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4464.8,4470.8,6,0,''],
+  ['2026-06-22','BC','Triming','Dede Darmawan','Malam','SWA-102','Triming coal bc dan bba',4624.7,4632.2,7.5,247,''],
+  ['2026-06-22','BC','Triming','Hairul Fadly','Malam','SWA-101','Triimming',4783.4,4790.9,7.5,380,''],
+  ['2026-06-23','BC','General','Denri','Siang','SPC-104','General',2442.4,2449.1,6.7,0,'General'],
+  ['2026-06-23','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',4470.8,4477.3,6.5,0,''],
+  ['2026-06-23','BC','Langsir','Suntoko','Siang','SWA-102','Langsir material',4632.2,4637.7,5.5,0,''],
+  ['2026-06-23','BC','Langsir','Husen L','Siang','SWA-101','Langsir matrial',4790.9,4796.6,5.7,0,''],
+  ['2026-06-23','BC','Triming','Hengki Ramadan','Malam','SBD-103','Trimming',4477.3,4487.8,10.5,217,''],
+  ['2026-06-23','BC','Barging','Dede Darmawan','Malam','SWA-102','Triming dan barging coal bc',4637.7,4648.5,10.8,208,''],
+  ['2026-06-23','BC','Barging','Hairul Fadly','Malam','SWA-101','Barging',4796.6,4807.4,10.8,227,''],
+  ['2026-06-24','BC','General','Herman','Siang','SPC-104','General',2449.1,2451.8,2.7,0,'General'],
+  ['2026-06-24','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',4487.8,4496.8,9,232,''],
+  ['2026-06-24','BC','Barging','Muh. Alief Palulun','Siang','SWA-102','Triming coal BC dan BBA',4648.5,4656.9,8.4,355,'Trimming Coal BC & BBA'],
+  ['2026-06-24','BC','Triming','Husen L','Siang','SWA-101','Treming, BC-BBA-barging-BBA',4807.4,4816.3,8.9,260,''],
+  ['2026-06-24','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4496.8,4505.2,8.4,114,''],
+  ['2026-06-24','BC','Barging','Suntoko','Malam','SWA-102','Barging dan triming',4656.9,4660.6,3.7,148,''],
+  ['2026-06-24','BC','Triming','Hairul Fadly','Malam','SWA-101','Trimming',4816.3,4824.8,8.5,232,''],
+  ['2026-06-25','BC','General','Muh. Alief Palulun','Siang','SPC-104','Support maintenance RFB',2451.8,2463,11.2,0,''],
+  ['2026-06-25','BBA','Langsir','Miki Mustakim','Siang','SBD-103','Langsir material',4505.2,4509.8,4.6,235,''],
+  ['2026-06-25','BC','Triming','Husen L','Siang','SWA-102','Treming, BC, BBA',4660.6,4669.2,8.6,260,''],
+  ['2026-06-25','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming boal bc dan bba',4824.8,4833.4,8.7,350,''],
+  ['2026-06-25','BC','General','Muh. Alief Palulun','Malam','SPC-104','Support maintenance RFB',2463,2464,1,0,'General'],
+  ['2026-06-25','BBA','Triming','Suntoko','Malam','SWA-102','Triming coal BBA,, BC',4669.2,4678,8.8,0,''],
+  ['2026-06-25','BC','Triming','Hairul Fadly','Malam','SWA-101','Trimming',4833.4,4842.4,9,0,''],
+  ['2026-06-26','BC','General','Muh. Alief Palulun','Siang','SPC-104','Support Maintenance RFB',2464,2473,9,0,''],
+  ['2026-06-26','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming',4509.8,4516,6.2,0,''],
+  ['2026-06-26','BBA','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bba',4842.4,4849.6,7.2,133,''],
+  ['2026-06-26','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4516,4523.2,7.2,0,''],
+  ['2026-06-26','BBA','Triming','Suntoko','Malam','SWA-102','Triming coal BBA',4678,4683.4,5.4,131,''],
+  ['2026-06-27','BC','General','Muh. Alief Palulun','Siang','SPC-104','General & Support maintenance RFB',2473,2484.7,11.7,245,''],
+  ['2026-06-27','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming',4523.7,4530.6,6.9,200,''],
+  ['2026-06-27','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bba',4683.4,4692.5,9.1,150,''],
+  ['2026-06-27','BBA','Triming','Hairul Fadly','Siang','SWA-101','Trimming',4849.6,4858.5,8.9,104,''],
+  ['2026-06-27','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4530.6,4533.6,3,0,''],
+  ['2026-06-27','BBA','Triming','Suntoko','Malam','SWA-102','Triming coal BBA',4692.5,4696,3.5,0,''],
+  ['2026-06-27','BBA','Triming','Dede Darmawan','Malam','SWA-101','Triming',4858.5,4861.1,2.6,0,''],
+  ['2026-06-28','BC','General','Muh. Alief Palulun','Siang','SPC-104','General & Support maintenance RFB',2484.7,2496.7,12,0,''],
+  ['2026-06-28','BBA','Triming','Miki Mustakim','Siang','SBD-103','Triming',4533.6,4541.6,8,0,''],
+  ['2026-06-28','BBA','Triming','Jhohan','Siang','SWA-102','Triming coal bba',4696,4706.1,10.1,220,''],
+  ['2026-06-28','BBA','Triming','Hairul Fadly','Siang','SWA-101','Trimming',4861.1,4871.2,10.1,150,''],
+  ['2026-06-28','BBA','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4541.6,4544.6,3,0,''],
+  ['2026-06-28','BBA','Triming','Suntoko','Malam','SWA-102','Triming',4706.1,4710,3.9,0,''],
+  ['2026-06-29','BC','General','Muh. Alief Palulun','Siang','SPC-104','General & Support maintenance RFB',2496.7,2506.3,9.6,0,''],
+  ['2026-06-29','BC','Langsir','Hairul Fadly','Siang','SBD-103','Langsir',4544.6,4548.3,3.7,0,''],
+  ['2026-06-29','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bba',4710,4719.3,9.3,380,''],
+  ['2026-06-29','BC','Langsir','Hairul Fadly','Siang','SWA-101','Langsir',4871.2,4878.5,7.3,0,''],
+  ['2026-06-29','BBA','Triming','Miki Mustakim','Malam','SBD-103','Triming',4548.4,4557.8,9.4,122,''],
+  ['2026-06-29','BBA','Barging','Suntoko','Malam','SWA-102','. Barging',4719.3,4729,9.7,0,''],
+  ['2026-06-29','BBA','Barging','Dede Darmawan','Malam','SWA-101','Barging coal bba',4878.5,4888.7,10.2,169,''],
+  ['2026-06-30','BC','General','Muh. Alief Palulun','Siang','SPC-104','Langsir',2506.3,2515.6,9.3,0,''],
+  ['2026-06-30','BBA','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4557.8,4567.4,9.6,0,''],
+  ['2026-06-30','BC','Barging','Jhohan','Siang','SWA-102','Barging bba',4729,4737.8,8.8,0,''],
+  ['2026-06-30','BBA','Barging','Hairul Fadly','Siang','SWA-101','Barging',4888.7,4898.5,9.8,0,''],
+  ['2026-06-30','SEN','General','Denri','Siang','PC-07Long','Traveling Pit to Jetty',6357.3,6362.5,5.2,0,''],
+  ['2026-06-30','BC','Langsir','','Siang','SBD-103','Standby',0,0,0,168,'Tidak ada laporan'],
+  ['2026-06-30','BBA','Barging','Alfius','Siang','SBD-103','Standby',0,0,0,0,'Standby'],
+  ['2026-06-30','BC','Barging','Miki Mustakim','Malam','SBD-103','Barging',4567.4,4577.4,10,0,''],
+  ['2026-06-30','BC','Barging','Suntoko','Malam','SWA-102','Barging',4737.8,4748.3,10.5,220,''],
+  ['2026-07-01','SEN','General','Muh. Alief Palulun','Siang','SPC-104','General support repair RFB',2515.6,2522.6,7,0,''],
+  ['2026-07-01','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4577.4,4585.4,8,269,''],
+  ['2026-07-01','BC','Barging','Dede Darmawan','Siang','SWA-102','Barging dan triming bc',4748.3,4756.1,7.8,249,''],
+  ['2026-07-01','BC','Barging','Hairul Fadly','Siang','SWA-101','Barging',4898.5,4906.6,8.1,236,''],
+  ['2026-07-01','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',4585.4,4592.8,7.4,0,''],
+  ['2026-07-01','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bc',4756.1,4763,6.9,45,''],
+  ['2026-07-02','BC','General','Muh. Alief Palulun','Siang','SPC-104','General & support pemasangan Lamela',2522.6,2528.8,6.2,0,''],
+  ['2026-07-02','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4592.8,4598.8,6,250,''],
+  ['2026-07-02','BC','Triming','Suntoko','Siang','SWA-102','Triming coal bc',4763,4769.4,6.4,0,''],
+  ['2026-07-02','BC','Triming','Hairul Fadly','Siang','SWA-101','Trimming',4906.6,4912.9,6.3,520,''],
+  ['2026-07-02','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',4598.8,4600.8,2,0,''],
+  ['2026-07-02','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bc',4769.4,4771.7,2.3,0,''],
+  ['2026-07-03','BC','General','Muh. Alief Palulun','Siang','SPC-104','Support maintenance RFB',2528.8,2533.8,5,0,''],
+  ['2026-07-03','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4600.8,4606.9,6.1,0,''],
+  ['2026-07-03','BC','Triming','Hairul Fadly','Siang','SWA-101','Trimming',4912.9,4917.9,5,0,''],
+  ['2026-07-03','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',4606.9,4615.4,8.5,189,''],
+  ['2026-07-03','BC','Triming','Alimudin','Malam','SWA-102','Trimming',4772.1,4780.4,8.4,147,''],
+  ['2026-07-04','BC','General','Denri','Siang','SPC-104','Support maintenance RFB',2533.8,2536.7,2.9,0,''],
+  ['2026-07-04','BC','General','Denri','Siang','SBD-103','Trimming',4615.6,4621.5,5.9,246,''],
+  ['2026-07-04','BC','Barging','Suntoko','Siang','SWA-102','Barging',4780.4,4789.9,9.6,328,''],
+  ['2026-07-04','BC','Barging','Hairul Fadly','Siang','SWA-101','Barging',4917.9,4927.2,9.3,192,''],
+  ['2026-07-04','BC','Barging','Miki Mustakim','Malam','SBD-103','Barging',4621.5,4631.3,9.8,0,''],
+  ['2026-07-04','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',4789.9,4798.6,8.7,0,''],
+  ['2026-07-04','BC','Barging','Alimudin','Malam','SWA-101','Barging',4927.2,4936.3,9.1,145,''],
+  ['2026-07-05','BC','General','Muh. Alief Palulun','Siang','SPC-104','Support maintenance RFB',2536.7,2544.4,7.7,0,''],
+  ['2026-07-05','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4631.3,4638.4,7.1,257,''],
+  ['2026-07-05','BC','Triming','Suntoko','Siang','SWA-102','Triming coal BC',4798.6,4805.8,7.2,360,''],
+  ['2026-07-05','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bc',4936.3,4943.9,7.6,310,''],
+  ['2026-07-05','BC','Triming','Alimudin','Malam','SBD-103','Triming',4638.4,4648.4,10,0,''],
+  ['2026-07-05','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',4805.8,4816.8,11,119,''],
+  ['2026-07-05','BC','Barging','Hairul Fadly','Malam','SWA-101','Barging',4943.9,4954.4,10.5,117,''],
+  ['2026-07-06','SEN','General','Muh. Alief Palulun','Siang','SPC-104','General, drainage sediment removal',2544.4,2550.5,6.1,295,''],
+  ['2026-07-06','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4648.4,4654.5,6.1,0,''],
+  ['2026-07-06','BC','Barging','Suntoko','Siang','SWA-102','Barging',4816.8,4822.2,5.4,300,''],
+  ['2026-07-06','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bc',4954.4,4960.2,5.8,200,''],
+  ['2026-07-06','SEN','General','Denri','Siang','PC-07Long','General',6362.5,6368.7,6.2,0,''],
+  ['2026-07-06','BC','Triming','Alimudin','Malam','SBD-103','Triming',4654.5,4655.5,1,184,''],
+  ['2026-07-07','BC','Langsir','Muh. Alief Palulun','Siang','SPC-104','General & lambung batu',2550.5,2557.8,7.3,0,''],
+  ['2026-07-07','BC','Triming','','Siang','SBD-103','',4655.5,4657.5,2,0,'tidak ada laporan'],
+  ['2026-07-07','BC','Barging','Suntoko','Siang','SWA-102','Barging',4822.2,4829.3,7.1,0,''],
+  ['2026-07-07','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging',4960.2,4967.7,7.5,0,''],
+  ['2026-07-07','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4657.5,4664.5,7,180,''],
+  ['2026-07-07','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bba',4829.3,4832.5,3.2,289,''],
+  ['2026-07-07','BC','Barging','Hairul Fadly','Malam','SWA-101','Barging',4967.7,4970.9,3.2,348,''],
+  ['2026-07-08','BC','General','Muh. Alief Palulun','Siang','SPC-104','Support maintenance RFB',2557.8,2565.8,8,0,''],
+  ['2026-07-08','BC','Triming','Alimudin','Siang','SBD-103','Triming',4664.5,4671.8,7.3,0,''],
+  ['2026-07-08','BC','Triming','Suntoko','Siang','SWA-102','Triming coal BC',4832.5,4838.5,6,0,''],
+  ['2026-07-08','SEN','General','Denri','Siang','PC-07Long','General',6368.7,6374.6,5.9,0,''],
+  ['2026-07-08','SEN','General','Dede Darmawan','Malam','SPC-104','General, drainage sediment removal',2565.8,2566.8,1,0,''],
+  ['2026-07-08','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4671.9,4679.9,8,250,''],
+  ['2026-07-08','BC','Triming','Hairul Fadly','Malam','SWA-102','Trimming',4838.5,4846.7,8.2,225,''],
+  ['2026-07-08','BC','Triming','Dede Darmawan','Malam','SWA-101','Triming coal bc',4970.9,4979.3,8.4,87,''],
+  ['2026-07-09','BC','General','Muh. Alief Palulun','Siang','SPC-104','Support maintenance RFB',2566.8,2574.8,8,305,''],
+  ['2026-07-09','BC','Barging','Alimudin','Siang','SBD-103','Triming dan barging',4679.9,4688.3,8.4,281,''],
+  ['2026-07-09','BC','Barging','Jhohan','Siang','SWA-102','Barging dan triming',4846.7,4855.5,8.8,300,''],
+  ['2026-07-09','SEN','General','Denri','Siang','PC-07Long','General',6374.6,6382.6,8,0,''],
+  ['2026-07-09','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4688.3,4696.7,8.4,0,''],
+  ['2026-07-09','BC','Barging','Suntoko','Malam','SWA-102','Barging',4855.5,4863.9,8.4,0,''],
+  ['2026-07-09','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging',4979.3,4988.6,9.3,121,''],
+  ['2026-07-10','BC','General','Muh. Alief Palulun','Siang','SPC-104','General, stockpile trimming',2574.8,2581.4,6.6,0,''],
+  ['2026-07-10','BC','Barging','Alimudin','Siang','SBD-103','Triming dan barging',4696.7,4703.4,6.7,255,''],
+  ['2026-07-10','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bc',4863.9,4870.3,6.4,255,''],
+  ['2026-07-10','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4703.4,4711.7,8.3,0,''],
+  ['2026-07-10','BC','Barging','Suntoko','Malam','SWA-102','Barging',4870.3,4878.6,8.3,124,''],
+  ['2026-07-10','BC','Barging','Husen L','Malam','SWA-101','Barging, BC',4988.6,4997,8.4,161,''],
+  ['2026-07-11','BC','General','Denri','Siang','SPC-104','General, stockpile trimming',2581.4,2588.2,6.8,0,'General'],
+  ['2026-07-11','BC','Triming','Alimudin','Siang','SBD-103','Triming',4711.7,4719.1,7.4,315,''],
+  ['2026-07-11','BC','Triming','Hairul Fadly','Siang','SWA-102','Trimming',4878.6,4882,3.4,0,''],
+  ['2026-07-11','BC','Triming','Hairul Fadly','Siang','SWA-101','Trimming',4997,5000.2,3.2,237,''],
+  ['2026-07-11','BC','Triming','Husen L','Malam','SBD-103','Treming BC',4719.1,4727.5,8.4,171,''],
+  ['2026-07-11','BC','Triming','Suntoko','Malam','SWA-102','Triming',4882,4885.6,3.6,194,''],
+  ['2026-07-11','BC','Triming','Dede Darmawan','Malam','SWA-101','Triming coal bc',5000.2,5009.2,9,0,''],
+  ['2026-07-12','BC','General','Muh. Alief Palulun','Siang','SPC-104','General, stockpile trimming',2588.2,2594.8,6.6,0,''],
+  ['2026-07-12','BC','Triming','Alimudin','Siang','SBD-103','Triming',4727.5,4734.6,7.1,195,''],
+  ['2026-07-12','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bc',4885.6,4893.8,8.2,200,''],
+  ['2026-07-12','BC','Triming','Hairul Fadly','Siang','SWA-101','Trimming',5009.2,5017.8,8.6,310,''],
+  ['2026-07-12','SEN','General','Denri','Siang','PC-07Long','WMP sediment removal, general, spoil',6382.6,6390,7.4,0,''],
+  ['2026-07-12','BC','Triming','Husen L','Malam','SBD-103','Treming, BC',4734.6,4743.2,8.6,0,''],
+  ['2026-07-12','BC','Barging','Suntoko','Malam','SWA-102','Barging',4893.8,4901.4,7.6,0,''],
+  ['2026-07-12','BC','Barging','Dede Darmawan','Malam','SWA-101','Triming dan barging coal bc',5017.8,5026.4,8.6,0,''],
+  ['2026-07-13','SEN','General','Muh. Alief Palulun','Siang','SPC-104','General, drainage sediment removal',2594.8,2602,7.2,242,''],
+  ['2026-07-13','BC','Triming','Alimudin','Siang','SBD-103','Barging dan triming',4743.2,4750.5,7.3,225,''],
+  ['2026-07-13','BC','Barging','Jhohan','Siang','SWA-102','Barging coal bc',4901.4,4909.1,7.7,306,''],
+  ['2026-07-13','BC','Barging','Hairul Fadly','Siang','SWA-101','Barging',5026.4,5033.6,7.2,200,''],
+  ['2026-07-13','SEN','General','Denri','Siang','PC-07Long','WMP sediment removal, general, spoil',6390,6398.6,8.6,0,''],
+  ['2026-07-13','BC','Triming','Husen L','Malam','SBD-103','Treming, BC',4750.5,4758.6,8.1,102,''],
+  ['2026-07-13','BC','Barging','Suntoko','Malam','SWA-102','Barging',4909.1,4917.5,8.4,222,''],
+  ['2026-07-13','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging coal bc',5033.6,5041.9,8.3,130,''],
+  ['2026-07-14','SEN','General','Muh. Alief Palulun','Siang','SPC-104','General, drainage sediment removal',2602,2610.2,8.2,0,''],
+  ['2026-07-14','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4758.6,4767.3,8.7,118,''],
+  ['2026-07-14','BC','Barging','Jhohan','Siang','SWA-102','Barging dan triming coal bc',4917.5,4926.4,8.9,128,''],
+  ['2026-07-14','BC','Barging','Hairul Fadly','Siang','SWA-101','Barging dan trimming',5041.9,5050.3,8.4,130,''],
+  ['2026-07-14','SEN','General','Denri','Siang','PC-07Long','WMP sediment removal, general, spoil',6398.6,6406.7,8.1,0,''],
+  ['2026-07-14','BC','Triming','Alimudin','Malam','SBD-103','Triming',4767.3,4775.5,8.2,0,''],
+  ['2026-07-14','BC','Barging','Suntoko','Malam','SWA-102','Barging',4926.4,4934.9,8.5,217,''],
+  ['2026-07-14','BC','Barging','Husen L','Malam','SWA-101','Barging',5050.3,5058.6,8.3,46,''],
+  ['2026-07-15','BC','General','Denri','Siang','SPC-104','Stockpile maintenance',2610.2,2616,5.8,178,''],
+  ['2026-07-15','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4775.5,4779,3.5,102,''],
+  ['2026-07-15','BC','Barging','Dede Darmawan','Siang','SWA-102','Barging coal bc',4934.9,4941.7,6.8,133,''],
+  ['2026-07-15','BC','Barging','Hairul Fadly','Siang','SWA-101','Barging',5058.6,5065.1,6.5,156,''],
+  ['2026-07-15','BC','Barging','Alimudin','Malam','SBD-103','Barging',4779,4785,6,0,''],
+  ['2026-07-15','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',4941.7,4947.2,5.5,109,''],
+  ['2026-07-15','BC','Barging','Husen L','Malam','SWA-101','Barging, BC',5065.1,5071.2,6.1,0,''],
+  ['2026-07-16','BC','General','Denri','Siang','SPC-104','Stockpile maintenance',2616,2623.4,7.4,0,''],
+  ['2026-07-16','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4785,4788.2,3.2,185,''],
+  ['2026-07-16','BC','Barging','Suntoko','Siang','SWA-102','Barging dan langsir',4947.2,4954.2,7,337,''],
+  ['2026-07-16','BC','Barging','Hairul Fadly','Siang','SWA-101','Barging',5071.2,5079.7,8.5,432,''],
+  ['2026-07-17','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4788.2,4795,6.8,157,''],
+  ['2026-07-17','BC','Langsir','Suntoko','Siang','SWA-102','Langsir coal',4954.2,4960,5.8,144,''],
+  ['2026-07-17','BC','Langsir','Jhohan','Malam','SWA-102','Langsir dan barging',4960,4968.3,8.3,0,''],
+  ['2026-07-17','BC','Barging','Hairul Fadly','Malam','SWA-101','Barging dan langsir',5079.7,5087.7,8,167,''],
+  ['2026-07-18','BC','General','Muh. Alief Palulun','Siang','SPC-104','Support maintenance RFB',2623.4,2632.4,9,0,''],
+  ['2026-07-18','BC','Langsir','Husen L','Siang','SWA-102','Langsir matrial',4968.3,4974.3,6,170,''],
+  ['2026-07-18','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming',5087.7,5094.7,7,135,''],
+  ['2026-07-18','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc1q',4974.3,4982,7.7,0,''],
+  ['2026-07-18','BC','Barging','Hairul Fadly','Malam','SWA-101','Barging',5094.7,5102.1,7.4,0,''],
+  ['2026-07-19','BC','Langsir','Muh. Alief Palulun','Siang','SPC-104','Lambung batu, test pit',2632.4,2641.4,9,216,''],
+  ['2026-07-19','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4795,4798.5,3.5,0,''],
+  ['2026-07-19','BC','Barging','Suntoko','Siang','SWA-102','Barging',4982,4989.4,7.4,360,''],
+  ['2026-07-19','BC','Barging','Husen L','Siang','SWA-101','Barging/langsir matrial',5102.1,5109.1,7,451,''],
+  ['2026-07-19','SEN','General','Denri','Siang','PC-07Long','Test pit dan general',6406.7,6414.7,8,0,''],
+  ['2026-07-19','BC','Barging','Miki Mustakim','Malam','SPC-104','setcast raw coal',2641.4,2646.3,4.9,0,''],
+  ['2026-07-19','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',4989.4,4997.1,7.7,0,''],
+  ['2026-07-19','BC','Barging','Hairul Fadly','Malam','SWA-101','Barging',5109.1,5116.7,7.6,146,''],
+  ['2026-07-20','BC','Barging','Suntoko','Siang','SWA-102','Barging',4997.1,5004.1,7,327,''],
+  ['2026-07-20','BC','Barging','Muh. Alief Palulun','Siang','SWA-101','Barging',5116.7,5123.9,7.2,207,''],
+  ['2026-07-20','BC','Triming','Husen L','Siang','DZ-09 DTJ','Treming BC',12000.6,12007.1,6.5,205,''],
+  ['2026-07-20','BC','General','Denri','Malam','SPC-104','Setcast',2646.3,2653.4,7.1,0,''],
+  ['2026-07-20','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',5004.1,5011.3,7.2,170,''],
+  ['2026-07-20','BC','Barging','Alimudin','Malam','SWA-101','Barging',5123.9,5131.4,7.5,260,''],
+  ['2026-07-20','BC','Triming','Hengki Ramadan','Malam','DZ-09 DTJ','Triming',12007.1,12014.4,7.3,0,''],
+  ['2026-07-21','BC','General','Muh. Alief Palulun','Siang','SPC-104','Support maintenance RFB',2653.4,2662,8.6,270,''],
+  ['2026-07-21','BC','Barging','Suntoko','Siang','SWA-101','Triming dan Barging',5131.4,5139.8,8.4,176,''],
+  ['2026-07-21','BC','Triming','Husen L','Siang','DZ-09 DTJ','Treming, BC',12014.4,12021.9,7.5,182,''],
+  ['2026-07-21','BC','General','Denri','Malam','SPC-104','Setcast support repair RFB',2662,2670.7,8.7,0,''],
+  ['2026-07-21','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',5011.3,5020.9,9.6,385,''],
+  ['2026-07-21','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging coal bc',5139.8,5148.8,9,129,''],
+  ['2026-07-21','BC','Triming','Hengki Ramadan','Malam','DZ-09 DTJ','Triming',12021.9,12030.5,8.6,0,''],
+  ['2026-07-22','BC','Langsir','Muh. Alief Palulun','Siang','SPC-104','General, lambung batu',2670.7,2677.7,7,254,''],
+  ['2026-07-22','BC','Barging','Alimudin','Siang','SWA-102','Barging',5020.9,5027.9,7,237,''],
+  ['2026-07-22','BC','Barging','Husen L','Siang','SWA-101','Barging BC',5148.8,5155.7,6.9,428,''],
+  ['2026-07-22','BC','Barging','Miki Mustakim','Siang','DZ-09 DTJ','Barging',12030.5,12037.9,7.4,175,''],
+  ['2026-07-22','BC','Barging','Suntoko','Malam','SWA-102','Barging',5027.9,5036.6,8.7,148,''],
+  ['2026-07-22','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging coal bc',5155.7,5164.7,9,0,''],
+  ['2026-07-22','BC','Triming','Denri','Malam','DZ-09 DTJ','trimming',12037.9,12046.7,8.8,0,''],
+  ['2026-07-23','BC','Langsir','Muh. Alief Palulun','Siang','SPC-104','Lambung batu',2677.7,2686.1,8.4,0,''],
+  ['2026-07-23','BC','Barging','Alimudin','Siang','SWA-102','Barging',5036.6,5044.6,8,338,''],
+  ['2026-07-23','BC','Barging','Husen L','Siang','SWA-101','Barging BC',5164.7,5172.3,7.6,400,''],
+  ['2026-07-23','BC','Barging','Miki Mustakim','Siang','DZ-09 DTJ','Barging',12046.7,12055,8.3,191,''],
+  ['2026-07-23','BC','Triming','Hengki Ramadan','Malam','DZ-09 DTJ','Triming',12055,12061.8,6.8,0,''],
+  ['2026-07-24','BC','General','Muh. Alief Palulun','Siang','SPC-104','General, stockpile cutting',2686.1,2692.4,6.3,0,''],
+  ['2026-07-24','BC','Triming','Alimudin','Siang','SWA-102','Triming',5044.6,5051.5,6.9,150,''],
+  ['2026-07-24','BC','Langsir','Miki Mustakim','Siang','DZ-09 DTJ','Langsir material',12061.8,12067.1,5.3,0,''],
+  ['2026-07-24','BC','General','Denri','Malam','SPC-104','setcast raw coal',2692.4,2701.6,9.2,0,''],
+  ['2026-07-24','BC','Barging','Suntoko','Malam','SWA-102','Barging',5051.5,5061.5,10,0,''],
+  ['2026-07-24','BC','Barging','Husen L','Malam','SWA-101','Barging, BC',5172.3,5182.5,10.2,0,''],
+  ['2026-07-24','BC','Triming','Hengki Ramadan','Malam','DZ-09 DTJ','Triming',12067.1,12076.5,9.4,0,''],
+  ['2026-07-25','BC','Langsir','Muh. Alief Palulun','Siang','SPC-104','Lambung batu,General',2701.6,2705.6,4,323,''],
+  ['2026-07-25','BC','Triming','Alimudin','Siang','SWA-101','Triming',5182.5,5187.2,4.7,265,''],
+  ['2026-07-25','BC','Triming','Miki Mustakim','Siang','DZ-09 DTJ','Triming',12076.5,12082.8,6.3,145,''],
+  ['2026-07-25','BC','General','Denri','Malam','SPC-104','setcast raw coal',2705.6,2714.3,8.7,0,''],
+  ['2026-07-25','BC','Triming','Dede Darmawan','Malam','SWA-101','Triming coal bc',5187.2,5195.8,8.6,0,''],
+  ['2026-07-25','BC','Triming','Hengki Ramadan','Malam','DZ-09 DTJ','Triming',12082.8,12091.2,8.4,87,''],
+  ['2026-07-26','BC','General','Muh. Alief Palulun','Siang','SPC-104','Support maintenance RFB',2714.3,2722.4,8.1,0,''],
+  ['2026-07-26','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bc',5061.5,5069.3,7.8,260,''],
+  ['2026-07-26','BC','Triming','Alimudin','Siang','SWA-101','Triming',5195.8,5202,6.2,260,''],
+  ['2026-07-26','BC','Triming','Miki Mustakim','Siang','DZ-09 DTJ','Triming',12091.2,12098.3,7.1,0,''],
+  ['2026-07-26','BC','Triming','Suntoko','Malam','SWA-102','Triming coal BC',5069.3,5077.8,8.5,0,''],
+  ['2026-07-26','BC','Triming','Husen L','Malam','SWA-101','Treming BC',5202,5210.6,8.6,0,''],
+  ['2026-07-27','BC','General','Denri','Siang','SPC-104','support repair RFB',2722.4,2732.7,10.3,0,''],
+  ['2026-07-27','BC','Triming','Jhohan','Siang','SWA-102','Triming coal bc',5077.8,5081.3,3.5,275,''],
+  ['2026-07-27','BC','Triming','Alimudin','Siang','SWA-101','Triming',5210.6,5215.3,4.7,240,''],
+  ['2026-07-27','BC','General','Muh. Alief Palulun','Malam','SPC-104','Support maintenance RFB, general',2732.7,2738,5.3,0,''],
+  ['2026-07-27','BC','Barging','Suntoko','Malam','SWA-102','Barging',5081.3,5087.2,5.9,0,''],
+  ['2026-07-27','BC','Triming','Husen L','Malam','SWA-101','Treming',5215.3,5218.5,3.2,0,''],
+  ['2026-07-27','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging',5218.5,5223.2,4.7,0,''],
+  ['2026-07-27','BC','Triming','Miki Mustakim','Malam','DZ-09 DTJ','Triming',12098.3,12106.6,8.3,0,''],
+  ['2026-07-28','BC','Barging','Jhohan','Siang','SWA-102','Barging coal bba',5087.2,5094.7,7.5,151,''],
+  ['2026-07-28','BC','Barging','Denri','Siang','SWA-101','barging',5223.2,5230.4,7.2,250,''],
+  ['2026-07-28','BC','Triming','Hengki Ramadan','Siang','DZ-09 DTJ','Triming',12106.6,12114.6,8,295,''],
+  ['2026-07-28','BC','Langsir','Muh. Alief Palulun','Malam','SPC-104','Lambung batu',2738,2746.2,8.2,291,''],
+  ['2026-07-28','BC','Barging','Suntoko','Malam','SWA-102','Barging',5094.7,5097.4,2.7,288,''],
+  ['2026-07-28','BC','Barging','Husen L','Malam','SWA-101','Treming/ barging BC',5230.4,5239.2,8.8,160,''],
+  ['2026-07-28','BC','Triming','Miki Mustakim','Malam','DZ-09 DTJ','Triming',12114.6,12123,8.4,0,''],
+  ['2026-07-29','BC','Barging','Denri','Siang','SWA-102','barging',5097.4,5105.1,7.7,0,''],
+  ['2026-07-29','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging dan triming coal bc',5239.2,5247.3,8.1,155,''],
+  ['2026-07-29','BC','Triming','Hengki Ramadan','Siang','DZ-09 DTJ','Triming',12123,12130.5,7.5,261,''],
+  ['2026-07-29','BC','Langsir','Muh. Alief Palulun','Malam','SPC-104','Lambung batu',2746.2,2752.9,6.7,0,''],
+  ['2026-07-29','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',5105.1,5113.5,8.4,208,''],
+  ['2026-07-29','BC','Barging','Husen L','Malam','SWA-101','Barging BC',5247.3,5254.6,7.3,200,''],
+  ['2026-07-29','BC','Triming','Miki Mustakim','Malam','DZ-09 DTJ','Triming',12130.5,12138.5,8,0,''],
+  ['2026-07-30','SEN','General','Denri','Siang','SPC-104','prepare jalur DT OB',2752.9,2758.8,5.9,0,''],
+  ['2026-07-30','BC','Barging','Suntoko','Siang','SWA-102','Barging dan triming',5113.5,5119.5,6,296,''],
+  ['2026-07-30','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging dan triming coal bc',5254.6,5263.6,9,100,''],
+  ['2026-07-30','BC','Triming','Hengki Ramadan','Siang','DZ-09 DTJ','Triming',12138.5,12147.1,8.6,265,''],
+  ['2026-07-30','SEN','General','Muh. Alief Palulun','Malam','SPC-104','prepare jalur DT OB',2758.8,2760,1.2,0,''],
+  ['2026-07-30','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bc',5119.5,5127,7.5,105,''],
+  ['2026-07-30','BC','Triming','Husen L','Malam','SWA-101','Treming',5263.6,5272.4,8.8,235,''],
+  ['2026-07-30','BC','Triming','Miki Mustakim','Malam','DZ-09 DTJ','Triming',12147.1,12155.3,8.2,0,''],
+  ['2026-07-31','BC','General','Denri','Siang','SPC-104','Stockpile maintenance',2760,2767.1,7.1,252,''],
+  ['2026-07-31','BC','Triming','Suntoko','Siang','SWA-102','Triming',5127,5134,7,165,''],
+  ['2026-07-31','BC','Triming','Dede Darmawan','Siang','SWA-101','Triming coal bc',5272.4,5278.6,6.2,70,''],
+  ['2026-07-31','BC','Triming','Hengki Ramadan','Siang','DZ-09 DTJ','Triming',12155.3,12161.3,6,118,''],
+  ['2026-07-31','SEN','General','Muh. Alief Palulun','Malam','SPC-104','General',2767.1,2770.6,3.5,0,''],
+  ['2026-07-31','BC','Barging','Jhohan','Malam','SWA-102','Barging dan triming coal bc',5134,5142,8,60,''],
+  ['2026-07-31','BC','Barging','Alimudin','Malam','SWA-101','Barging',5278.6,5286.7,8.1,180,''],
+  ['2026-07-31','BC','Triming','Miki Mustakim','Malam','DZ-09 DTJ','Triming',12161.3,12169.5,8.2,0,''],
+  ['2026-08-01','BC','General','Denri Holmen Ambarita','Siang','SPC-104','General',2770.6,2779.2,8.6,219,''],
+  ['2026-08-01','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4798.5,4804.1,5.6,201,''],
+  ['2026-08-01','BC','Barging','Suntoko','Siang','SWA-102','Barging',5142,5150.7,8.7,156,''],
+  ['2026-08-01','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging dan triming coal bc',5286.7,5295.7,9,340,''],
+  ['2026-08-01','BC','Triming','Hengki Ramadan','Siang','DZ-09 DTJ','Triming',12169.5,12173,3.5,0,''],
+  ['2026-08-01','BC','Triming','Husen L','Siang','DZ-09 DTJ','Treming BC',12173,12177.6,4.6,240,''],
+  ['2026-08-01','BC','Langsir','Muh. Alief Palulun','Malam','SPC-104','Lambung batu',2779.2,2782.4,3.2,0,''],
+  ['2026-08-01','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',4804.1,4812.7,8.6,0,''],
+  ['2026-08-01','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',5150.7,5159,8.3,218,''],
+  ['2026-08-01','BC','Barging','Alimudin','Malam','SWA-101','Barging',5295.7,5303.9,8.2,0,''],
+  ['2026-08-02','BC','General','Denri Holmen Ambarita','Siang','SPC-104','General',2782.4,2790.7,8.3,0,''],
+  ['2026-08-02','BC','Triming','Hengki Ramadan','Siang','SBD-103','Triming',4812.7,4816.4,3.7,0,''],
+  ['2026-08-02','BC','Triming','Husen L','Siang','SBD-103','Treming BC',4816.4,4821.9,5.5,339,''],
+  ['2026-08-02','BC','Barging','Suntoko','Siang','SWA-102','Barging',5159,5167.8,8.8,310,''],
+  ['2026-08-02','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bc',5303.9,5313.5,9.6,275,''],
+  ['2026-08-02','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',4821.9,4830,8.1,8,''],
+  ['2026-08-02','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',5167.8,5172.3,4.5,213,''],
+  ['2026-08-02','BC','Barging','Alimudin','Malam','SWA-101','Barging',5313.5,5317.3,3.8,222,''],
+  ['2026-08-03','BC','General','Muh. Alief Palulun','Siang','SPC-104','Maintenance area stock file',2790.7,2794.9,4.2,0,''],
+  ['2026-08-03','BC','Triming','Husen L','Siang','SBD-103','Treming, BC',4830,4835.2,5.2,103,''],
+  ['2026-08-03','BC','Barging','Suntoko','Siang','SWA-102','Barging dan triming',5172.3,5181.1,8.8,160,''],
+  ['2026-08-03','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging dan triming coal bc',5317.3,5326.3,9,153,''],
+  ['2026-08-03','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4835.2,4843.6,8.4,0,''],
+  ['2026-08-03','BC','Barging','Jhohan','Malam','SWA-102','Triming coal bc',5181.1,5188.6,7.5,149,''],
+  ['2026-08-04','SEN','General','Muh. Alief Palulun','Siang','SPC-104','General',2794.9,2801.3,6.4,311,''],
+  ['2026-08-04','BC','Langsir','Miki Mustakim','Siang','SBD-103','Langsir',4843.8,4850.8,7,183,''],
+  ['2026-08-04','BC','Triming','Suntoko','Siang','SWA-102','Triming coal BC',5188.6,5196.2,7.6,196,''],
+  ['2026-08-04','BC','Triming','Husen L','Siang','SWA-101','Treming BC',5326.3,5333.7,7.4,150,''],
+  ['2026-08-04','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4850.8,4858.3,7.5,81,''],
+  ['2026-08-04','BC','Barging','Denri Holmen Ambarita','Malam','SWA-102','Trimming & Loading',5196.2,5204.7,8.5,0,''],
+  ['2026-08-05','BC','Barging','Denri Holmen Ambarita','Malam','SWA-102','Trimming & Loading',5196.2,5204.7,8.5,0,''],
+].map((row,i)=>{
+  const [tanggal,user,category,nama,shift,unitCode,pekerjaan,hmAwal,hmAkhir,hmTotal,fuel,keterangan] = row;
+  return {
+    id: 'hm-seed-'+(i+1)+'-'+tanggal+'-'+unitCode,
+    tanggal,user,category,nama,shift,unitCode,pekerjaan,hmAwal,hmAkhir,hmTotal,fuel,keterangan
   };
 });
 
@@ -1907,6 +3374,18 @@ async function loadData(){
     const hm = await appStorage.get('hm-records');
     hmRecords = hm ? JSON.parse(hm.value) : [];
   }catch(e){ hmRecords = []; }
+
+  // one-time import of the HM.xlsx history, guarded so it never re-runs after being cleared
+  let hmSeeded = false;
+  try{
+    const hmFlag = await appStorage.get('hm-seeded-flag');
+    hmSeeded = hmFlag ? JSON.parse(hmFlag.value) === true : false;
+  }catch(e){ hmSeeded = false; }
+  if(!hmSeeded && hmRecords.length===0){
+    hmRecords = HM_SEED.slice();
+    await saveHM();
+    try{ await appStorage.set('hm-seeded-flag', JSON.stringify(true)); }catch(e){}
+  }
   try{
     const mapa = await appStorage.get('mapa-data');
     mapaData = mapa ? JSON.parse(mapa.value) : null;
@@ -2337,11 +3816,78 @@ function pillClass(status){
   return status==='Open'?'open':status==='Progress'?'progress':'close';
 }
 
+/* ================= MA & PA — OTOMATIS DARI DATA MONITORING HM =================
+   Sejak data HM (Monitoring HM) tersedia, MA (Mechanical Availability) & PA (Physical Availability)
+   dihitung OTOMATIS dari data tsb, tidak perlu upload file jam operasional terpisah lagi:
+     W (Jam Kerja)   = total HM Total pada baris Monitoring HM milik unit tsb (pada periode terkait)
+     R (Jam Repair)  = total durasi record Daily Maintenance kategori "Breakdown" yang sudah Approved
+                        milik unit tsb (pada periode terkait)
+     T (Total Jam)   = jumlah hari periode × 24 jam (kalender penuh, unit dianggap tersedia 24 jam/hari)
+     S (Jam Standby) = T − W − R (tidak boleh negatif)
+   MA = W / (W+R) × 100%      PA = (W+S) / (W+S+R) × 100%   →  otomatis sama dengan (T−R)/T × 100%
+   Jika unit tsb belum ada data HM sama sekali, MA & PA jatuh kembali (fallback) ke file jam operasional
+   manual yang diupload lewat panel Dashboard (kalau ada), supaya angka tidak tiba-tiba kosong. */
+function daysBetweenInclusive(startStr, endStr){
+  const d1 = new Date(startStr+'T00:00:00');
+  const d2 = new Date(endStr+'T00:00:00');
+  const diff = Math.round((d2-d1)/86400000) + 1;
+  return Math.max(diff, 1);
+}
+function hmWSRForUnit(unitCode, startStr, endStr){
+  let recs = hmRecords.filter(r=>String(r.unitCode||'').trim().toUpperCase()===String(unitCode||'').trim().toUpperCase());
+  if(startStr) recs = recs.filter(r=>r.tanggal && r.tanggal>=startStr);
+  if(endStr) recs = recs.filter(r=>r.tanggal && r.tanggal<=endStr);
+  if(!recs.length) return null;
+  const W = recs.reduce((s,r)=>s+(Number(r.hmTotal)||0),0);
+  let rangeStart = startStr, rangeEnd = endStr;
+  if(!rangeStart || !rangeEnd){
+    const dates = recs.map(r=>r.tanggal).filter(Boolean).sort();
+    rangeStart = rangeStart || dates[0];
+    rangeEnd = rangeEnd || dates[dates.length-1];
+  }
+  const T = daysBetweenInclusive(rangeStart, rangeEnd) * 24;
+  const R = dailyRecords
+    .filter(r=>r.unitCode===unitCode && r.category==='Breakdown' && r.approvalStatus==='Approved'
+      && r.tanggal && r.tanggal>=rangeStart && r.tanggal<=rangeEnd)
+    .reduce((s,r)=>s+(Number(r.duration)||0),0);
+  const S = Math.max(T - W - R, 0);
+  return { W, S, R, T };
+}
+function hmWSRGlobal(startStr, endStr){
+  let recs = hmRecords.slice();
+  if(startStr) recs = recs.filter(r=>r.tanggal && r.tanggal>=startStr);
+  if(endStr) recs = recs.filter(r=>r.tanggal && r.tanggal<=endStr);
+  if(!recs.length) return null;
+  const units = Array.from(new Set(recs.map(r=>r.unitCode).filter(Boolean)));
+  let rangeStart = startStr, rangeEnd = endStr;
+  if(!rangeStart || !rangeEnd){
+    const dates = recs.map(r=>r.tanggal).filter(Boolean).sort();
+    rangeStart = rangeStart || dates[0];
+    rangeEnd = rangeEnd || dates[dates.length-1];
+  }
+  const W = recs.reduce((s,r)=>s+(Number(r.hmTotal)||0),0);
+  const T = daysBetweenInclusive(rangeStart, rangeEnd) * 24 * units.length;
+  const R = dailyRecords
+    .filter(r=>units.includes(r.unitCode) && r.category==='Breakdown' && r.approvalStatus==='Approved'
+      && r.tanggal && r.tanggal>=rangeStart && r.tanggal<=rangeEnd)
+    .reduce((s,r)=>s+(Number(r.duration)||0),0);
+  const S = Math.max(T - W - R, 0);
+  return { W, S, R, T, units };
+}
+function maPaFromWSR(wsr){
+  const { W, S, R } = wsr;
+  return {
+    ma: (W+R) > 0 ? (W/(W+R)*100) : 0,
+    pa: (W+S+R) > 0 ? ((W+S)/(W+S+R)*100) : 0
+  };
+}
+
 /* ================= DATABASE UNIT VIEW ================= */
 /* KPI per unit dihitung otomatis dari data yang sudah ada — tidak perlu input manual:
    - MTBS, MTTR, PMR: dari record Daily Maintenance (approved) milik unit tsb.
    - Service Accuracy (SA): dari record Plan Service milik unit tsb.
-   - MA & PA: dari baris data jam operasional (upload MA/PA) yang cocok dengan kode unit tsb. */
+   - MA & PA: otomatis dari data Monitoring HM milik unit tsb (fallback ke file jam operasional manual
+     kalau unit tsb belum ada data HM). */
 function computeUnitKPIs(unitCode){
   const approvedRecords = dailyRecords.filter(r=>r.unitCode===unitCode && r.approvalStatus==='Approved');
   const bdCount = approvedRecords.filter(r=>r.category==='Breakdown').length;
@@ -2363,7 +3909,10 @@ function computeUnitKPIs(unitCode){
   const sa = plansForUnit.length ? ((plansForUnit.length-overdue)/plansForUnit.length*100) : 0;
 
   let ma = 0, pa = 0;
-  if(mapaData && mapaData.rows && mapaData.rows.length){
+  const hmwsr = hmWSRForUnit(unitCode, null, null);
+  if(hmwsr){
+    ({ ma, pa } = maPaFromWSR(hmwsr));
+  } else if(mapaData && mapaData.rows && mapaData.rows.length){
     const rows = mapaData.rows.filter(r=>String(r.unit||'').trim().toUpperCase()===unitCode.toUpperCase());
     if(rows.length){
       const W = rows.reduce((s,r)=>s+(Number(r.w)||0),0);
@@ -2375,11 +3924,9 @@ function computeUnitKPIs(unitCode){
   }
   return { mtbs, mttr, pmr, sa, ma, pa };
 }
-
 /* ---- Versi computeUnitKPIs dengan filter rentang tanggal (dipakai untuk filter periode minggu) ----
-   MTBS, MTTR, PMR: dari record Daily Maintenance (approved) milik unit tsb yang jatuh pada rentang tanggal.
-   Service Accuracy (SA): dari record Plan Service milik unit tsb yang jatuh pada rentang tanggal.
-   MA & PA: tetap dihitung dari total baris data jam operasional yang diupload (tidak dipecah per tanggal). */
+   MTBS, MTTR, PMR, SA: dari record yang jatuh pada rentang tanggal.
+   MA & PA: dihitung dari data Monitoring HM pada rentang tanggal yang sama (fallback ke file manual). */
 function computeUnitKPIsForRange(unitCode, startStr, endStr){
   const approvedRecords = dailyRecords.filter(r=>r.unitCode===unitCode && r.approvalStatus==='Approved' && r.tanggal && r.tanggal>=startStr && r.tanggal<=endStr);
   const bdCount = approvedRecords.filter(r=>r.category==='Breakdown').length;
@@ -2401,7 +3948,10 @@ function computeUnitKPIsForRange(unitCode, startStr, endStr){
   const sa = plansForUnit.length ? ((plansForUnit.length-overdue)/plansForUnit.length*100) : 0;
 
   let ma = 0, pa = 0;
-  if(mapaData && mapaData.rows && mapaData.rows.length){
+  const hmwsr = hmWSRForUnit(unitCode, startStr, endStr);
+  if(hmwsr){
+    ({ ma, pa } = maPaFromWSR(hmwsr));
+  } else if(mapaData && mapaData.rows && mapaData.rows.length){
     const rows = mapaData.rows.filter(r=>String(r.unit||'').trim().toUpperCase()===unitCode.toUpperCase());
     if(rows.length){
       const W = rows.reduce((s,r)=>s+(Number(r.w)||0),0);
@@ -3108,6 +4658,26 @@ function syncDailyTopScroll(){
   wrap.addEventListener('scroll', ()=>{ if(syncing) return; syncing=true; top.scrollLeft = wrap.scrollLeft; syncing=false; });
   window.addEventListener('resize', ()=>{ inner.style.width = table.scrollWidth + 'px'; });
 }
+/* Scrollbar tambahan di atas tabel lebar lainnya (Pre Inspection, P2H, Plan Service,
+   Plan Schedule Maintenance, Mechanic Activity Report, Monitoring HM) — pola yang sama
+   dengan Record Daily Maintenance di atas, tapi generik lewat parameter prefix supaya
+   tidak perlu duplikasi fungsi utk tiap tabel. Dipanggil ulang tiap kali tabel di-render
+   supaya lebar area geser di atas selalu sinkron dengan lebar tabel yang terbaru. */
+function attachTopScroll(prefix){
+  const top = document.getElementById(prefix+'-scroll-top');
+  const inner = document.getElementById(prefix+'-scroll-top-inner');
+  const wrap = document.getElementById(prefix+'-table-wrap');
+  const table = document.getElementById(prefix+'-table');
+  if(!top || !inner || !wrap || !table) return;
+  inner.style.width = table.scrollWidth + 'px';
+  if(top.dataset.bound) return;
+  top.dataset.bound = '1';
+  let syncing = false;
+  top.addEventListener('scroll', ()=>{ if(syncing) return; syncing=true; wrap.scrollLeft = top.scrollLeft; syncing=false; });
+  wrap.addEventListener('scroll', ()=>{ if(syncing) return; syncing=true; top.scrollLeft = wrap.scrollLeft; syncing=false; });
+  window.addEventListener('resize', ()=>{ inner.style.width = table.scrollWidth + 'px'; });
+}
+
 /* ---- Detail Modal Record Daily Maintenance ----
    Klik baris tabel (di luar tombol aksi) langsung menampilkan seluruh isi
    record dalam kartu vertikal, jadi tidak perlu geser tabel ke kanan/kiri
@@ -3234,32 +4804,158 @@ window.rejectDaily = async function(id){
 function renderHMTable(){
   const tbody = document.getElementById('hm-tbody');
   if(!tbody) return;
+  renderHMUploadStatus();
   if(!hmRecords.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="13">Belum ada data. Data akan tersinkron dari Google Spreadsheet.</td></tr>`;
-    return;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="13">Belum ada data. Upload file HM di atas untuk mengisi tabel.</td></tr>`;
+  } else {
+    tbody.innerHTML = hmRecords.map(r=>`
+      <tr>
+        <td>${r.tanggal||'—'}</td>
+        <td>${r.user||'—'}</td>
+        <td>${r.category||'—'}</td>
+        <td>${r.nama||'—'}</td>
+        <td>${r.shift||'—'}</td>
+        <td>${r.unitCode||'—'}</td>
+        <td style="white-space:normal; min-width:180px;">${r.pekerjaan||'—'}</td>
+        <td>${r.hmAwal ?? '—'}</td>
+        <td>${r.hmAkhir ?? '—'}</td>
+        <td>${r.hmTotal ?? '—'}</td>
+        <td>${r.fuel || '—'}</td>
+        <td style="white-space:normal; min-width:140px;">${r.keterangan||'—'}</td>
+        <td><button class="btn danger" onclick="deleteHM('${r.id}')">Hapus</button></td>
+      </tr>`).join('');
   }
-  tbody.innerHTML = hmRecords.map(r=>`
-    <tr>
-      <td>${r.tanggal||'—'}</td>
-      <td>${r.user||'—'}</td>
-      <td>${r.category||'—'}</td>
-      <td>${r.nama||'—'}</td>
-      <td>${r.shift||'—'}</td>
-      <td>${r.unitCode||'—'}</td>
-      <td style="white-space:normal; min-width:180px;">${r.pekerjaan||'—'}</td>
-      <td>${r.hmAwal ?? '—'}</td>
-      <td>${r.hmAkhir ?? '—'}</td>
-      <td>${r.hmTotal ?? '—'}</td>
-      <td>${r.fuel || '—'}</td>
-      <td style="white-space:normal; min-width:140px;">${r.keterangan||'—'}</td>
-      <td><button class="btn danger" onclick="deleteHM('${r.id}')">Hapus</button></td>
-    </tr>`).join('');
+  attachTopScroll('hm');
 }
 window.deleteHM = async function(id){
   hmRecords = hmRecords.filter(r=>r.id!==id);
   await saveHM();
   renderAll();
 }
+
+function renderHMUploadStatus(){
+  const box = document.getElementById('hm-upload-status');
+  const clearBtn = document.getElementById('hm-clear-btn');
+  if(!box) return;
+  if(!hmRecords.length){
+    box.innerHTML = 'Belum ada data HM.';
+    if(clearBtn) clearBtn.style.display = 'none';
+    return;
+  }
+  box.innerHTML = `✓ ${hmRecords.length} baris data HM tersimpan.`;
+  if(clearBtn) clearBtn.style.display = '';
+}
+
+// Cari nama kolom secara fleksibel (tidak case-sensitive, boleh beda urutan / penamaan)
+function findHMColumn(headerRow, keywords){
+  const idx = headerRow.findIndex(h=>{
+    const clean = String(h||'').toLowerCase();
+    return keywords.some(kw=>clean.includes(kw));
+  });
+  return idx;
+}
+function excelDateToStr(v){
+  if(v===undefined || v===null || v==='') return '';
+  if(v instanceof Date) return v.toISOString().slice(0,10);
+  if(typeof v==='number'){
+    const d = XLSX.SSF.parse_date_code(v);
+    if(d) return `${String(d.y).padStart(4,'0')}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  const s = String(v).trim();
+  const bulan = { jan:1,feb:2,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,agu:8,aug:8,sep:9,okt:10,oct:10,nov:11,des:12,dec:12 };
+  const m1 = s.match(/^(\d{1,2})-([A-Za-z]{3,})-(\d{4})$/);
+  if(m1){
+    const mm = bulan[m1[2].toLowerCase().slice(0,3)];
+    if(mm) return `${m1[3]}-${String(mm).padStart(2,'0')}-${m1[1].padStart(2,'0')}`;
+  }
+  const m2 = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m2) return `${m2[1]}-${m2[2].padStart(2,'0')}-${m2[3].padStart(2,'0')}`;
+  const m3 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m3) return `${m3[3]}-${m3[2].padStart(2,'0')}-${m3[1].padStart(2,'0')}`;
+  return s;
+}
+function parseHMSheet(rowsAoa, fileName){
+  if(!rowsAoa || rowsAoa.length < 2) throw new Error('File kosong atau tidak memiliki baris data.');
+  const header = rowsAoa[0];
+  const tglIdx = findHMColumn(header, ['tanggal', 'date']);
+  const userIdx = findHMColumn(header, ['user']);
+  const catIdx = findHMColumn(header, ['kategori', 'category']);
+  const namaIdx = findHMColumn(header, ['nama', 'name']);
+  const shiftIdx = findHMColumn(header, ['shift']);
+  const unitIdx = findHMColumn(header, ['kode unit', 'unit']);
+  const jobIdx = findHMColumn(header, ['pekerjaan', 'job']);
+  const awalIdx = findHMColumn(header, ['hm awal', 'awal']);
+  const akhirIdx = findHMColumn(header, ['hm akhir', 'akhir']);
+  const totalIdx = findHMColumn(header, ['hm total', 'total']);
+  const fuelIdx = findHMColumn(header, ['fuel']);
+  const ketIdx = findHMColumn(header, ['keterangan', 'notes', 'note']);
+  if(tglIdx===-1 || unitIdx===-1 || awalIdx===-1 || akhirIdx===-1){
+    throw new Error('Kolom Tanggal / Kode Unit / HM Awal / HM Akhir tidak ditemukan. Gunakan template yang disediakan.');
+  }
+  const rows = [];
+  for(let i=1;i<rowsAoa.length;i++){
+    const row = rowsAoa[i];
+    if(!row || row.every(c=>c===undefined || c==='' || c===null)) continue;
+    const hmAwal = Number(row[awalIdx]) || 0;
+    const hmAkhir = Number(row[akhirIdx]) || 0;
+    const hmTotal = totalIdx>-1 && row[totalIdx]!=='' && row[totalIdx]!=null ? Number(row[totalIdx]) : (hmAkhir - hmAwal);
+    rows.push({
+      id: 'hm-'+Date.now()+'-'+i,
+      tanggal: excelDateToStr(row[tglIdx]),
+      user: userIdx>-1 ? String(row[userIdx]||'').trim() : '',
+      category: catIdx>-1 ? String(row[catIdx]||'').trim() : '',
+      nama: namaIdx>-1 ? String(row[namaIdx]||'').trim() : '',
+      shift: shiftIdx>-1 ? String(row[shiftIdx]||'').trim() : '',
+      unitCode: String(row[unitIdx]||'').trim(),
+      pekerjaan: jobIdx>-1 ? String(row[jobIdx]||'').trim() : '',
+      hmAwal, hmAkhir, hmTotal,
+      fuel: fuelIdx>-1 ? (Number(row[fuelIdx]) || 0) : 0,
+      keterangan: ketIdx>-1 ? String(row[ketIdx]||'').trim() : ''
+    });
+  }
+  if(!rows.length) throw new Error('Tidak ada baris data yang valid pada file.');
+  return rows;
+}
+document.getElementById('hm-file-input').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(evt){
+    try{
+      const wb = XLSX.read(evt.target.result, { type:'array', cellDates:true });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const aoa = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true, defval:'' });
+      const parsed = parseHMSheet(aoa, file.name);
+      hmRecords = parsed;
+      await saveHM();
+      try{ await appStorage.set('hm-seeded-flag', JSON.stringify(true)); }catch(e){}
+      renderAll();
+      alert(`Berhasil memproses ${parsed.length} baris data HM.`);
+    }catch(err){
+      alert('⚠ Gagal membaca file: ' + err.message);
+    }finally{
+      e.target.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+document.getElementById('hm-clear-btn').addEventListener('click', async function(){
+  if(!confirm('Hapus seluruh riwayat Monitoring HM?')) return;
+  hmRecords = [];
+  await saveHM();
+  try{ await appStorage.set('hm-seeded-flag', JSON.stringify(true)); }catch(e){}
+  renderAll();
+});
+document.getElementById('hm-template-btn').addEventListener('click', function(){
+  const wsData = [
+    ['Tanggal', 'User', 'Kategori', 'Nama', 'Shift', 'Kode Unit', 'Pekerjaan', 'HM Awal', 'HM Akhir', 'HM Total', 'Fuel', 'Keterangan'],
+    ['2026-07-01', 'SEN', 'General', 'Muh. Alief Palulun', 'Siang', 'SPC-104', 'General support repair RFB', 2515.6, 2522.6, 7, 0, ''],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template HM');
+  XLSX.writeFile(wb, 'template-hm.xlsx');
+});
 
 /* ================= PLAN SERVICE ================= */
 const pUnitSelect = document.getElementById('p-unitcode');
@@ -3291,6 +4987,7 @@ function renderPlanTable(){
   const tbody = document.getElementById('plan-tbody');
   if(!planRecords.length){
     tbody.innerHTML = `<tr class="empty-row"><td colspan="11">Belum ada rencana service.</td></tr>`;
+    attachTopScroll('plan');
     return;
   }
   const today = new Date().toISOString().slice(0,10);
@@ -3318,6 +5015,7 @@ function renderPlanTable(){
       <td><button class="btn danger" onclick="deletePlan('${r.id}')">Hapus</button></td>
     </tr>`;
   }).join('');
+  attachTopScroll('plan');
 }
 window.updatePlanExecStatus = async function(id, value){
   const r = planRecords.find(x=>x.id===id);
@@ -3488,8 +5186,7 @@ function renderPlanningTable(){
     }).join('');
   }
   renderPlanningMechanicNotify();
-
-  // Stat cards (mengikuti filter bulan & filter lain yang aktif)
+  attachTopScroll('planningsystem');
   const total = rows.length;
   const open = rows.filter(r=>r.status==='Open').length;
   const close = rows.filter(r=>r.status==='Close').length;
@@ -3819,6 +5516,7 @@ function renderP2HTable(){
   document.getElementById('p2h-stat-normal').textContent = p2hRecords.filter(r=>r.status==='Normal').length;
   document.getElementById('p2h-stat-findings').textContent = p2hRecords.filter(r=>r.status==='Ada Temuan').length;
   document.getElementById('p2h-stat-aa').textContent = p2hRecords.reduce((s,r)=>s+(r.aaCount||0),0);
+  attachTopScroll('p2h');
 }
 window.deleteP2H = async function(id){
   p2hRecords = p2hRecords.filter(r=>r.id!==id);
@@ -4141,6 +5839,7 @@ function renderPreInspectionTable(){
   document.getElementById('preins-stat-ok').textContent = preInspectionRecords.filter(r=>r.status==='OK').length;
   document.getElementById('preins-stat-findings').textContent = preInspectionRecords.filter(r=>r.status==='Ada Temuan').length;
   document.getElementById('preins-stat-backlog').textContent = preInspectionRecords.reduce((s,r)=>s+((r.defects||[]).filter(d=>d.status==='Open').length),0);
+  attachTopScroll('preins');
 }
 window.deletePreInspection = async function(id){
   preInspectionRecords = preInspectionRecords.filter(r=>r.id!==id);
@@ -4216,18 +5915,19 @@ function renderHistory(){
   const tbody = document.getElementById('history-tbody');
   if(!rows.length){
     tbody.innerHTML = `<tr class="empty-row"><td colspan="12">Tidak ada data sesuai filter.</td></tr>`;
-    return;
+  } else {
+    tbody.innerHTML = rows.map(r=>`
+      <tr>
+        <td>${r.tanggal||'—'}</td><td>${r.unitCode}</td><td>${r.typeUnit}</td><td>${r.hm||'—'}</td>
+        <td><span class="cat ${r.category}">${r.category==='Daily'?'Daily Maint.':r.category}</span></td>
+        <td style="white-space:normal; min-width:180px;">${r.jobDesc||'—'}</td>
+        <td>${fmtDur(r.duration)}</td><td>${r.mechanic}</td><td>${r.area}</td>
+        <td><span class="pill ${pillClass(r.status)}">${r.status==='Progress'?'On Progress':r.status}</span></td>
+        <td>${approvalPillHTML(r)}</td>
+        <td>${r.approvedBy||'—'}</td>
+      </tr>`).join('');
   }
-  tbody.innerHTML = rows.map(r=>`
-    <tr>
-      <td>${r.tanggal||'—'}</td><td>${r.unitCode}</td><td>${r.typeUnit}</td><td>${r.hm||'—'}</td>
-      <td><span class="cat ${r.category}">${r.category==='Daily'?'Daily Maint.':r.category}</span></td>
-      <td style="white-space:normal; min-width:180px;">${r.jobDesc||'—'}</td>
-      <td>${fmtDur(r.duration)}</td><td>${r.mechanic}</td><td>${r.area}</td>
-      <td><span class="pill ${pillClass(r.status)}">${r.status==='Progress'?'On Progress':r.status}</span></td>
-      <td>${approvalPillHTML(r)}</td>
-      <td>${r.approvedBy||'—'}</td>
-    </tr>`).join('');
+  attachTopScroll('history');
 }
 document.getElementById('h-export').addEventListener('click', ()=>{
   let rows = filterHistoryRows();
@@ -4389,6 +6089,7 @@ function renderSummary(){
   const names = Object.keys(byMech);
   if(!names.length){
     tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Tidak ada data pada bulan ini.</td></tr>`;
+    attachTopScroll('summary');
     return;
   }
   tbody.innerHTML = names.sort().map(name=>{
@@ -4401,6 +6102,7 @@ function renderSummary(){
       <td><span class="pill ${pct>=90?'close':pct>=70?'progress':'open'}">${pct.toFixed(0)}%</span></td>
     </tr>`;
   }).join('');
+  attachTopScroll('summary');
 }
 
 /* ================= DASHBOARD KPI ================= */
@@ -4837,9 +6539,12 @@ function renderKPIChartDashboard(k, globalStats){
     monthlyPct.mttr.push(Math.min(100,(kk.mttr/KPI_TARGET.mttr*100)||0));
     monthlyPct.pmr.push(Math.min(100,(kk.pmr/KPI_TARGET.pmr*100)||0));
     monthlyPct.sa.push(Math.min(100,(kk.sa/KPI_TARGET.sa*100)||0));
-    // MA & PA dihitung dari total file jam operasional yang diupload (tidak dipecah per bulan)
-    monthlyPct.ma.push(Math.min(100,(k.ma/KPI_TARGET.ma*100)||0));
-    monthlyPct.pa.push(Math.min(100,(k.pa/KPI_TARGET.pa*100)||0));
+    // MA & PA: otomatis per bulan dari data Monitoring HM bulan tsb; fallback ke total global (k.ma/k.pa)
+    // kalau bulan tsb belum ada data HM sama sekali.
+    const hmwsrMonth = hmWSRGlobal(start, end);
+    const monthMaPa = hmwsrMonth ? maPaFromWSR(hmwsrMonth) : { ma:k.ma, pa:k.pa };
+    monthlyPct.ma.push(Math.min(100,(monthMaPa.ma/KPI_TARGET.ma*100)||0));
+    monthlyPct.pa.push(Math.min(100,(monthMaPa.pa/KPI_TARGET.pa*100)||0));
   }
 
   const combinedAvg = [0,1,2].map(i => (monthlyPct.mttr[i]+monthlyPct.pmr[i]+monthlyPct.sa[i])/3);
@@ -4964,11 +6669,18 @@ function computeKPIs(){
 
   const pendingApproval = dailyRecords.filter(r=>(r.approvalStatus||'Pending')==='Pending').length;
 
-  // MA (Mechanical Availability) & PA (Physical Availability), otomatis dari file jam operasional yang diupload.
-  // W = Jam Kerja, S = Jam Standby, R = Jam Repair/Breakdown
-  const W = mapaData?.totalW || 0, S = mapaData?.totalS || 0, R = mapaData?.totalR || 0;
-  const ma = (W+R) > 0 ? (W/(W+R)*100) : 0;
-  const pa = (W+S+R) > 0 ? ((W+S)/(W+S+R)*100) : 0;
+  // MA (Mechanical Availability) & PA (Physical Availability): otomatis dari data Monitoring HM.
+  // W = Jam Kerja, S = Jam Standby, R = Jam Repair/Breakdown. Fallback ke file jam operasional manual
+  // (upload di Dashboard) hanya kalau belum ada data HM sama sekali.
+  let ma = 0, pa = 0;
+  const hmwsr = hmWSRGlobal(null, null);
+  if(hmwsr){
+    ({ ma, pa } = maPaFromWSR(hmwsr));
+  } else {
+    const W = mapaData?.totalW || 0, S = mapaData?.totalS || 0, R = mapaData?.totalR || 0;
+    ma = (W+R) > 0 ? (W/(W+R)*100) : 0;
+    pa = (W+S+R) > 0 ? ((W+S)/(W+S+R)*100) : 0;
+  }
 
   return { mtbs, mttr, pmr, sa, ma, pa, bdCount, totalHM, overduePlans, pendingApproval };
 }
@@ -5018,21 +6730,27 @@ function computeKPIsForRange(startStr, endStr){
 
 /* ---- Filter periode bulan untuk Dashboard KPI ---- */
 function computeKPIsFor(periodValue){
-  // MA & PA tidak dipecah per periode (dihitung dari total file jam operasional yang diupload),
-  // jadi tetap dihitung sama seperti computeKPIs() apapun periodenya.
-  const W = mapaData?.totalW || 0, S = mapaData?.totalS || 0, R = mapaData?.totalR || 0;
-  const ma = (W+R) > 0 ? (W/(W+R)*100) : 0;
-  const pa = (W+S+R) > 0 ? ((W+S)/(W+S+R)*100) : 0;
-
   if(!periodValue){
-    const k = computeKPIs();
-    return k;
+    return computeKPIs();
   }
   const [y,m] = periodValue.split('-').map(Number);
   if(!y || !m) return computeKPIs();
   const start = new Date(y, m-1, 1);
   const end = new Date(y, m, 0);
-  const base = computeKPIsForRange(toDateStr(start), toDateStr(end));
+  const startStr = toDateStr(start), endStr = toDateStr(end);
+  const base = computeKPIsForRange(startStr, endStr);
+
+  // MA & PA: otomatis dari data Monitoring HM pada bulan tsb. Fallback ke total file manual
+  // (tidak dipecah per bulan) hanya kalau belum ada data HM pada bulan tersebut.
+  let ma = 0, pa = 0;
+  const hmwsr = hmWSRGlobal(startStr, endStr);
+  if(hmwsr){
+    ({ ma, pa } = maPaFromWSR(hmwsr));
+  } else {
+    const W = mapaData?.totalW || 0, S = mapaData?.totalS || 0, R = mapaData?.totalR || 0;
+    ma = (W+R) > 0 ? (W/(W+R)*100) : 0;
+    pa = (W+S+R) > 0 ? ((W+S)/(W+S+R)*100) : 0;
+  }
   return { ...base, ma, pa };
 }
 
@@ -5079,6 +6797,18 @@ function renderDashboard(){
     renderKPICard('Service Accuracy', k.sa.toFixed(0), '%', KPI_TARGET.sa, (k.sa/KPI_TARGET.sa*100)||0) +
     renderKPICard('MA — Mechanical Availability', k.ma.toFixed(0), '%', KPI_TARGET.ma, (k.ma/KPI_TARGET.ma*100)||0) +
     renderKPICard('PA — Physical Availability', k.pa.toFixed(0), '%', KPI_TARGET.pa, (k.pa/KPI_TARGET.pa*100)||0);
+
+  const maPaStatusEl = document.getElementById('ma-pa-source-status');
+  if(maPaStatusEl){
+    const hmwsrStatus = hmWSRGlobal(null, null);
+    if(hmwsrStatus){
+      maPaStatusEl.innerHTML = `⛭ MA &amp; PA dihitung otomatis dari <b>${hmRecords.length}</b> baris data Monitoring HM (${hmwsrStatus.units.length} unit) — Jam Kerja (W): <b>${hmwsrStatus.W.toFixed(1)}</b> jam · Jam Standby (S): <b>${hmwsrStatus.S.toFixed(1)}</b> jam · Jam Repair (R): <b>${hmwsrStatus.R.toFixed(1)}</b> jam.`;
+    } else if(mapaData && mapaData.rows && mapaData.rows.length){
+      maPaStatusEl.innerHTML = `⛭ Belum ada data Monitoring HM — MA &amp; PA memakai fallback file jam operasional manual (<b>${mapaData.fileName}</b>).`;
+    } else {
+      maPaStatusEl.innerHTML = `⛭ Belum ada data Monitoring HM maupun file jam operasional manual — MA &amp; PA masih 0%.`;
+    }
+  }
 
   document.getElementById('stat-units').textContent = UNITS.length;
   const thisMonth = new Date().toISOString().slice(0,7);
@@ -5158,7 +6888,7 @@ document.getElementById('mapa-file-input').addEventListener('change', function(e
       mapaData = parsed;
       await saveMapaData();
       renderDashboard();
-      alert(`Berhasil memproses ${parsed.rows.length} baris data. MA & PA sudah dihitung ulang secara otomatis.`);
+      alert(`Berhasil memproses ${parsed.rows.length} baris data. Data ini akan dipakai sebagai fallback MA & PA untuk unit/periode yang belum ada data Monitoring HM.`);
     }catch(err){
       alert('⚠ Gagal membaca file: ' + err.message);
     }finally{
@@ -5169,7 +6899,7 @@ document.getElementById('mapa-file-input').addEventListener('change', function(e
 });
 
 document.getElementById('mapa-clear-btn').addEventListener('click', async function(){
-  if(!confirm('Hapus data jam operasional yang sudah diupload? MA & PA akan kembali ke 0%.')) return;
+  if(!confirm('Hapus data jam operasional (fallback) yang sudah diupload? Unit/periode yang sudah punya data Monitoring HM tidak terpengaruh.')) return;
   mapaData = null;
   await saveMapaData();
   renderDashboard();
