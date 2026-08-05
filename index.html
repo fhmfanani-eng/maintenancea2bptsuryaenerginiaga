@@ -4926,11 +4926,11 @@ document.getElementById('hm-file-input').addEventListener('change', function(e){
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const aoa = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true, defval:'' });
       const parsed = parseHMSheet(aoa, file.name);
-      hmRecords = parsed;
+      const { added, updated } = mergeHMRows(parsed);
       await saveHM();
       try{ await appStorage.set('hm-seeded-flag', JSON.stringify(true)); }catch(e){}
       renderAll();
-      alert(`Berhasil memproses ${parsed.length} baris data HM.`);
+      alert(`Berhasil memproses data HM: ${added} baris baru ditambahkan, ${updated} baris diperbarui (riwayat lama tetap tersimpan).`);
     }catch(err){
       alert('⚠ Gagal membaca file: ' + err.message);
     }finally{
@@ -6875,16 +6875,62 @@ function parseMapaSheet(rowsAoa, fileName){
   return { rows, totalW, totalS, totalR, fileName, updatedAt: new Date().toISOString() };
 }
 
+/* Menggabungkan baris HM baru ke hmRecords yang sudah ada tanpa menghapus data lama —
+   dipakai dari slot upload manapun (Monitoring HM ATAU fallback MA & PA) supaya
+   meng-upload file log HM tidak pernah menghapus riwayat yang sudah tersimpan. Baris
+   dianggap sama (dan ditimpa dengan versi baru) kalau tanggal + kode unit + shift +
+   nama + pekerjaan-nya identik; selain itu dianggap baris baru.
+   Baris tanpa tanggal (tak lengkap) tetap ditolak lebih dulu oleh parseHMSheet. */
+function mergeHMRows(newRows){
+  const keyOf = r => [r.tanggal, r.unitCode, r.shift, r.nama, r.pekerjaan].join('|').toLowerCase();
+  const existingKeys = new Map(hmRecords.map(r=>[keyOf(r), r]));
+  let added = 0, updated = 0;
+  newRows.forEach(r=>{
+    const k = keyOf(r);
+    if(existingKeys.has(k)){
+      Object.assign(existingKeys.get(k), r, { id: existingKeys.get(k).id });
+      updated++;
+    } else {
+      hmRecords.push(r);
+      existingKeys.set(k, r);
+      added++;
+    }
+  });
+  return { added, updated };
+}
+
 document.getElementById('mapa-file-input').addEventListener('change', function(e){
   const file = e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
   reader.onload = async function(evt){
     try{
-      const wb = XLSX.read(evt.target.result, { type:'array' });
+      const wb = XLSX.read(evt.target.result, { type:'array', cellDates:true });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const aoa = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true, defval:'' });
-      const parsed = parseMapaSheet(aoa, file.name);
+      let parsed;
+      try{
+        parsed = parseMapaSheet(aoa, file.name);
+      }catch(mapaErr){
+        // File yang diupload di sini ternyata format riwayat HM mentah (Tanggal/Kode Unit/
+        // HM Awal/HM Akhir — bukan ringkasan Jam Kerja(W)/Standby(S)/Repair(R)). Daripada
+        // menolak, arahkan otomatis ke data Monitoring HM supaya MA & PA tetap terhitung
+        // dari data HM asli (lebih akurat) — sama seperti kalau diupload lewat panel
+        // Monitoring HM langsung.
+        let hmRows;
+        try{
+          hmRows = parseHMSheet(aoa, file.name);
+        }catch(hmErr){
+          throw mapaErr; // bukan salah satu dari kedua format yang dikenali — tampilkan error aslinya
+        }
+        const { added, updated } = mergeHMRows(hmRows);
+        await saveHM();
+        try{ await appStorage.set('hm-seeded-flag', JSON.stringify(true)); }catch(e2){}
+        renderAll();
+        alert(`File "${file.name}" berformat riwayat Monitoring HM (bukan ringkasan Jam Kerja/Standby/Repair), jadi otomatis dimasukkan ke data Monitoring HM: ${added} baris baru, ${updated} baris diperbarui. MA & PA akan dihitung otomatis dari data ini.`);
+        e.target.value = '';
+        return;
+      }
       mapaData = parsed;
       await saveMapaData();
       renderDashboard();
