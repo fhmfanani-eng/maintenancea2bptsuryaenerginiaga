@@ -4063,6 +4063,12 @@ function updateRoleUI(){
     item.classList.toggle('role-hidden', hideForMechanic);
   });
 
+  // Sembunyikan tombol hapus/hapus massal untuk role Mechanic di semua panel yang bisa
+  // diakses mekanik — mekanik hanya boleh menambah/mengedit data miliknya, penghapusan
+  // record/data hanya untuk Supervisor.
+  const dailyBulkDeleteBtn = document.getElementById('daily-bulk-delete-btn');
+  if(dailyBulkDeleteBtn) dailyBulkDeleteBtn.style.display = isSupervisor ? '' : 'none';
+
   // Jika view yang sedang aktif tidak diizinkan untuk role saat ini, pindah otomatis ke Daily Maintenance
   const activeItem = document.querySelector('.nav-item.active');
   if(activeItem && activeItem.classList.contains('role-hidden')){
@@ -5140,7 +5146,7 @@ function renderDailyTable(){
       <td><span class="pill ${pillClass(r.status)}">${r.status==='Progress'?'On Progress':r.status}</span></td>
       <td style="white-space:normal; min-width:140px;">${r.bdCategory ? `<b>${r.bdCategory}</b>${r.keterangan?' — '+r.keterangan:''}` : (r.keterangan||'—')}</td>
       <td>${approvalPillHTML(r)}</td>
-      <td>${actionCell}<button class="btn danger" style="margin-top:6px;" onclick="deleteDaily('${r.id}')">Hapus</button></td>
+      <td>${actionCell}${isSupervisor ? `<button class="btn danger" style="margin-top:6px;" onclick="deleteDaily('${r.id}')">Hapus</button>` : ''}</td>
     </tr>`;
   }).join('');
   syncDailyTopScroll();
@@ -5359,6 +5365,7 @@ function renderHMTable(){
   const tbody = document.getElementById('hm-tbody');
   if(!tbody) return;
   renderHMUploadStatus();
+  const isSupervisor = currentRole()==='Supervisor';
   if(!hmRecords.length){
     tbody.innerHTML = `<tr class="empty-row"><td colspan="13">Belum ada data. Upload file HM di atas untuk mengisi tabel.</td></tr>`;
   } else {
@@ -5378,7 +5385,7 @@ function renderHMTable(){
         <td>${r.hmTotal ?? '—'}</td>
         <td>${r.fuel || '—'}</td>
         <td style="white-space:normal; min-width:140px;">${r.keterangan||'—'}</td>
-        <td><button class="btn danger" onclick="deleteHM('${r.id}')">Hapus</button></td>
+        <td>${isSupervisor ? `<button class="btn danger" onclick="deleteHM('${r.id}')">Hapus</button>` : ''}</td>
       </tr>`).join('');
   }
   attachTopScroll('hm');
@@ -5393,13 +5400,14 @@ function renderHMUploadStatus(){
   const box = document.getElementById('hm-upload-status');
   const clearBtn = document.getElementById('hm-clear-btn');
   if(!box) return;
+  const isSupervisor = currentRole()==='Supervisor';
   if(!hmRecords.length){
     box.innerHTML = 'Belum ada data HM.';
     if(clearBtn) clearBtn.style.display = 'none';
     return;
   }
   box.innerHTML = `✓ ${hmRecords.length} baris data HM tersimpan.`;
-  if(clearBtn) clearBtn.style.display = '';
+  if(clearBtn) clearBtn.style.display = isSupervisor ? '' : 'none';
 }
 
 // Cari nama kolom secara fleksibel (tidak case-sensitive, boleh beda urutan / penamaan)
@@ -5546,6 +5554,7 @@ function renderPlanTable(){
     attachTopScroll('plan');
     return;
   }
+  const isSupervisor = currentRole()==='Supervisor';
   const today = new Date().toISOString().slice(0,10);
   tbody.innerHTML = planRecords.map(r=>{
     const isOverdue = r.status==='Planned' && r.planDate && r.planDate < today;
@@ -5585,7 +5594,7 @@ function renderPlanTable(){
       </td>
       <td><input type="date" value="${r.execDate||''}" onchange="updatePlanExecDate('${r.id}', this.value)" style="background:var(--panel-2); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-family:inherit; font-size:12px;"></td>
       <td style="white-space:normal; min-width:150px;">${r.notes||'—'}</td>
-      <td><button class="btn danger" onclick="deletePlan('${r.id}')">Hapus</button></td>
+      <td>${isSupervisor ? `<button class="btn danger" onclick="deletePlan('${r.id}')">Hapus</button>` : ''}</td>
     </tr>`;
   }).join('');
   attachTopScroll('plan');
@@ -5802,6 +5811,7 @@ function renderPlanningTable(){
   const rows = filterPlanningRows();
   const tbody = document.getElementById('planningsystem-tbody');
   const today = new Date().toISOString().slice(0,10);
+  const isSupervisor = currentRole()==='Supervisor';
 
   if(!rows.length){
     tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Belum ada rencana maintenance untuk filter ini.</td></tr>`;
@@ -5822,7 +5832,7 @@ function renderPlanningTable(){
         <td>${r.planDate||'—'}</td>
         <td>${r.dueDate||'—'}</td>
         <td>${statusPill}</td>
-        <td><button class="btn danger" onclick="deletePlanningSystem('${r.id}')">Hapus</button></td>
+        <td>${isSupervisor ? `<button class="btn danger" onclick="deletePlanningSystem('${r.id}')">Hapus</button>` : ''}</td>
       </tr>`;
     }).join('');
   }
@@ -6129,6 +6139,7 @@ function filterP2HRows(){
 function renderP2HTable(){
   const rows = filterP2HRows();
   const tbody = document.getElementById('p2h-tbody');
+  const isSupervisor = currentRole()==='Supervisor';
   if(!rows.length){
     tbody.innerHTML = `<tr class="empty-row"><td colspan="11">Belum ada record P2H.</td></tr>`;
   } else {
@@ -6151,7 +6162,7 @@ function renderP2HTable(){
         <td>${statusPill}</td>
         <td style="white-space:normal; min-width:220px; font-size:11px;">${findingsText}</td>
         <td style="font-size:11px;">${notif}</td>
-        <td>${resendBtn}<button class="btn danger" onclick="deleteP2H('${r.id}')">Hapus</button></td>
+        <td>${resendBtn}${isSupervisor ? `<button class="btn danger" onclick="deleteP2H('${r.id}')">Hapus</button>` : ''}</td>
       </tr>`;
     }).join('');
   }
@@ -6476,7 +6487,7 @@ function renderPreInspectionTable(){
         <td>${statusPill}</td>
         <td style="white-space:normal; min-width:220px; font-size:11px;">${findingsText}</td>
         <td>${approvalCell}</td>
-        <td><button class="btn danger" onclick="deletePreInspection('${r.id}')">Hapus</button></td>
+        <td>${isSupervisor ? `<button class="btn danger" onclick="deletePreInspection('${r.id}')">Hapus</button>` : ''}</td>
       </tr>`;
     }).join('');
   }
