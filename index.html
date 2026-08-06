@@ -1355,7 +1355,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>Record Daily Maintenance</h2><div class="toolbar"><button type="button" class="btn secondary" id="daily-import-service-btn">⤓ Import Service Report (Historis)</button><button type="button" class="btn secondary" id="daily-refresh-btn" title="Ambil ulang data terbaru dari database">⟲ Refresh Data</button></div></div>
+          <div class="panel-head"><h2>Record Daily Maintenance</h2><div class="toolbar"><button type="button" class="btn secondary" id="daily-import-service-btn">⤓ Import Service Report (Historis)</button><button type="button" class="btn secondary" id="daily-refresh-btn" title="Ambil ulang data terbaru dari database">⟲ Refresh Data</button><button type="button" class="btn danger" id="daily-bulk-delete-btn" title="Hapus banyak record sekaligus berdasarkan rentang Code BD, mis. 363-371">🗑 Hapus by Code BD</button></div></div>
           <div class="scroll-top-track" id="daily-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="daily-scroll-top-inner"></div></div>
           <div class="table-wrap" id="daily-table-wrap">
             <table id="daily-record-table">
@@ -5268,6 +5268,55 @@ window.deleteDaily = async function(id){
   renderAll();
   syncDailyToSheets();
 }
+
+/* ---- Hapus banyak record Daily Maintenance sekaligus berdasarkan rentang Code BD
+   (mis. "brk-363" s/d "brk-371"). Dipakai dari tombol "Hapus by Code BD" di toolbar
+   Record Daily Maintenance. ---- */
+window.bulkDeleteDailyByCodeRange = async function(){
+  const input = prompt('Masukkan rentang Code BD yang ingin dihapus.\nContoh: 363-371 (akan menghapus brk-363 s/d brk-371)', '363-371');
+  if(input===null) return;
+  const nums = input.match(/\d+/g);
+  if(!nums || nums.length<2){ alert('⚠ Format rentang tidak valid. Contoh: 363-371'); return; }
+  const start = Math.min(Number(nums[0]), Number(nums[1]));
+  const end = Math.max(Number(nums[0]), Number(nums[1]));
+
+  const targets = dailyRecords.filter(r=>{
+    const m = /^brk-(\d+)$/i.exec((r.codeBD||'').trim());
+    if(!m) return false;
+    const n = Number(m[1]);
+    return n>=start && n<=end;
+  });
+
+  if(!targets.length){
+    alert(`Tidak ditemukan record dengan Code BD brk-${String(start).padStart(3,'0')} s/d brk-${String(end).padStart(3,'0')}.`);
+    return;
+  }
+
+  const preview = targets.map(r=>r.codeBD).join(', ');
+  if(!confirm(`Akan menghapus ${targets.length} record Daily Maintenance:\n${preview}\n\nTindakan ini tidak bisa dibatalkan. Lanjutkan?`)) return;
+
+  const targetIds = new Set(targets.map(r=>r.id));
+  const backup = dailyRecords;
+  dailyRecords = dailyRecords.filter(r=>!targetIds.has(r.id));
+
+  let failed = 0;
+  if(usingDailyTable()){
+    for(const id of targetIds){
+      const ok = await deleteDailyRecordDb(id);
+      if(!ok) failed++;
+    }
+    if(failed){
+      alert(`⚠ ${failed} dari ${targets.length} record gagal dihapus di server. Coba lagi untuk sisanya.`);
+      await refreshDailyRecords();
+    }
+  } else {
+    await saveDaily();
+  }
+
+  renderAll();
+  syncDailyToSheets();
+  alert(`✓ ${targets.length - failed} record berhasil dihapus.`);
+}
 window.approveDaily = async function(id){
   const r = dailyRecords.find(x=>x.id===id);
   if(!r) return;
@@ -5313,7 +5362,9 @@ function renderHMTable(){
   if(!hmRecords.length){
     tbody.innerHTML = `<tr class="empty-row"><td colspan="13">Belum ada data. Upload file HM di atas untuk mengisi tabel.</td></tr>`;
   } else {
-    tbody.innerHTML = hmRecords.map(r=>`
+    // Urutkan dari tanggal TERBARU di paling atas ke tanggal TERLAMA di paling bawah.
+    const sortedHM = hmRecords.slice().sort((a,b)=> (b.tanggal||'').localeCompare(a.tanggal||''));
+    tbody.innerHTML = sortedHM.map(r=>`
       <tr>
         <td>${r.tanggal||'—'}</td>
         <td>${r.user||'—'}</td>
@@ -5629,6 +5680,7 @@ window.deletePlan = async function(id){
 }
 document.getElementById('btn-import-plan').addEventListener('click', importPlanSeed);
 document.getElementById('daily-import-service-btn').addEventListener('click', importDailyServiceSeedManual);
+document.getElementById('daily-bulk-delete-btn').addEventListener('click', bulkDeleteDailyByCodeRange);
 
 /* ================= PLANNING SYSTEM (MONTHLY MAINTENANCE PLANNING) ================= */
 const psUnitSelect = document.getElementById('ps-unitcode');
