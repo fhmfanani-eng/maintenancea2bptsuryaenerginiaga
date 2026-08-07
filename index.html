@@ -961,7 +961,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 
         <div class="grid grid-3" id="kpi-grid"></div>
         <div class="hint" id="ma-pa-source-status" style="margin-top:10px;"></div>
-        <div class="hint" style="margin-top:14px; margin-bottom:6px;">KPI dihitung hanya dari record Daily Maintenance yang sudah berstatus <b>Approved</b> oleh Supervisor. Khusus MA &amp; PA dihitung otomatis dari data <b>Monitoring HM</b> (fallback ke file jam operasional manual di bawah kalau belum ada data HM).</div>
+        <div class="hint" style="margin-top:14px; margin-bottom:6px;">KPI (MTBS, MTTR, PMR, dan Service Accuracy/SA) dihitung hanya dari record <b>Daily Maintenance</b> yang sudah berstatus <b>Approved</b> oleh Supervisor — SA memakai flag Plan/Unplan tiap record Daily Maintenance kategori Periodical. Data <b>Plan Service hanya dipakai untuk monitoring jadwal</b>, tidak lagi jadi sumber perhitungan KPI. Khusus MA &amp; PA dihitung otomatis dari data <b>Monitoring HM</b> + Daily Maintenance (Breakdown Approved) (fallback ke file jam operasional manual di bawah kalau belum ada data HM).</div>
 
         <div class="section-title">Data Sumber MA &amp; PA (fallback manual)</div>
         <div class="panel">
@@ -1018,7 +1018,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
       <!-- DATABASE UNIT -->
       <section class="view" id="view-database">
         <div class="panel-head" style="margin-bottom:16px;"><h2>Master Unit Alat Berat</h2></div>
-        <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy, MA, PA) tiap unit dihitung otomatis dari data Daily Maintenance, Plan Service, dan data Monitoring HM — tidak perlu input manual.</div>
+        <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy, MA, PA) tiap unit dihitung otomatis dari data Daily Maintenance dan data Monitoring HM — Plan Service hanya untuk monitoring jadwal, tidak perlu input manual.</div>
 
         <div class="panel period-panel" style="margin-bottom:16px;">
           <div class="panel-head" style="margin-bottom:8px;">
@@ -1304,12 +1304,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
                 </select>
               </div>
               <div class="field"><label>Man Power 3 (Opsional)</label>
-                <select id="d-mechanic3">
-                  <option value="">— Tidak ada —</option>
-                  <option value="Robertus G M">Robertus G M</option>
-                  <option value="Alfius S">Alfius S</option>
-                  <option value="Mechanic UT">Mechanic UT</option>
-                </select>
+                <input type="text" id="d-mechanic3" placeholder="Ketik nama mekanik lain...">
               </div>
               <div class="field"><label>Area</label>
                 <select id="d-area" required>
@@ -3887,13 +3882,9 @@ function populateMechanicSelects(){
     dMech2.innerHTML = '<option value="">— Tidak ada —</option>' + optsHTML + extraUT;
     if(prev==='Mechanic UT' || mechanics.some(u=>u.name===prev)) dMech2.value = prev;
   }
-  const dMech3 = document.getElementById('d-mechanic3');
-  if(dMech3){
-    const prev = dMech3.value;
-    const extraUT = mechanics.some(u=>u.name==='Mechanic UT') ? '' : '<option value="Mechanic UT">Mechanic UT</option>';
-    dMech3.innerHTML = '<option value="">— Tidak ada —</option>' + optsHTML + extraUT;
-    if(prev==='Mechanic UT' || mechanics.some(u=>u.name===prev)) dMech3.value = prev;
-  }
+  /* Man Power 3 sekarang berupa input teks bebas (bukan dropdown) agar nama mekanik lain
+     di luar daftar user Mechanic terdaftar tetap bisa diisi manual — nilainya tidak perlu
+     diisi ulang dari daftar user di sini. */
   const p2hOp = document.getElementById('p2h-operator');
   if(p2hOp){
     const prev = p2hOp.value;
@@ -4242,10 +4233,12 @@ function computeUnitKPIs(unitCode){
   const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
   const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
 
-  const today = new Date().toISOString().slice(0,10);
-  const plansForUnit = planRecords.filter(p=>p.unitCode===unitCode);
-  const overdue = plansForUnit.filter(p=>p.status==='Planned' && p.planDate && p.planDate<today).length;
-  const sa = plansForUnit.length ? ((plansForUnit.length-overdue)/plansForUnit.length*100) : 0;
+  // Service Accuracy (SA): dihitung dari data Daily Maintenance (kategori Periodical, sudah Approved),
+  // berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan Service (Plan Service hanya
+  // dipakai untuk monitoring jadwal, tidak lagi jadi sumber perhitungan KPI).
+  const periodicalRecords = approvedRecords.filter(r=>r.category!=='Breakdown');
+  const plannedServiceCount = periodicalRecords.filter(r=>r.planUnplan==='Plan').length;
+  const sa = periodicalRecords.length ? (plannedServiceCount/periodicalRecords.length*100) : 0;
 
   let ma = 0, pa = 0;
   const hmwsr = hmWSRForUnit(unitCode, null, null);
@@ -4281,16 +4274,19 @@ function computeUnitKPIsForRange(unitCode, startStr, endStr){
   const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
   const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
 
-  const today = new Date().toISOString().slice(0,10);
-  let plansForUnit = planRecords.filter(p=>p.unitCode===unitCode && p.planDate && p.planDate>=startStr && p.planDate<=endStr);
-  if(!plansForUnit.length){
-    // Belum ada Plan Service unit ini yang dijadwalkan pada bulan/minggu tsb — pakai seluruh
-    // Plan Service unit ini yang sudah dibuat s/d akhir periode tsb (kumulatif) supaya Service
-    // Accuracy tetap otomatis terhitung dari data yang ada, bukan langsung 0%.
-    plansForUnit = planRecords.filter(p=>p.unitCode===unitCode && p.planDate && p.planDate<=endStr);
+  // Service Accuracy (SA): dihitung dari data Daily Maintenance (kategori Periodical, sudah Approved)
+  // pada rentang tanggal tsb, berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan
+  // Service (Plan Service hanya dipakai untuk monitoring jadwal).
+  let periodicalRecords = approvedRecords.filter(r=>r.category!=='Breakdown');
+  if(!periodicalRecords.length){
+    // Belum ada Daily Maintenance Periodical unit ini pada bulan/minggu tsb — pakai seluruh
+    // Daily Maintenance Periodical (Approved) unit ini s/d akhir periode tsb (kumulatif) supaya
+    // Service Accuracy tetap otomatis terhitung dari data yang ada, bukan langsung 0%.
+    periodicalRecords = dailyRecords.filter(r=>r.unitCode===unitCode && r.approvalStatus==='Approved'
+      && r.category!=='Breakdown' && r.tanggal && r.tanggal<=endStr);
   }
-  const overdue = plansForUnit.filter(p=>p.status==='Planned' && p.planDate<today).length;
-  const sa = plansForUnit.length ? ((plansForUnit.length-overdue)/plansForUnit.length*100) : 0;
+  const plannedServiceCount = periodicalRecords.filter(r=>r.planUnplan==='Plan').length;
+  const sa = periodicalRecords.length ? (plannedServiceCount/periodicalRecords.length*100) : 0;
 
   let ma = 0, pa = 0;
   let hmwsr = hmWSRForUnit(unitCode, startStr, endStr);
@@ -4962,7 +4958,7 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   const category = document.getElementById('d-category').value;
   const mechanic = document.getElementById('d-mechanic').value;
   const mechanic2 = document.getElementById('d-mechanic2').value;
-  const mechanic3 = document.getElementById('d-mechanic3').value;
+  const mechanic3 = document.getElementById('d-mechanic3').value.trim();
   if(mechanic2 && mechanic2===mechanic){
     alert('Man Power 2 tidak boleh sama dengan Man Power utama. Pilih mekanik lain atau kosongkan.');
     return;
@@ -6283,7 +6279,7 @@ const PRE_INSPECTION_WHEELED_ITEMS = [
   { no:41, component:'Periksa semua pengaman & pelindung ada dan aman, contoh: Fan (Check that all guards are in place and secure, for example: Fan)' },
 ];
 const PRE_INSPECTION_CHECKLIST = {
-  'Bulldozer': [
+  'D85ESS-2A': [
     { section:'ENGINE' },
     { no:1, component:'Periksa kebocoran air (Check for water leaks)' },
     { no:2, component:'Periksa kebocoran oli sekitar engine (Check for oil leaks around engine)' },
@@ -6342,8 +6338,8 @@ const PRE_INSPECTION_CHECKLIST = {
     { no:50, component:'Periksa semua tutup & pengaman ada dan lengkap (Check that all guards and covers are in place and secure)' },
     { no:51, component:'Periksa kondisi ROPS (Inspect condition of ROPS)' },
   ],
-  'Wheel Loader': PRE_INSPECTION_WHEELED_ITEMS,
-  'Excavator': PRE_INSPECTION_WHEELED_ITEMS,
+  'WA500-6R': PRE_INSPECTION_WHEELED_ITEMS,
+  'PC210-10MO': PRE_INSPECTION_WHEELED_ITEMS,
 };
 
 const preinsUnitSelect = document.getElementById('preins-unitcode');
@@ -6358,12 +6354,12 @@ document.getElementById('preins-tanggal').value = new Date().toISOString().slice
 function renderPreInspectionChecklist(){
   const unit = UNITS.find(u=>u.code===preinsUnitSelect.value);
   const tbody = document.getElementById('preins-checklist-body');
-  if(!unit || !PRE_INSPECTION_CHECKLIST[unit.category]){
+  if(!unit || !PRE_INSPECTION_CHECKLIST[unit.type]){
     tbody.innerHTML = `<tr class="empty-row"><td colspan="4">Pilih Unit No untuk menampilkan checklist Pre Inspection sesuai tipe unit.</td></tr>`;
     attachTopScroll('preins-checklist');
     return;
   }
-  const items = PRE_INSPECTION_CHECKLIST[unit.category];
+  const items = PRE_INSPECTION_CHECKLIST[unit.type];
   tbody.innerHTML = items.map(it=>{
     if(it.section){
       return `<tr><td colspan="4" style="background:var(--panel-2); font-family:'Oswald',sans-serif; font-weight:700; letter-spacing:0.5px; color:var(--yellow); font-size:11.5px;">${it.section}</td></tr>`;
@@ -7370,10 +7366,17 @@ function computeKPIs(){
   const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
   const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
 
+  // Service Accuracy (SA): dihitung dari data Daily Maintenance (kategori Periodical, sudah Approved),
+  // berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan Service (Plan Service hanya
+  // dipakai untuk monitoring jadwal, tidak lagi jadi sumber perhitungan KPI).
+  const periodicalRecordsAll = approvedRecords.filter(r=>r.category!=='Breakdown');
+  const plannedServiceCountAll = periodicalRecordsAll.filter(r=>r.planUnplan==='Plan').length;
+  const sa = periodicalRecordsAll.length ? (plannedServiceCountAll/periodicalRecordsAll.length*100) : 0;
+
+  // overduePlans: statistik monitoring Plan Service (dipakai utk kartu "Plan Overdue"), tidak lagi
+  // dipakai untuk menghitung SA — Plan Service kini murni untuk monitoring jadwal.
   const today = new Date().toISOString().slice(0,10);
-  const totalPlans = planRecords.length;
   const overduePlans = planRecords.filter(p=>p.status==='Planned' && p.planDate && p.planDate<today).length;
-  const sa = totalPlans ? ((totalPlans-overduePlans)/totalPlans*100) : 0;
 
   const pendingApproval = dailyRecords.filter(r=>(r.approvalStatus||'Pending')==='Pending').length;
 
@@ -7428,16 +7431,19 @@ function computeKPIsForRange(startStr, endStr){
   const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
   const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
 
-  const today = new Date().toISOString().slice(0,10);
-  let plansInRange = planRecords.filter(p=>p.planDate && p.planDate>=startStr && p.planDate<=endStr);
-  if(!plansInRange.length){
-    // Bulan ini belum punya Plan Service yang dijadwalkan sendiri (mis. bulan sebelum jadwal
-    // service mulai rutin diinput) — supaya Service Accuracy tidak langsung 0%, pakai seluruh
-    // Plan Service yang sudah dibuat s/d akhir bulan tsb (kumulatif dari data yang ada).
-    plansInRange = planRecords.filter(p=>p.planDate && p.planDate<=endStr);
+  // Service Accuracy (SA): dihitung dari data Daily Maintenance (kategori Periodical, sudah Approved)
+  // pada rentang tanggal tsb, berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan
+  // Service (Plan Service hanya dipakai untuk monitoring jadwal).
+  let periodicalRecordsRange = approvedRecords.filter(r=>r.category!=='Breakdown');
+  if(!periodicalRecordsRange.length){
+    // Bulan/periode ini belum punya Daily Maintenance Periodical sendiri (mis. sebelum data rutin
+    // diinput) — supaya Service Accuracy tidak langsung 0%, pakai seluruh Daily Maintenance
+    // Periodical (Approved) yang sudah ada s/d akhir periode tsb (kumulatif dari data yang ada).
+    periodicalRecordsRange = dailyRecords.filter(r=>r.approvalStatus==='Approved' && r.category!=='Breakdown'
+      && r.tanggal && r.tanggal<=endStr);
   }
-  const overduePlans = plansInRange.filter(p=>p.status==='Planned' && p.planDate<today).length;
-  const sa = plansInRange.length ? ((plansInRange.length-overduePlans)/plansInRange.length*100) : 0;
+  const plannedServiceCountRange = periodicalRecordsRange.filter(r=>r.planUnplan==='Plan').length;
+  const sa = periodicalRecordsRange.length ? (plannedServiceCountRange/periodicalRecordsRange.length*100) : 0;
 
   return { mtbs, mttr, pmr, sa };
 }
