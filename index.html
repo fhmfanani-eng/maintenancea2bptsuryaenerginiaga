@@ -3721,6 +3721,7 @@ async function importDailyServiceSeed(){
 async function importDailyServiceSeedManual(){
   const n = await importDailyServiceSeed();
   try{ await appStorage.set('daily-service-seeded-flag', JSON.stringify(true)); }catch(e){}
+  await syncCodeBDChronological();
   renderAll();
   alert(n>0
     ? `${n} record Service Report berhasil diimport ke Daily Maintenance (langsung berstatus Approved).`
@@ -3757,6 +3758,12 @@ async function refreshDailyRecords(){
       const d = await appStorage.get('daily-records');
       if(d) dailyRecords = JSON.parse(d.value);
     }
+    // Setiap kali data disegarkan dari server, pastikan urutan Code BD (brk-NNN)
+    // tetap mencerminkan urutan tanggal+jam kejadian yang sebenarnya. Tanpa ini,
+    // record yang nomornya sempat "nyempil" tidak ikut ke-refresh ke posisi yang
+    // benar walau tabel di-refresh/dibuka ulang (mis. brk-363 bertanggal lebih tua
+    // tapi nomornya lebih besar dari brk-360/361/362 yang tanggalnya lebih baru).
+    await syncCodeBDChronological();
   }catch(e){ console.error('refresh daily records gagal', e); }
 }
 async function savePlan(){
@@ -5059,9 +5066,54 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
     if(mechanicField){ mechanicField.value = loggedInUser.name; mechanicField.disabled = true; }
   }
   updateCodeBDPreview();
+  await syncCodeBDChronological();
   renderAll();
   syncDailyToSheets();
 });
+
+/* ---- Sinkron ULANG Code BD supaya SELALU urut sesuai tanggal & jam kejadian ----
+   Beda dengan fixCodeBDChronologicalOrder() di atas (yang cuma jalan sekali & hanya
+   untuk nomor >=333, sudah selesai tugasnya), fungsi ini SENGAJA TIDAK dikunci flag
+   dan mencakup SEMUA record ber-Code-BD (format brk-NNN) — dipanggil setiap kali ada
+   record baru disimpan, tanggal record diedit, atau data disegarkan dari server,
+   supaya urutan Code BD (brk-001, brk-002, dst) selalu mencerminkan urutan
+   tanggal+jam breakdown/perbaikan yang sebenarnya, bukan urutan input/edit. Angka
+   yang dipakai TETAP sama (hanya dipasangkan ulang ke record yang berbeda), jadi
+   total jumlah Code BD tidak berubah — record paling lama dapat nomor terkecil,
+   record paling baru dapat nomor terbesar. Aman & murah dipanggil berulang: kalau
+   urutan sudah benar, tidak ada satu pun record yang ditulis ulang. */
+async function syncCodeBDChronological(){
+  const numOf = code => {
+    const m = /^brk-(\d+)$/i.exec((code||'').trim());
+    return m ? parseInt(m[1],10) : null;
+  };
+  const affected = dailyRecords.filter(r => numOf(r.codeBD)!==null);
+  if(affected.length < 2) return;
+
+  const numbers = affected.map(r=>numOf(r.codeBD)).sort((a,b)=>a-b);
+  const sortedByDate = affected.slice().sort((a,b)=>{
+    const da = `${a.tanggal||''} ${a.breakdownTime||a.start||''}`;
+    const db = `${b.tanggal||''} ${b.breakdownTime||b.start||''}`;
+    return da.localeCompare(db);
+  });
+
+  const canWriteToDb = usingDailyTable();
+  for(let i=0;i<sortedByDate.length;i++){
+    const rec = sortedByDate[i];
+    const newCode = `brk-${String(numbers[i]).padStart(3,'0')}`;
+    if(rec.codeBD===newCode) continue;
+    const oldCode = rec.codeBD;
+    rec.codeBD = newCode;
+    if(canWriteToDb){
+      const res = await updateDailyRecordDb(rec);
+      if(!res.ok){
+        console.error(`Gagal sinkron urutan Code BD ${oldCode} -> ${newCode}`, res.error);
+        rec.codeBD = oldCode;
+      }
+    }
+  }
+  if(!canWriteToDb){ await saveDaily(); }
+}
 
 /* ---- Sinkron ke Google Sheets (pilot: Daily Maintenance) ----
    Dipanggil tiap kali dailyRecords berubah (simpan/approve/reject/hapus).
@@ -7857,6 +7909,7 @@ function subscribeDailyRealtime(){
             const idx = dailyRecords.findIndex(r=>r.id===rec.id);
             if(idx>-1) dailyRecords[idx] = rec; else dailyRecords.unshift(rec);
             await enforceCodeBDLock();
+            await syncCodeBDChronological();
           }
           renderAll();
         }catch(e){ console.error('Gagal proses update realtime', e); }
@@ -7880,6 +7933,7 @@ function subscribeDailyRealtime(){
     await fixOvershotCodeBD();
     await enforceCodeBDLock();
     await fixCodeBDChronologicalOrder();
+    await syncCodeBDChronological();
     renderAll();
     updateRoleUI();
     requestNotifPermission();
@@ -7892,6 +7946,7 @@ function subscribeDailyRealtime(){
       const before = JSON.stringify(dailyRecords.map(r=>r.id+r.updatedAt));
       await refreshDailyRecords();
       await enforceCodeBDLock();
+      await syncCodeBDChronological();
       const after = JSON.stringify(dailyRecords.map(r=>r.id+r.updatedAt));
       if(before!==after) renderAll();
     }, 30000);
