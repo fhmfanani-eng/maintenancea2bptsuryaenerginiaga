@@ -4275,22 +4275,29 @@ function computeUnitKPIsForRange(unitCode, startStr, endStr){
   const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
 
   // Service Accuracy (SA): dihitung dari data Daily Maintenance (kategori Periodical, sudah Approved)
-  // pada rentang tanggal tsb, berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan
+  // pada rentang tanggal tsb saja, berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan
   // Service (Plan Service hanya dipakai untuk monitoring jadwal).
-  let periodicalRecords = approvedRecords.filter(r=>r.category!=='Breakdown');
-  if(!periodicalRecords.length){
-    // Belum ada Daily Maintenance Periodical unit ini pada bulan/minggu tsb — pakai seluruh
-    // Daily Maintenance Periodical (Approved) unit ini s/d akhir periode tsb (kumulatif) supaya
-    // Service Accuracy tetap otomatis terhitung dari data yang ada, bukan langsung 0%.
-    periodicalRecords = dailyRecords.filter(r=>r.unitCode===unitCode && r.approvalStatus==='Approved'
-      && r.category!=='Breakdown' && r.tanggal && r.tanggal<=endStr);
-  }
+  // CATATAN PERBAIKAN: sebelumnya ada fallback ke data kumulatif s/d akhir periode kalau minggu/bulan
+  // yang difilter belum punya record Periodical sendiri. Itu justru membuat angka SA TIDAK sinkron
+  // dengan filter yang dipilih (SA diam-diam menampilkan data dari LUAR periode, sementara
+  // MTBS/MTTR/PMR di kartu yang sama tetap ketat ke periode terpilih) — inilah penyebab data KPI
+  // terlihat "belum sinkron" saat difilter mingguan/bulanan. Supaya semua KPI di kartu unit selalu
+  // konsisten & benar-benar mencerminkan filter yang aktif, SA sekarang HANYA dihitung dari record
+  // Periodical pada periode tsb — kalau belum ada, tampil 0% (bukan diam-diam pakai data periode lain).
+  const periodicalRecords = approvedRecords.filter(r=>r.category!=='Breakdown');
   const plannedServiceCount = periodicalRecords.filter(r=>r.planUnplan==='Plan').length;
   const sa = periodicalRecords.length ? (plannedServiceCount/periodicalRecords.length*100) : 0;
 
+  // MA & PA: otomatis dari data Monitoring HM PADA PERIODE YANG DIFILTER SAJA (unit yang sama).
+  // CATATAN PERBAIKAN: sebelumnya ada fallback yang mengabaikan tanggal awal periode (startStr) dan
+  // mengambil SELURUH histori HM unit ini s/d akhir periode kalau minggu/bulan yang difilter belum
+  // punya baris HM sendiri — sama seperti bug SA di atas, ini membuat MA/PA tidak sinkron dengan
+  // periode yang dipilih (terutama untuk unit yang jarang di-entry Monitoring HM-nya, mis. Dozer,
+  // sehingga W4 25-31 Jul bisa menampilkan angka dari bulan lain). Sekarang MA/PA hanya dihitung
+  // dari data HM pada periode tsb; kalau belum ada, baru pakai file jam operasional manual
+  // (mapaData) sebagai fallback terakhir — bukan histori HM dari periode lain.
   let ma = 0, pa = 0;
-  let hmwsr = hmWSRForUnit(unitCode, startStr, endStr);
-  if(!hmwsr) hmwsr = hmWSRForUnit(unitCode, null, endStr);
+  const hmwsr = hmWSRForUnit(unitCode, startStr, endStr);
   if(hmwsr){
     ({ ma, pa } = maPaFromWSR(hmwsr));
   } else if(mapaData && mapaData.rows && mapaData.rows.length){
@@ -4667,10 +4674,10 @@ function updateDurationPreview(){
 
 /* ---- Code BD otomatis: prefix mengikuti kategori job, nomor urut berjalan per kategori ---- */
 function genRecordCode(category){
-  // Ikuti format & urutan Code BD yang SUDAH ADA di data (brk-002, brk-003, ... brk-333, dst) —
-  // bukan format baru per-kategori (DM-0001/Brk-0001/PM-0001). Nomor berikutnya dihitung dari
-  // nomor "brk-NNN" tertinggi yang ada di seluruh dailyRecords saat ini, apa pun kategorinya,
-  // supaya saat mekanik input data terbaru, Code BD-nya otomatis nyambung/lanjut dari file lama.
+  // Dipakai HANYA untuk preview di form (angka berjalan saat mekanik pilih kategori) — cukup dari
+  // cache lokal karena cuma tampilan sementara. Angka yang BENAR-BENAR disimpan saat submit dihitung
+  // ulang oleh generateUniqueCodeBD() di bawah, yang menyegarkan data dari server dulu supaya tidak
+  // nabrak Code BD mekanik lain yang submit hampir bersamaan (lihat catatan di fungsi tsb).
   let maxNum = 0;
   dailyRecords.forEach(r=>{
     const m = /^brk-(\d+)$/i.exec((r.codeBD||'').trim());
@@ -4678,6 +4685,32 @@ function genRecordCode(category){
   });
   const next = maxNum + 1;
   return `brk-${String(next).padStart(3,'0')}`;
+}
+/* ---- Generate Code BD FINAL yang unik saat record disimpan ----
+   Bug lama: nomor berikutnya dihitung dari `dailyRecords` cache lokal di browser masing-masing
+   mekanik. Kalau 2 mekanik di device berbeda submit Daily Maintenance hampir bersamaan (sebelum
+   realtime sempat menyinkronkan record satu ke device yang lain), KEDUANYA menghitung "nomor
+   berikutnya" dari cache yang sama-sama belum tahu submit satu sama lain → dapat Code BD yang SAMA
+   (persis kasus brk-347 muncul 3x di beberapa record berbeda).
+   Perbaikan: sebelum menghitung nomor berikutnya, tarik dulu data Daily Maintenance TERBARU
+   langsung dari server (bukan cache), supaya jendela race-condition-nya jauh lebih sempit (cuma
+   selama proses submit itu sendiri, bukan sampai realtime/polling 30 detik berikutnya nyampai).
+   Lapis pengaman kedua ada di syncCodeBDChronological() (dipanggil otomatis tiap ada record baru,
+   tiap refresh berkala, dan tiap event realtime) — fungsi itu sekarang memastikan TIDAK ADA lagi
+   Code BD yang sama dipakai 2 record, jadi kalaupun race condition tetap kejadian (sangat kecil
+   kemungkinannya), akan otomatis "diluruskan" ke nomor unik dalam beberapa detik tanpa perlu
+   campur tangan manual. ---- */
+async function generateUniqueCodeBD(){
+  if(usingDailyTable()){
+    try{ await loadDailyFromTable(); }
+    catch(e){ console.error('Gagal refresh data sebelum generate Code BD, pakai cache lokal', e); }
+  }
+  let maxNum = 0;
+  dailyRecords.forEach(r=>{
+    const m = /^brk-(\d+)$/i.exec((r.codeBD||'').trim());
+    if(m){ const n = parseInt(m[1],10); if(n>maxNum) maxNum = n; }
+  });
+  return `brk-${String(maxNum+1).padStart(3,'0')}`;
 }
 function updateCodeBDPreview(){
   document.getElementById('d-codebd').value = genRecordCode(document.getElementById('d-category').value);
@@ -5027,7 +5060,7 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   if(!wasEditing && !saveFailed){
     const rec = {
       id: uid(),
-      codeBD: genRecordCode(category),
+      codeBD: await generateUniqueCodeBD(),
       ...fields,
       submittedBy: currentUserName(),
       approvalStatus: 'Pending',
@@ -5086,7 +5119,20 @@ async function syncCodeBDChronological(){
   const affected = dailyRecords.filter(r => numOf(r.codeBD)!==null);
   if(affected.length < 2) return;
 
-  const numbers = affected.map(r=>numOf(r.codeBD)).sort((a,b)=>a-b);
+  // PERBAIKAN PENTING (akar masalah Code BD dobel, mis. beberapa record sama-sama "brk-347"):
+  // Versi lama fungsi ini mengambil KUMPULAN angka yang SUDAH ADA (termasuk kalau ada 2-3 record
+  // yang kebetulan sama-sama bernomor sama akibat race condition saat submit), lalu cuma
+  // memasang-ulangkan angka itu ke record lain sesuai urutan tanggal — sehingga kalau angka "347"
+  // sudah dobel di data, hasil pasang-ulangnya TETAP dobel (cuma pindah ke record yang beda),
+  // sehingga Code BD dobel di atas tidak pernah benar-benar hilang walau fungsi ini otomatis
+  // dijalankan berkala. Sekarang, alih-alih memakai ulang persis angka yang ada, kita buat deret
+  // angka BARU yang naik 1-1 tanpa lompat dan TANPA DUPLIKAT (mulai dari angka terkecil yang sudah
+  // ada), lalu pasangkan ke record terurut tanggal+jam kejadian. Ini menjamin Code BD SELALU unik
+  // sekaligus otomatis merapikan/memperbarui nomor tiap kali ada data baru/berubah — dan karena
+  // fungsi ini dipanggil otomatis setiap ada record baru, setiap refresh berkala, dan setiap event
+  // realtime, Code BD dobel yang sudah ada di data saat ini juga akan otomatis diperbaiki sendiri
+  // (self-heal) tanpa perlu tindakan manual.
+  const minNum = Math.min(...affected.map(r=>numOf(r.codeBD)));
   const sortedByDate = affected.slice().sort((a,b)=>{
     const da = `${a.tanggal||''} ${a.breakdownTime||a.start||''}`;
     const db = `${b.tanggal||''} ${b.breakdownTime||b.start||''}`;
@@ -5096,7 +5142,7 @@ async function syncCodeBDChronological(){
   const canWriteToDb = usingDailyTable();
   for(let i=0;i<sortedByDate.length;i++){
     const rec = sortedByDate[i];
-    const newCode = `brk-${String(numbers[i]).padStart(3,'0')}`;
+    const newCode = `brk-${String(minNum+i).padStart(3,'0')}`;
     if(rec.codeBD===newCode) continue;
     const oldCode = rec.codeBD;
     rec.codeBD = newCode;
@@ -7432,16 +7478,13 @@ function computeKPIsForRange(startStr, endStr){
   const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
 
   // Service Accuracy (SA): dihitung dari data Daily Maintenance (kategori Periodical, sudah Approved)
-  // pada rentang tanggal tsb, berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan
+  // pada rentang tanggal tsb saja, berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan
   // Service (Plan Service hanya dipakai untuk monitoring jadwal).
-  let periodicalRecordsRange = approvedRecords.filter(r=>r.category!=='Breakdown');
-  if(!periodicalRecordsRange.length){
-    // Bulan/periode ini belum punya Daily Maintenance Periodical sendiri (mis. sebelum data rutin
-    // diinput) — supaya Service Accuracy tidak langsung 0%, pakai seluruh Daily Maintenance
-    // Periodical (Approved) yang sudah ada s/d akhir periode tsb (kumulatif dari data yang ada).
-    periodicalRecordsRange = dailyRecords.filter(r=>r.approvalStatus==='Approved' && r.category!=='Breakdown'
-      && r.tanggal && r.tanggal<=endStr);
-  }
+  // CATATAN PERBAIKAN: fallback ke data kumulatif s/d akhir periode (kalau bulan yang difilter belum
+  // punya record Periodical sendiri) dihapus — itu membuat SA tidak sinkron dengan filter periode yang
+  // dipilih, berbeda dari MTBS/MTTR/PMR yang selalu ketat ke periode tsb. Sekarang SA HANYA dari data
+  // pada periode yang difilter (0% kalau memang belum ada input Periodical di periode itu).
+  const periodicalRecordsRange = approvedRecords.filter(r=>r.category!=='Breakdown');
   const plannedServiceCountRange = periodicalRecordsRange.filter(r=>r.planUnplan==='Plan').length;
   const sa = periodicalRecordsRange.length ? (plannedServiceCountRange/periodicalRecordsRange.length*100) : 0;
 
@@ -7460,14 +7503,14 @@ function computeKPIsFor(periodValue){
   const startStr = toDateStr(start), endStr = toDateStr(end);
   const base = computeKPIsForRange(startStr, endStr);
 
-  // MA & PA: otomatis dari data Monitoring HM pada bulan tsb. Kalau bulan tsb belum ada baris HM
-  // sendiri (mis. sebelum data HM rutin diinput), pakai data HM kumulatif s/d akhir bulan tsb
-  // (semua baris HM dengan tanggal <= akhir bulan) supaya MA & PA tetap otomatis terhitung dari
-  // data riil yang ada — bukan langsung 0%. Fallback ke file jam operasional manual (tidak
-  // dipecah per bulan) hanya kalau memang belum ada data HM sama sekali s/d bulan tersebut.
+  // MA & PA: otomatis dari data Monitoring HM PADA BULAN YANG DIFILTER SAJA.
+  // CATATAN PERBAIKAN: fallback yang mengabaikan awal bulan (memakai histori HM kumulatif s/d akhir
+  // bulan tsb kalau bulan itu belum ada baris HM sendiri) dihapus — sama seperti perbaikan SA/MA/PA
+  // per-unit di Master Unit, ini membuat MA/PA Dashboard tidak sinkron dengan bulan yang difilter.
+  // Fallback ke file jam operasional manual (mapaData) tetap ada untuk kondisi belum ada data HM
+  // sama sekali.
   let ma = 0, pa = 0;
-  let hmwsr = hmWSRGlobal(startStr, endStr);
-  if(!hmwsr) hmwsr = hmWSRGlobal(null, endStr);
+  const hmwsr = hmWSRGlobal(startStr, endStr);
   if(hmwsr){
     ({ ma, pa } = maPaFromWSR(hmwsr));
   } else {
