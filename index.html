@@ -45,84 +45,93 @@ body{
 
 /* SIDEBAR */
 .sidebar{
-  width:322px; flex-shrink:0;
-  background:#121417;
-  border-right:1px solid var(--line);
+  width:300px; flex-shrink:0;
+  background:#0f1115;
+  border-right:1px solid rgba(255,255,255,0.05);
   display:flex; flex-direction:column;
   position:sticky; top:0; height:100vh;
 }
 .brand{
-  padding:22px 20px 18px;
-  border-bottom:1px solid var(--line);
+  padding:22px 18px 18px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
   display:flex; flex-direction:column; align-items:center;
   text-align:center;
 }
 .brand .logo-badge{
-  background:#fff; border-radius:6px; padding:8px 10px; margin-bottom:12px;
+  background:#fff; border-radius:12px; padding:10px 12px; margin-bottom:12px;
   display:inline-flex; align-items:center; justify-content:center;
-  box-shadow:0 2px 8px rgba(0,0,0,0.35);
+  box-shadow:0 2px 12px rgba(0,0,0,0.35);
 }
 .brand .logo-badge img{ display:block; height:34px; width:auto; }
 .brand .mark{
-  font-family:'Oswald',sans-serif; font-weight:700; font-size:15.5px;
-  letter-spacing:0.6px; color:var(--yellow); display:flex; align-items:center; gap:8px;
-  line-height:1.25;
+  font-family:'Oswald',sans-serif; font-weight:700; font-size:14px;
+  letter-spacing:0.7px; color:var(--yellow); display:flex; align-items:center; gap:8px;
+  line-height:1.3;
 }
 .brand .mark svg{ flex-shrink:0; }
-.brand .sub{ font-size:9.5px; color:var(--text-faint); letter-spacing:1.5px; margin-top:5px; text-transform:uppercase; font-family:'JetBrains Mono',monospace; line-height:1.4;}
+.brand .sub{ font-size:8.5px; color:var(--text-faint); letter-spacing:1.6px; margin-top:5px; text-transform:uppercase; font-family:'JetBrains Mono',monospace; line-height:1.4;}
 .nav{
-  flex:1; padding:16px 14px; overflow-y:auto;
-  display:grid; grid-template-columns:repeat(3, 1fr); gap:9px;
+  flex:1; padding:16px 12px; overflow-y:auto;
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;
   align-content:start;
 }
 .nav-item{
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:7px; text-align:center;
-  padding:13px 6px 10px; border-radius:14px;
-  color:var(--text-dim); cursor:pointer; font-size:10px; font-weight:600; line-height:1.25;
-  border:1px solid rgba(255,255,255,0.05);
-  background:#1a1d22;
-  box-shadow:0 1px 3px rgba(0,0,0,0.3);
-  transition:background .14s, color .14s, border-color .14s, transform .1s, box-shadow .14s;
+  padding:12px 4px 10px; border-radius:14px;
+  color:#8b929a; cursor:pointer; font-size:9px; font-weight:600; line-height:1.25;
+  border:1px solid transparent;
+  background:rgba(255,255,255,0.02);
+  transition:all .15s ease;
   user-select:none;
   position:relative;
 }
 .nav-item .label{
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
   overflow:hidden; width:100%;
+  letter-spacing:0.15px;
 }
 .nav-item .num{
   display:inline-flex; align-items:center; justify-content:center;
-  width:38px; height:38px; flex-shrink:0; border-radius:50%;
-  background:var(--panel-2); color:var(--text-dim);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.03);
-  transition:background .14s, color .14s;
+  width:42px; height:42px; flex-shrink:0; border-radius:13px;
+  background:rgba(255,255,255,0.04);
+  transition:all .15s ease;
 }
-.nav-item .num svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-/* Warna ikon per menu, ala ikon berwarna di aplikasi mobile */
-.nav-item:nth-child(1) .num{ background:rgba(74,144,217,0.18); color:#7db3ee; }
-.nav-item:nth-child(2) .num{ background:rgba(255,140,66,0.18); color:#ffab6b; }
-.nav-item:nth-child(3) .num{ background:rgba(76,175,109,0.18); color:#7ed99a; }
-.nav-item:nth-child(4) .num{ background:rgba(168,120,255,0.18); color:#c3a6ff; }
-.nav-item:nth-child(5) .num{ background:rgba(255,199,44,0.18); color:var(--yellow); }
-.nav-item:nth-child(6) .num{ background:rgba(229,72,77,0.18); color:#f28b8e; }
-.nav-item:nth-child(7) .num{ background:rgba(64,196,196,0.18); color:#7fe0e0; }
-.nav-item:nth-child(8) .num{ background:rgba(255,105,180,0.18); color:#ff9fcb; }
-.nav-item:nth-child(9) .num{ background:rgba(120,144,255,0.18); color:#a3b3ff; }
-.nav-item:hover{ background:#20242b; color:var(--text); border-color:var(--line); transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,0.35); }
-.nav-item:active{ transform:scale(0.97); }
+.nav-item .num svg{ width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+/* Soft accent per menu — gaya aplikasi modern */
+.nav-item:nth-child(1) .num{ background:rgba(74,144,217,0.12); color:#6eafef; }
+.nav-item:nth-child(2) .num{ background:rgba(255,140,66,0.12); color:#ff9d5c; }
+.nav-item:nth-child(3) .num{ background:rgba(76,175,109,0.12); color:#6ed492; }
+.nav-item:nth-child(4) .num{ background:rgba(168,120,255,0.12); color:#b99aff; }
+.nav-item:nth-child(5) .num{ background:rgba(255,199,44,0.12); color:#ffc72c; }
+.nav-item:nth-child(6) .num{ background:rgba(229,72,77,0.12); color:#f07075; }
+.nav-item:nth-child(7) .num{ background:rgba(64,196,196,0.12); color:#6edbdb; }
+.nav-item:nth-child(8) .num{ background:rgba(255,105,180,0.12); color:#ff8fc4; }
+.nav-item:nth-child(9) .num{ background:rgba(120,144,255,0.12); color:#95a8ff; }
+.nav-item:hover{
+  background:rgba(255,255,255,0.05);
+  color:var(--text);
+  border-color:rgba(255,255,255,0.06);
+}
+.nav-item:hover .num{ transform:scale(1.08); }
+.nav-item:active{ transform:scale(0.96); }
 .nav-item.active{
-  background:linear-gradient(160deg, rgba(255,199,44,0.16), rgba(255,199,44,0.05));
-  color:var(--yellow); border-color:rgba(255,199,44,0.35);
-  box-shadow:0 2px 10px rgba(255,199,44,0.1);
+  background:rgba(255,199,44,0.1);
+  color:var(--yellow);
+  border-color:rgba(255,199,44,0.28);
 }
-.nav-item.active .num{ background:var(--yellow); color:#1b1500; box-shadow:0 0 0 1px rgba(255,199,44,0.5); }
-.nav-item .nav-badge{ position:absolute; top:8px; right:10px; margin-left:0; }
+.nav-item.active .num{
+  background:var(--yellow); color:#1a1400;
+  box-shadow:0 4px 14px rgba(255,199,44,0.3);
+}
+.nav-item .nav-badge{ position:absolute; top:6px; right:8px; margin-left:0; }
 .sidebar-foot{
-  padding:14px 20px; border-top:1px solid var(--line);
-  font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; letter-spacing:1px;
+  padding:12px 16px; border-top:1px solid rgba(255,255,255,0.05);
+  font-size:9.5px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; letter-spacing:1.1px;
+  display:flex; align-items:center;
 }
-.status-dot{ width:6px; height:6px; border-radius:50%; background:var(--green); display:inline-block; margin-right:6px; box-shadow:0 0 6px var(--green); }
+.status-dot{ width:6px; height:6px; border-radius:50%; background:var(--green); display:inline-block; margin-right:7px; box-shadow:0 0 6px var(--green); animation:pulse-dot 2.2s ease-in-out infinite; }
+@keyframes pulse-dot{ 0%,100%{ opacity:1; } 50%{ opacity:0.45; } }
 
 /* MAIN */
 .main{ flex:1; min-width:0; }
@@ -335,12 +344,12 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 /* KPI GAUGES — PREMIUM */
 .kpi-card{
   background:
-    radial-gradient(ellipse at top right, rgba(255,199,44,0.08), transparent 55%),
-    linear-gradient(180deg, var(--panel-2), #1a1c21);
-  border:1px solid var(--line); border-radius:6px; padding:20px 18px 18px;
+    radial-gradient(ellipse at top right, rgba(255,199,44,0.1), transparent 55%),
+    linear-gradient(165deg, #1e2229 0%, #16191f 100%);
+  border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:22px 18px 18px;
   text-align:center; position:relative; overflow:hidden;
-  box-shadow:0 4px 18px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.03);
-  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  box-shadow:0 6px 22px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
 .kpi-card::before{
   content:''; position:absolute; top:0; left:0; right:0; height:2px;
@@ -379,16 +388,26 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 /* ===== KPI CHART DASHBOARD (grafik premium ala executive dashboard) ===== */
 .chart-panel{
   background:
-    radial-gradient(ellipse at top right, rgba(255,199,44,0.06), transparent 55%),
-    linear-gradient(180deg, var(--panel-2), #1a1c21);
-  border:1px solid var(--line); border-radius:6px; padding:18px;
-  box-shadow:0 4px 18px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.03);
+    radial-gradient(ellipse at top right, rgba(255,199,44,0.07), transparent 55%),
+    radial-gradient(ellipse at bottom left, rgba(74,144,217,0.04), transparent 50%),
+    linear-gradient(180deg, #1c1f26, #16181d);
+  border:1px solid rgba(255,199,44,0.12); border-radius:10px; padding:20px 20px 18px;
+  box-shadow:0 8px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  position:relative; overflow:hidden;
+}
+.chart-panel::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, transparent, rgba(255,199,44,0.55), transparent);
+  opacity:0.8;
 }
 .chart-panel .chart-panel-title{
-  font-family:'Oswald',sans-serif; font-size:12.5px; font-weight:600; letter-spacing:0.6px;
-  text-transform:uppercase; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:7px;
+  font-family:'Oswald',sans-serif; font-size:13.5px; font-weight:600; letter-spacing:0.8px;
+  text-transform:uppercase; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:9px;
 }
-.chart-panel .chart-panel-title::before{ content:''; width:3px; height:13px; background:var(--yellow); display:inline-block; border-radius:2px; }
+.chart-panel .chart-panel-title::before{
+  content:''; width:3px; height:15px; background:linear-gradient(180deg, #FFC72C, #c99a10);
+  display:inline-block; border-radius:2px; box-shadow:0 0 8px rgba(255,199,44,0.4);
+}
 .chart-panel-title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
 .chart-panel-title-row .chart-panel-title{ margin-bottom:0; }
 .trend-quarter-select{
@@ -401,7 +420,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 .chart-kpi-legend b{ color:var(--yellow); font-weight:700; }
 .chart-panel-stats-row{ display:flex; gap:22px; flex-wrap:wrap; margin-bottom:14px; }
 .kpi-mini-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-.kpi-mini-card{ background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:5px; padding:10px 10px 2px; }
+.kpi-mini-card{ background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:12px 12px 6px; box-shadow:0 2px 10px rgba(0,0,0,0.2); }
 .kpi-mini-card .kpi-mini-title{ display:flex; align-items:center; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:700; letter-spacing:0.4px; color:var(--text); margin-bottom:2px; }
 .kpi-mini-card .kpi-mini-title .kpi-mini-target{ font-size:9px; font-weight:500; color:var(--text-faint); text-transform:none; letter-spacing:0; }
 .kpi-mini-card svg{ width:100%; height:auto; display:block; }
@@ -959,7 +978,8 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
         <div class="section-title">Grafik KPI</div>
         <div class="grid grid-2" id="kpi-chart-dashboard" style="margin-bottom:20px; align-items:start;"></div>
 
-        <div class="grid grid-3" id="kpi-grid"></div>
+        <!-- kpi-grid gauge cards dihapus — diganti tabel detail di chart monthly/quarterly -->
+        <div class="grid grid-3" id="kpi-grid" style="display:none;"></div>
         <div class="hint" id="ma-pa-source-status" style="margin-top:10px;"></div>
         <div class="hint" style="margin-top:14px; margin-bottom:6px;">KPI (MTBS, MTTR, PMR, dan Service Accuracy/SA) dihitung hanya dari record <b>Daily Maintenance</b> yang sudah berstatus <b>Approved</b> oleh Supervisor — SA memakai flag Plan/Unplan tiap record Daily Maintenance kategori Periodical. Data <b>Plan Service hanya dipakai untuk monitoring jadwal</b>, tidak lagi jadi sumber perhitungan KPI. Khusus MA &amp; PA dihitung otomatis dari data <b>Monitoring HM</b> + Daily Maintenance (Breakdown Approved) (fallback ke file jam operasional manual di bawah kalau belum ada data HM).</div>
 
@@ -984,40 +1004,18 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
           <div id="mapa-upload-status" class="hint"></div>
         </div>
 
-        <div class="section-title">Ringkasan Operasional</div>
-        <div class="grid grid-5">
-          <div class="panel" style="margin-bottom:0;">
-            <div class="panel-head"><h2>Total Unit</h2></div>
-            <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700;" id="stat-units">0</div>
-            <div class="hint">Unit terdaftar dalam database</div>
-          </div>
-          <div class="panel" style="margin-bottom:0;">
-            <div class="panel-head"><h2>Job Bulan Ini</h2></div>
-            <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700;" id="stat-jobs">0</div>
-            <div class="hint">Total record daily maintenance</div>
-          </div>
-          <div class="panel" style="margin-bottom:0;">
-            <div class="panel-head"><h2>Breakdown Aktif</h2></div>
-            <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700; color:var(--red);" id="stat-open">0</div>
-            <div class="hint">Status Open / On Progress</div>
-          </div>
-          <div class="panel" style="margin-bottom:0;">
-            <div class="panel-head"><h2>Plan Service Overdue</h2></div>
-            <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700; color:var(--orange);" id="stat-overdue">0</div>
-            <div class="hint">Lewat tanggal rencana</div>
-          </div>
-          <div class="panel" style="margin-bottom:0;">
-            <div class="panel-head"><h2>Menunggu Approval</h2></div>
-            <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700; color:var(--yellow);" id="stat-pending">0</div>
-            <div class="hint">Record daily maintenance belum disetujui Supervisor</div>
-          </div>
-        </div>
+        <!-- Ringkasan Operasional dihapus -->
+        <div id="stat-units" style="display:none;">0</div>
+        <div id="stat-jobs" style="display:none;">0</div>
+        <div id="stat-open" style="display:none;">0</div>
+        <div id="stat-overdue" style="display:none;">0</div>
+        <div id="stat-pending" style="display:none;">0</div>
       </section>
 
 
       <!-- DATABASE UNIT -->
       <section class="view" id="view-database">
-        <div class="panel-head" style="margin-bottom:16px;"><h2>Master Unit Alat Berat</h2></div>
+        <div class="panel-head" style="margin-bottom:16px;"><h2>Performance Unit Alat Berat</h2></div>
         <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy, MA, PA) tiap unit dihitung otomatis dari data Daily Maintenance dan data Monitoring HM — Plan Service hanya untuk monitoring jadwal, tidak perlu input manual.</div>
 
         <div class="panel period-panel" style="margin-bottom:16px;">
@@ -1542,6 +1540,10 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
             <div id="summary-donut-chart" style="display:flex; align-items:center; gap:22px; justify-content:center; flex-wrap:wrap;"></div>
           </div>
         </div>
+        <div class="panel" style="margin-bottom:20px;">
+          <div class="panel-head"><h2>Komposisi Status Job</h2></div>
+          <div id="summary-status-chart" style="display:flex; align-items:center; gap:28px; justify-content:center; flex-wrap:wrap;"></div>
+        </div>
 
         <div class="panel">
           <div class="panel-head">
@@ -1634,7 +1636,63 @@ const UNITS = [
   { type:'D85ESS-2A', code:'SBD-103', category:'Bulldozer' },
   { type:'PC210-10MO', code:'SPC-104', category:'Excavator' },
 ];
-const KPI_TARGET = { mtbs:80, mttr:90, pmr:90, sa:90, ma:90, pa:90 };
+/* Target KPI resmi — format skor mengikuti spreadsheet KEY PERFORMANCE INDICATOR Maintenance.
+   Acv. = nilai aktual | Score = tier 60% / 80% / 100% dari bobot.
+   MTBS: >80 jam = 100% | 64–80 jam = 80% | <64 jam = 60%
+   MTTR: <36 jam = 100% | 36–45 jam = 80% | >45 jam = 60%  (rata-rata jam repair, lower better)
+   PMR:  >90% = 100% | 85–90% = 80% | <85% = 60%
+   SA:   >90% = 100% | 80–90% = 80% | <80% = 60%
+   MA/PA: ≥90% = 100% | 70–89% = 80% | <70% = 60%
+   Perhitungan nilai: MTBS/MTTR/PMR/SA dari Daily Maintenance (Approved);
+   MA/PA dari Monitoring HM (fallback file jam operasional manual). */
+const KPI_TARGET = { mtbs:80, mttr:36, pmr:90, sa:90, ma:90, pa:90 };
+const KPI_WEIGHT = { mtbs:10, mttr:10, pmr:10, sa:10, ma:15, pa:15 };
+
+/** Skor tier 60/80/100 sesuai format spreadsheet KPI Maintenance. */
+function kpiTierScore(key, value){
+  const v = Number(value)||0;
+  if(key==='ma' || key==='pa'){
+    if(v >= 90) return 100;
+    if(v >= 70) return 80;
+    return v>0 ? 60 : 0;
+  }
+  if(key==='mtbs'){
+    // higher better
+    if(v > 80) return 100;
+    if(v >= 64) return 80;
+    return v>0 ? 60 : 0;
+  }
+  if(key==='mttr'){
+    // lower better (jam rata-rata repair). 0 jam (tanpa repair) = 100%
+    if(v <= 0) return 100;
+    if(v < 36) return 100;
+    if(v <= 45) return 80;
+    return 60;
+  }
+  if(key==='pmr'){
+    if(v > 90) return 100;
+    if(v >= 85) return 80;
+    return v>0 ? 60 : 0;
+  }
+  if(key==='sa'){
+    if(v > 90) return 100;
+    if(v >= 80) return 80;
+    return v>0 ? 60 : 0;
+  }
+  return 0;
+}
+
+/** % capaian untuk chart/tabel = skor tier (60/80/100). */
+function kpiAchievePct(key, value){
+  return kpiTierScore(key, value);
+}
+
+/** Bobot skor (Score di spreadsheet) = tier/100 * weight. */
+function kpiWeightedScore(key, value){
+  const tier = kpiTierScore(key, value);
+  const w = KPI_WEIGHT[key]||0;
+  return (tier/100) * w;
+}
 
 // Imported from "Plan Schedule Next Service Juli-Desember 2026.xlsx" — sheet "Plan Next Service"
 // Imported from "Report_Maintenance_A2B.xlsx" — realisasi service Jan-Jul 2026 dijadikan riwayat
@@ -3786,7 +3844,7 @@ async function saveHM(){
 const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 const titleMap = {
-  dashboard:'KPI REPORT', database:'Master Unit', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
+  dashboard:'KPI REPORT', database:'Performance Unit', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
   plan:'Plan Service', planningsystem:'Plan Shcedule Maintenance', summary:'Mechanic Activity Report',
   hm:'Monitoring HM'
 };
@@ -4183,6 +4241,28 @@ function hmWSRForUnit(unitCode, startStr, endStr){
   const S = Math.max(T - W - R, 0);
   return { W, S, R, T };
 }
+// PERBAIKAN: hitung total jam HM (elapsed) secara BENAR untuk perhitungan gabungan banyak unit.
+// Sebelumnya totalHM dihitung dari (Math.max - Math.min) atas SEMUA nilai HM tercampur dari
+// berbagai unit sekaligus — padahal tiap unit punya angka HM meter dasar yang jauh berbeda
+// (mis. SPC-104 ~1000 jam, SWA-101 ~5000 jam), sehingga selisihnya jadi angka raksasa yang tidak
+// berarti apa-apa (bukan jam operasional riil) dan selalu jauh melebihi target MTBS (80 jam) —
+// akibatnya MTBS selalu mentok/capped 100% di grafik "Rekap KPI Triwulan" walau data breakdown
+// sudah lengkap & approved. Sekarang HM dikelompokkan PER UNIT dulu, baru dijumlahkan.
+function totalHMByUnit(records){
+  const byUnit = {};
+  records.forEach(r=>{
+    const v = Number(r.hm)||0;
+    if(v<=0 || !r.unitCode) return;
+    if(!byUnit[r.unitCode]) byUnit[r.unitCode] = [];
+    byUnit[r.unitCode].push(v);
+  });
+  let total = 0;
+  Object.values(byUnit).forEach(vals=>{
+    if(vals.length) total += (Math.max(...vals) - Math.min(...vals));
+  });
+  return total;
+}
+
 function hmWSRGlobal(startStr, endStr){
   let recs = hmRecords.slice();
   if(startStr) recs = recs.filter(r=>r.tanggal && r.tanggal>=startStr);
@@ -4225,10 +4305,9 @@ function computeUnitKPIs(unitCode){
   const totalHM = hmValues.length ? Math.max(...hmValues) - Math.min(...hmValues) : 0;
   const mtbs = bdCount>0 ? (totalHM / bdCount) : totalHM;
 
-  const onTimeTarget = 4;
-  const mttrEligible = approvedRecords.filter(r=>r.duration!==null);
-  const mttrOk = mttrEligible.filter(r=>r.duration<=onTimeTarget).length;
-  const mttr = mttrEligible.length ? (mttrOk/mttrEligible.length*100) : 0;
+  // MTTR = rata-rata jam repair (Total Jam Breakdown / Jumlah Repair) — format spreadsheet
+  const mttrEligible = approvedRecords.filter(r=>r.duration!==null && r.duration!==undefined);
+  const mttr = mttrEligible.length ? (mttrEligible.reduce((s,r)=>s+(Number(r.duration)||0),0)/mttrEligible.length) : 0;
 
   const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
   const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
@@ -4266,10 +4345,9 @@ function computeUnitKPIsForRange(unitCode, startStr, endStr){
   const totalHM = hmValues.length ? Math.max(...hmValues) - Math.min(...hmValues) : 0;
   const mtbs = bdCount>0 ? (totalHM / bdCount) : totalHM;
 
-  const onTimeTarget = 4;
-  const mttrEligible = approvedRecords.filter(r=>r.duration!==null);
-  const mttrOk = mttrEligible.filter(r=>r.duration<=onTimeTarget).length;
-  const mttr = mttrEligible.length ? (mttrOk/mttrEligible.length*100) : 0;
+  // MTTR = rata-rata jam repair (Total Jam Breakdown / Jumlah Repair) — format spreadsheet
+  const mttrEligible = approvedRecords.filter(r=>r.duration!==null && r.duration!==undefined);
+  const mttr = mttrEligible.length ? (mttrEligible.reduce((s,r)=>s+(Number(r.duration)||0),0)/mttrEligible.length) : 0;
 
   const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
   const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
@@ -4313,7 +4391,7 @@ function computeUnitKPIsForRange(unitCode, startStr, endStr){
   return { mtbs, mttr, pmr, sa, ma, pa };
 }
 
-/* ---- Filter periode minggu untuk Master Unit Alat Berat (Database Unit) ----
+/* ---- Filter periode minggu untuk Performance Unit Alat Berat (Database Unit) ----
    periodValue kosong = semua periode (tidak difilter). Format periodValue: "YYYY-MM-DD_YYYY-MM-DD" (Senin_Minggu). */
 function computeUnitKPIsFor(unitCode, periodValue){
   if(!periodValue) return computeUnitKPIs(unitCode);
@@ -4379,7 +4457,7 @@ function getUnitWeekPeriodOptions(){
   return keys;
 }
 
-/* ---- Filter periode bulan untuk Master Unit Alat Berat (Database Unit) ----
+/* ---- Filter periode bulan untuk Performance Unit Alat Berat (Database Unit) ----
    Sama seperti getUnitWeekPeriodOptions(), tapi per bulan kalender penuh (tanggal 1 s/d akhir bulan).
    Key tetap format "YYYY-MM-DD_YYYY-MM-DD" supaya bisa langsung dipakai computeUnitKPIsForRange()
    tanpa perlu fungsi hitung KPI terpisah. */
@@ -4434,10 +4512,13 @@ function populateUnitWeekPeriodSelect(){
   }
 }
 
-function kpiMiniItem(label, value, unit, target){
-  const pct = target ? (value/target*100) : 0;
-  const color = pct>=100 ? 'var(--green)' : pct>=75 ? 'var(--yellow)' : 'var(--red)';
-  return `<div class="kpi-mini-item">${label}<b style="color:${color}">${value.toFixed(0)}${unit}</b></div>`;
+function kpiMiniItem(label, value, unit, target, key){
+  // pct capaian = skor tier 60/80/100 (format spreadsheet)
+  const pct = key ? kpiAchievePct(key, value) : (target ? (value/target*100) : 0);
+  const color = pct>=100 ? 'var(--green)' : pct>=80 ? 'var(--yellow)' : 'var(--red)';
+  const tgtLabel = target ? ` <span style="color:var(--text-faint);font-size:8.5px;font-weight:500;">/ ${target}${unit}</span>` : '';
+  const scoreLbl = key ? ` <span style="color:${color};font-size:8.5px;font-weight:600;">(${pct}%)</span>` : '';
+  return `<div class="kpi-mini-item">${label}<b style="color:${color}">${value.toFixed(1)}${unit}${tgtLabel}${scoreLbl}</b></div>`;
 }
 
 /* Foto unit asli (di-embed base64) — dicocokkan otomatis ke tipe/kategori unit pada Database Unit. */
@@ -4535,12 +4616,12 @@ function renderUnitCards(){
         <div>HM Terakhir<b>${lastHM}</b></div>
       </div>
       <div class="kpi-mini">
-        ${kpiMiniItem('MTBS', k.mtbs, ' jam', KPI_TARGET.mtbs)}
-        ${kpiMiniItem('MTTR', k.mttr, '%', KPI_TARGET.mttr)}
-        ${kpiMiniItem('PMR', k.pmr, '%', KPI_TARGET.pmr)}
-        ${kpiMiniItem('SA', k.sa, '%', KPI_TARGET.sa)}
-        ${kpiMiniItem('MA', k.ma, '%', KPI_TARGET.ma)}
-        ${kpiMiniItem('PA', k.pa, '%', KPI_TARGET.pa)}
+        ${kpiMiniItem('MTBS', k.mtbs, ' jam', KPI_TARGET.mtbs, 'mtbs')}
+        ${kpiMiniItem('MTTR', k.mttr, ' jam', KPI_TARGET.mttr, 'mttr')}
+        ${kpiMiniItem('PMR', k.pmr, '%', KPI_TARGET.pmr, 'pmr')}
+        ${kpiMiniItem('SA', k.sa, '%', KPI_TARGET.sa, 'sa')}
+        ${kpiMiniItem('MA', k.ma, '%', KPI_TARGET.ma, 'ma')}
+        ${kpiMiniItem('PA', k.pa, '%', KPI_TARGET.pa, 'pa')}
       </div>
     </div>`;
   }).join('');
@@ -6835,6 +6916,22 @@ function renderSummary(){
     { label:'Periodical', value: rows.filter(r=>r.category==='Periodical').length, color:'#FFC72C' },
   ]);
 
+  // Komposisi Status Job (dipindah dari KPI Report)
+  const statusEl = document.getElementById('summary-status-chart');
+  if(statusEl){
+    const stClose = rows.filter(r=>r.status==='Close').length;
+    const stProgress = rows.filter(r=>r.status==='Progress').length;
+    const stOpen = rows.filter(r=>r.status==='Open').length;
+    const stTotal = stClose + stProgress + stOpen;
+    statusEl.innerHTML = summaryDonutChart([
+      { label:'Close', value: stClose, color:'#4CAF6D' },
+      { label:'Progress', value: stProgress, color:'#FFC72C' },
+      { label:'Open', value: stOpen, color:'#E5484D' },
+    ]) + `<div style="width:100%; text-align:center; margin-top:8px; font-size:11px; color:var(--text-faint);">
+      Total ${stTotal} job · Close ${stClose} · Progress ${stProgress} · Open ${stOpen}
+    </div>`;
+  }
+
   const tbody = document.getElementById('summary-tbody');
   const names = Object.keys(byMech);
   if(!names.length){
@@ -6859,6 +6956,8 @@ function renderSummary(){
 
 /* ---- Chart SVG generators ala executive/CEO dashboard (bar / line / donut / horizontal bar) ---- */
 function achievedColor(pct){ return pct>=100 ? '#4CAF6D' : pct>=75 ? '#FFC72C' : '#E5484D'; }
+function achievedColorSoft(pct){ return pct>=100 ? 'rgba(76,175,109,0.18)' : pct>=75 ? 'rgba(255,199,44,0.18)' : 'rgba(229,72,77,0.18)'; }
+function achievedLabel(pct){ return pct>=100 ? 'ACHIEVED' : pct>=75 ? 'ON TRACK' : 'BELOW'; }
 
 /* Daftar bar horizontal — dipakai panel "KPI Report Monthly" (gaya mirip panel "Outage / Down Time"
    pada dashboard referensi: label kiri, bar tengah, angka kanan). items: [{label, pct}] */
@@ -7009,6 +7108,36 @@ function kpiDonutSVG(segments){
   </svg>`;
 }
 
+/* Donut untuk Rekap KPI Triwulan — center menampilkan rata-rata %, segmen proporsional ke capaian tiap bulan */
+function kpiQuarterDonutSVG(segments, centerValue, centerLabel){
+  // segments: [{label, value, color}] value = % capaian bulan
+  const total = segments.reduce((s,x)=>s+Math.max(0,x.value),0);
+  const cx=90, cy=90, r=66, sw=22;
+  const circumference = 2*Math.PI*r;
+  let acc = 0;
+  let arcs = '';
+  if(total<=0){
+    arcs = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2a2e35" stroke-width="${sw}"/>`;
+  } else {
+    segments.forEach(seg=>{
+      const frac = Math.max(0,seg.value)/total;
+      const dash = circumference*frac;
+      const gapDash = circumference - dash;
+      const rotate = -90 + acc*360;
+      arcs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${sw}" stroke-linecap="butt"
+        stroke-dasharray="${dash.toFixed(1)} ${gapDash.toFixed(1)}" transform="rotate(${rotate.toFixed(1)} ${cx} ${cy})"/>`;
+      acc += frac;
+    });
+  }
+  const centerTxt = (typeof centerValue === 'number') ? centerValue.toFixed(0)+'%' : String(centerValue);
+  return `<svg viewBox="0 0 180 180" style="max-width:200px;width:100%;height:auto;">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="${sw}"/>
+    ${arcs}
+    <text x="${cx}" y="${cy-6}" text-anchor="middle" font-size="28" font-weight="700" fill="#EDEEF0" font-family="Oswald, sans-serif">${centerTxt}</text>
+    <text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="10" fill="#9AA0A8" font-family="JetBrains Mono, monospace" letter-spacing="0.8">${centerLabel||'AVG'}</text>
+  </svg>`;
+}
+
 function kpiMiniTrendSVG(points, color){
   // points: [{label, value}] value 0-100. Skala vertikal (Y) tetap 0% - 100%.
   color = color || '#FFC72C';
@@ -7052,114 +7181,167 @@ function kpiMiniTrendSVG(points, color){
 let kpiChartInstanceSeq = 0;
 function kpiFullComboSVG(items){
   const uid = 'fc'+(kpiChartInstanceSeq++);
-  const W = 640, H = 250, padL = 40, padR = 20, padT = 40, padB = 34, capPct = 130;
+  const W = 680, H = 280, padL = 48, padR = 24, padT = 48, padB = 40, capPct = 130;
   const chartW = W - padL - padR, chartH = H - padT - padB;
   const n = items.length;
-  const stepX = n>1 ? chartW/(n-1) : chartW;
-  const barW = Math.min(54, stepX*0.5);
+  const gap = 18;
+  const barW = Math.min(58, (chartW - gap*(n-1)) / n);
+  const totalBarsW = barW*n + gap*(n-1);
+  const startX = padL + (chartW - totalBarsW) / 2;
   const baseY = padT + chartH;
   const coords = items.map((it,i)=>{
-    const x = padL + (n>1 ? stepX*i : chartW/2);
+    const x = startX + i*(barW+gap) + barW/2;
     const v = Math.max(0, it.pct);
     const vCapped = Math.min(v, capPct);
     const y = padT + chartH * (1 - vCapped/capPct);
     return {x,y,v,label:it.label};
   });
-  const yAxis = [0,50,100,130].map(v=>{
+  // Grid + target line
+  const yAxis = [0,25,50,75,100,130].map(v=>{
     const y = padT + chartH*(1-v/capPct);
     const isTarget = v===100;
-    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="${isTarget?'#FFC72C':'#252932'}" stroke-width="1" ${isTarget?'stroke-dasharray="5 4" opacity="0.7"':'opacity="0.55"'}/>
-      <text x="${(padL-9).toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="9" fill="${isTarget?'#FFC72C':'#5C636B'}" font-family="JetBrains Mono, monospace">${v}</text>`;
+    const isMajor = v===0 || v===50 || v===100 || v===130;
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="${isTarget?'#FFC72C':(isMajor?'#2e333b':'#23262c')}" stroke-width="${isTarget?1.4:1}" ${isTarget?'stroke-dasharray="6 4" opacity="0.85"':`opacity="${isMajor?0.55:0.3}"`}/>
+      <text x="${(padL-10).toFixed(1)}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="9.5" font-weight="${isTarget?'700':'500'}" fill="${isTarget?'#FFC72C':(isMajor?'#8a9199':'#5C636B')}" font-family="JetBrains Mono, monospace">${v}%</text>`;
   }).join('');
+  // Target badge (floating right)
+  const targetY = padT + chartH*(1-100/capPct);
+  const targetBadge = `<g>
+    <rect x="${W-padR-72}" y="${(targetY-11).toFixed(1)}" width="68" height="18" rx="9" fill="#FFC72C" opacity="0.95"/>
+    <text x="${W-padR-38}" y="${(targetY+2).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#15171b" font-family="JetBrains Mono, monospace" letter-spacing="0.5">TARGET</text>
+  </g>`;
+  // Gradients + glow filters
   const defs = coords.map((c,i)=>{
     const color = achievedColor(c.v);
     return `<linearGradient id="${uid}g${i}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${color}" stop-opacity="1"/>
-      <stop offset="100%" stop-color="${color}" stop-opacity="0.5"/>
+      <stop offset="55%" stop-color="${color}" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0.35"/>
+    </linearGradient>
+    <filter id="${uid}glow${i}" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>`;
+  }).join('') + `
+    <linearGradient id="${uid}area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFC72C" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#FFC72C" stop-opacity="0"/>
     </linearGradient>`;
-  }).join('');
+  // Bars with top highlight
   const bars = coords.map((c,i)=>{
     const color = achievedColor(c.v);
-    const h = Math.max(5, baseY - c.y);
-    return `<rect x="${(c.x-barW/2).toFixed(1)}" y="${c.y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="6" fill="url(#${uid}g${i})" stroke="${color}" stroke-width="1" stroke-opacity="0.5"/>`;
+    const h = Math.max(6, baseY - c.y);
+    const x = c.x - barW/2;
+    return `<rect x="${x.toFixed(1)}" y="${c.y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="8" fill="url(#${uid}g${i})" filter="url(#${uid}glow${i})"/>
+      <rect x="${(x+3).toFixed(1)}" y="${(c.y+2).toFixed(1)}" width="${Math.max(4, barW-6).toFixed(1)}" height="3.5" rx="2" fill="#fff" opacity="0.22"/>
+      <rect x="${x.toFixed(1)}" y="${c.y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="8" fill="none" stroke="${color}" stroke-width="1.2" stroke-opacity="0.55"/>`;
   }).join('');
-  const trendY = coords.map(c=> Math.max(padT-16, c.y-16));
+  // Smooth trend line above bars
+  const trendY = coords.map(c=> Math.max(padT-10, c.y-18));
   const linePath = coords.map((c,i)=> (i===0?'M':'L') + c.x.toFixed(1) + ' ' + trendY[i].toFixed(1)).join(' ');
-  const dots = coords.map((c,i)=>`<circle cx="${c.x.toFixed(1)}" cy="${trendY[i].toFixed(1)}" r="3.4" fill="#15171b" stroke="#EDEEF0" stroke-width="1.8"/>`).join('');
-  const valueLabels = coords.map((c,i)=>{
-    const txt = `${c.v.toFixed(0)}%`;
-    const tw = Math.max(26, txt.length*7.6);
-    const ty = trendY[i]-9;
-    return `<rect x="${(c.x-tw/2).toFixed(1)}" y="${(ty-11.5).toFixed(1)}" width="${tw.toFixed(1)}" height="16" rx="4" fill="#15171b" opacity="0.72"/>
-      <text x="${c.x.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#EDEEF0" font-family="JetBrains Mono, monospace">${txt}</text>`;
+  const areaPath = linePath + ` L ${coords[coords.length-1].x.toFixed(1)} ${baseY.toFixed(1)} L ${coords[0].x.toFixed(1)} ${baseY.toFixed(1)} Z`;
+  const dots = coords.map((c,i)=>{
+    const color = achievedColor(c.v);
+    return `<circle cx="${c.x.toFixed(1)}" cy="${trendY[i].toFixed(1)}" r="5" fill="${color}" opacity="0.25"/>
+      <circle cx="${c.x.toFixed(1)}" cy="${trendY[i].toFixed(1)}" r="3.6" fill="#15171b" stroke="${color}" stroke-width="2"/>`;
   }).join('');
-  const xLabels = coords.map(c=>`<text x="${c.x.toFixed(1)}" y="${H-11}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#9AA0A8" font-family="JetBrains Mono, monospace" letter-spacing="0.5">${c.label}</text>`).join('');
-  return `<svg viewBox="0 0 ${W} ${H}">
+  // Value pills
+  const valueLabels = coords.map((c,i)=>{
+    const color = achievedColor(c.v);
+    const txt = `${c.v.toFixed(0)}%`;
+    const tw = Math.max(30, txt.length*8);
+    const ty = trendY[i]-12;
+    return `<rect x="${(c.x-tw/2).toFixed(1)}" y="${(ty-12).toFixed(1)}" width="${tw.toFixed(1)}" height="18" rx="9" fill="#15171b" stroke="${color}" stroke-width="1" stroke-opacity="0.45"/>
+      <text x="${c.x.toFixed(1)}" y="${(ty+1).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="${color}" font-family="JetBrains Mono, monospace">${txt}</text>`;
+  }).join('');
+  // X labels + status chips
+  const xLabels = coords.map(c=>{
+    const color = achievedColor(c.v);
+    return `<text x="${c.x.toFixed(1)}" y="${H-18}" text-anchor="middle" font-size="11" font-weight="700" fill="#c5c9d0" font-family="JetBrains Mono, monospace" letter-spacing="0.6">${c.label}</text>
+      <text x="${c.x.toFixed(1)}" y="${H-5}" text-anchor="middle" font-size="8" font-weight="600" fill="${color}" font-family="JetBrains Mono, monospace" letter-spacing="0.4">${achievedLabel(c.v)}</text>`;
+  }).join('');
+  // Base line
+  const baseLine = `<line x1="${padL}" y1="${baseY}" x2="${W-padR}" y2="${baseY}" stroke="#3a4048" stroke-width="1.5"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" style="overflow:visible">
     <defs>${defs}</defs>
     ${yAxis}
+    ${baseLine}
+    <path d="${areaPath}" fill="url(#${uid}area)" opacity="0.35"/>
     ${bars}
-    <path d="${linePath}" fill="none" stroke="#EDEEF0" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.7"/>
+    <path d="${linePath}" fill="none" stroke="#EDEEF0" stroke-width="1.6" stroke-dasharray="5 4" opacity="0.55" stroke-linecap="round"/>
     ${dots}
     ${valueLabels}
+    ${targetBadge}
     ${xLabels}
   </svg>`;
 }
 
 function kpiMiniComboSVG(points){
   const uid = 'mc'+(kpiChartInstanceSeq++);
-  const W = 280, H = 150, padL = 30, padR = 14, padT = 30, padB = 24;
-  const plotL = padL + 12; // sedikit inset dari sumbu-Y supaya titik data pertama tidak tumpang tindih dengan angka "100" di sumbu
+  const W = 300, H = 160, padL = 32, padR = 14, padT = 32, padB = 26;
+  const plotL = padL + 8;
   const chartW = W - plotL - padR, chartH = H - padT - padB;
   const n = points.length;
-  const stepX = n>1 ? chartW/(n-1) : chartW;
-  const barW = Math.min(32, stepX*0.4);
+  const gap = 14;
+  const barW = Math.min(36, n>1 ? (chartW - gap*(n-1))/n : chartW*0.4);
+  const totalW = barW*n + gap*(Math.max(0,n-1));
+  const startX = plotL + (chartW - totalW)/2;
   const baseY = padT + chartH;
   const coords = points.map((p,i)=>{
-    const x = plotL + (n>1 ? stepX*i : chartW/2);
+    const x = startX + i*(barW+gap) + barW/2;
     const v = Math.max(0, Math.min(100, p.value));
     const y = padT + chartH * (1 - v/100);
     return {x,y,v,label:p.label};
   });
-  const yAxis = [0,50,100].map(v=>{
+  const yAxis = [0,25,50,75,100].map(v=>{
     const y = padT + chartH*(1-v/100);
     const isTarget = v===100;
-    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="${isTarget?'#FFC72C':'#252932'}" stroke-width="1" ${isTarget?'stroke-dasharray="4 3" opacity="0.6"':'opacity="0.5"'}/>
-      <text x="${(padL-6).toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="${isTarget?'#FFC72C':'#5C636B'}" font-family="JetBrains Mono, monospace">${v}</text>`;
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="${isTarget?'#FFC72C':'#252932'}" stroke-width="1" ${isTarget?'stroke-dasharray="4 3" opacity="0.7"':'opacity="0.45"'}/>
+      <text x="${(padL-5).toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="8.5" fill="${isTarget?'#FFC72C':'#5C636B'}" font-family="JetBrains Mono, monospace">${v}%</text>`;
   }).join('');
   const defs = coords.map((c,i)=>{
     const color = achievedColor(c.v);
     return `<linearGradient id="${uid}g${i}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${color}" stop-opacity="1"/>
-      <stop offset="100%" stop-color="${color}" stop-opacity="0.5"/>
-    </linearGradient>`;
+      <stop offset="100%" stop-color="${color}" stop-opacity="0.4"/>
+    </linearGradient>
+    <filter id="${uid}gl${i}" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>`;
   }).join('');
   const bars = coords.map((c,i)=>{
     const color = achievedColor(c.v);
     const h = Math.max(5, baseY - c.y);
-    return `<rect x="${(c.x-barW/2).toFixed(1)}" y="${c.y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="url(#${uid}g${i})" stroke="${color}" stroke-width="1" stroke-opacity="0.45"/>`;
+    const x = c.x - barW/2;
+    return `<rect x="${x.toFixed(1)}" y="${c.y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="6" fill="url(#${uid}g${i})" filter="url(#${uid}gl${i})"/>
+      <rect x="${(x+2).toFixed(1)}" y="${(c.y+1.5).toFixed(1)}" width="${Math.max(3,barW-4).toFixed(1)}" height="2.5" rx="1.5" fill="#fff" opacity="0.2"/>`;
   }).join('');
-  const trendY = coords.map(c=> Math.max(padT-14, c.y-12));
+  const trendY = coords.map(c=> Math.max(padT-10, c.y-12));
   const linePath = coords.map((c,i)=> (i===0?'M':'L') + c.x.toFixed(1) + ' ' + trendY[i].toFixed(1)).join(' ');
-  const dots = coords.map((c,i)=>`<circle cx="${c.x.toFixed(1)}" cy="${trendY[i].toFixed(1)}" r="2.8" fill="#15171b" stroke="#EDEEF0" stroke-width="1.6"/>`).join('');
-  const valueLabels = coords.map((c,i)=>{
-    const txt = `${c.v.toFixed(0)}%`;
-    const tw = Math.max(20, txt.length*6.4);
-    const ty = trendY[i]-7;
-    return `<rect x="${(c.x-tw/2).toFixed(1)}" y="${(ty-10).toFixed(1)}" width="${tw.toFixed(1)}" height="13" rx="3" fill="#15171b" opacity="0.7"/>
-      <text x="${c.x.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#EDEEF0" font-family="JetBrains Mono, monospace">${txt}</text>`;
+  const dots = coords.map((c,i)=>{
+    const color = achievedColor(c.v);
+    return `<circle cx="${c.x.toFixed(1)}" cy="${trendY[i].toFixed(1)}" r="3.2" fill="#15171b" stroke="${color}" stroke-width="1.8"/>`;
   }).join('');
-  const xLabels = coords.map(c=>`<text x="${c.x.toFixed(1)}" y="${H-7}" text-anchor="middle" font-size="8.5" fill="#9AA0A8" font-family="JetBrains Mono, monospace">${c.label}</text>`).join('');
+  const valueLabels = coords.map((c,i)=>{
+    const color = achievedColor(c.v);
+    const txt = `${c.v.toFixed(0)}%`;
+    const tw = Math.max(22, txt.length*6.8);
+    const ty = trendY[i]-8;
+    return `<rect x="${(c.x-tw/2).toFixed(1)}" y="${(ty-10).toFixed(1)}" width="${tw.toFixed(1)}" height="14" rx="7" fill="#15171b" stroke="${color}" stroke-width="0.8" stroke-opacity="0.4"/>
+      <text x="${c.x.toFixed(1)}" y="${(ty).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${color}" font-family="JetBrains Mono, monospace">${txt}</text>`;
+  }).join('');
+  const xLabels = coords.map(c=>`<text x="${c.x.toFixed(1)}" y="${H-7}" text-anchor="middle" font-size="9" font-weight="600" fill="#9AA0A8" font-family="JetBrains Mono, monospace">${c.label}</text>`).join('');
   return `<svg viewBox="0 0 ${W} ${H}">
     <defs>${defs}</defs>
     ${yAxis}
     ${bars}
-    <path d="${linePath}" fill="none" stroke="#EDEEF0" stroke-width="1.3" stroke-dasharray="3 3" opacity="0.7"/>
+    <path d="${linePath}" fill="none" stroke="#EDEEF0" stroke-width="1.4" stroke-dasharray="4 3" opacity="0.55" stroke-linecap="round"/>
     ${dots}
     ${valueLabels}
     ${xLabels}
   </svg>`;
 }
-
 
 function kpiHBarSVG(items){
   // items: [{label, value, color}]
@@ -7185,10 +7367,20 @@ function chartStatItem(num, lbl, color){
 
 /* ---- Filter periode bulan khusus untuk panel "KPI Report Monthly" ---- */
 let kpiMonthlyChartPeriodValue = ''; // '' = Semua Periode (default)
+let kpiInspectionMonthValue = ''; // '' = bulan berjalan — filter chart Pre Inspection
 
 function onKpiMonthlyChartPeriodChange(selectEl){
   kpiMonthlyChartPeriodValue = selectEl.value;
   renderDashboard();
+}
+function onKpiInspectionMonthChange(selectEl){
+  kpiInspectionMonthValue = selectEl.value;
+  renderDashboard();
+}
+/** Target Pre Inspection: 4× per bulan per unit (tetap). */
+function weeksInMonth(year, month){
+  // residual helper — target fixed 4×/bulan
+  return 4;
 }
 
 /* ---- Filter periode triwulan untuk panel "Rekap KPI Triwulan" ---- */
@@ -7239,16 +7431,41 @@ function renderKPIChartDashboard(k, globalStats){
     }).join('')}
   </select>`;
 
-  const barItems = [
-    {label:'MTBS', pct:(kMonthly.mtbs/KPI_TARGET.mtbs*100)||0},
-    {label:'MTTR', pct:(kMonthly.mttr/KPI_TARGET.mttr*100)||0},
-    {label:'PMR', pct:(kMonthly.pmr/KPI_TARGET.pmr*100)||0},
-    {label:'SA', pct:(kMonthly.sa/KPI_TARGET.sa*100)||0},
-    {label:'MA', pct:(kMonthly.ma/KPI_TARGET.ma*100)||0},
-    {label:'PA', pct:(kMonthly.pa/KPI_TARGET.pa*100)||0},
+  const monthlyKpiDefs = [
+    { key:'mtbs', label:'MTBS', unit:' jam', target:KPI_TARGET.mtbs, value:kMonthly.mtbs||0 },
+    { key:'mttr', label:'MTTR', unit:' jam', target:KPI_TARGET.mttr, value:kMonthly.mttr||0 },
+    { key:'pmr',  label:'PMR', unit:'%', target:KPI_TARGET.pmr, value:kMonthly.pmr||0 },
+    { key:'sa',   label:'SA', unit:'%', target:KPI_TARGET.sa, value:kMonthly.sa||0 },
+    { key:'ma',   label:'MA', unit:'%', target:KPI_TARGET.ma, value:kMonthly.ma||0 },
+    { key:'pa',   label:'PA', unit:'%', target:KPI_TARGET.pa, value:kMonthly.pa||0 },
   ];
+  // pct chart = skor tier 60/80/100 (format spreadsheet KEY PERFORMANCE INDICATOR)
+  const barItems = monthlyKpiDefs.map(d=>({
+    label: d.label,
+    pct: kpiAchievePct(d.key, d.value)
+  }));
   const avgAchieve = barItems.reduce((s,b)=>s+Math.min(b.pct,130),0)/barItems.length;
   const bestKPI = barItems.reduce((a,b)=> b.pct>a.pct ? b : a, barItems[0]);
+
+  // Tabel detail % capaian di bawah chart (sama pola dengan Rekap Triwulan)
+  const monthlyDetailRows = monthlyKpiDefs.map(d=>{
+    const pct = kpiAchievePct(d.key, d.value);
+    const col = pct>=100 ? 'var(--green)' : pct>=80 ? 'var(--yellow)' : 'var(--red)';
+    const status = pct>=100 ? 'ACHIEVED' : pct>=80 ? 'ON TRACK' : 'BELOW';
+    return `<tr style="border-top:1px solid rgba(255,255,255,0.06);">
+      <td style="padding:9px 12px; font-weight:600; color:var(--text); font-size:12px;">${d.label}
+        <div style="font-size:9px; color:var(--text-faint); font-weight:500; margin-top:2px;">Target ${d.target}${d.unit}</div>
+      </td>
+      <td style="text-align:center; padding:9px 12px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text);">${d.value.toFixed(0)}${d.unit}</td>
+      <td style="text-align:center; padding:9px 12px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-weight:700; color:${col}; font-size:14px;">${pct.toFixed(0)}%</div>
+      </td>
+      <td style="text-align:center; padding:9px 12px;">
+        <span class="pill ${pct>=100?'close':pct>=75?'progress':'open'}">${status}</span>
+      </td>
+    </tr>`;
+  }).join('');
+
   const panel1 = `<div class="chart-panel">
     <div class="chart-panel-title-row">
       <div class="chart-panel-title">KPI Report Monthly</div>
@@ -7257,61 +7474,116 @@ function renderKPIChartDashboard(k, globalStats){
     <div class="chart-panel-stats-row">
       ${chartStatItem(avgAchieve.toFixed(0)+'%', 'Rata-rata Capaian', 'var(--yellow)')}
       ${chartStatItem(bestKPI.label, 'KPI Tertinggi', 'var(--green)')}
-      ${chartStatItem(barItems.filter(b=>b.pct<75).length, 'KPI Di Bawah Target', 'var(--red)')}
+      ${chartStatItem(barItems.filter(b=>b.pct<100).length, 'KPI Di Bawah Target', 'var(--red)')}
     </div>
     <div class="chart-visual">${kpiFullComboSVG(barItems)}</div>
+    <div style="margin-top:18px; overflow-x:auto; border:1px solid rgba(255,255,255,0.07); border-radius:8px;">
+      <table style="width:100%; border-collapse:collapse; min-width:380px; font-size:12px;">
+        <thead style="background:rgba(255,255,255,0.03);">
+          <tr>
+            <th style="text-align:left; padding:9px 12px;">KPI</th>
+            <th style="text-align:center; padding:9px 12px;">Nilai</th>
+            <th style="text-align:center; padding:9px 12px;">% Capaian</th>
+            <th style="text-align:center; padding:9px 12px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>${monthlyDetailRows}</tbody>
+      </table>
+    </div>
+    <div class="chart-kpi-legend">Skor mengikuti format spreadsheet KPI: <b>100% / 80% / 60%</b> sesuai ambang capaian. MTTR = rata-rata jam repair (target &lt;36 jam). Hijau=100% · Kuning=80% · Merah=60%.</div>
   </div>`;
 
-  // Panel 2: Rekap KPI Quarter — masing-masing KPI (MTBS, MTTR, PM Ratio, SA, MA, PA) punya grafik tersendiri, skala vertikal 0%-100%
+      // Panel 2: Rekap KPI Quarter — donut per bulan + detail % semua KPI
   const quarterOptions = getQuarterOptions();
   const activeQuarter = (kpiTrendQuarterValue && quarterOptions.includes(kpiTrendQuarterValue)) ? kpiTrendQuarterValue : quarterOptions[0];
   const [qYear, qNum] = activeQuarter.split('-Q').map(Number);
-  const qStartMonth = (qNum-1)*3; // 0-indexed
+  const qStartMonth = (qNum-1)*3;
 
-  const quarterKpiDefs = [
-    { key:'mtbs', label:'MTBS', color:'#4A90D9' },
-    { key:'mttr', label:'MTTR', color:'#FF6B35' },
-    { key:'pmr',  label:'PM RATIO', color:'#FFC72C' },
-    { key:'sa',   label:'SA', color:'#4CAF6D' },
-    { key:'ma',   label:'MA', color:'#4CAF6D' },
-    { key:'pa',   label:'PA', color:'#4A90D9' },
+  const qKpiDefs = [
+    { key:'mtbs', label:'MTBS', unit:' jam', target:KPI_TARGET.mtbs },
+    { key:'mttr', label:'MTTR', unit:' jam', target:KPI_TARGET.mttr },
+    { key:'pmr',  label:'PMR', unit:'%', target:KPI_TARGET.pmr },
+    { key:'sa',   label:'SA', unit:'%', target:KPI_TARGET.sa },
+    { key:'ma',   label:'MA', unit:'%', target:KPI_TARGET.ma },
+    { key:'pa',   label:'PA', unit:'%', target:KPI_TARGET.pa },
   ];
 
   const monthLabels = [];
-  const monthlyPct = { mtbs:[], mttr:[], pmr:[], sa:[], ma:[], pa:[] };
+  const monthShort = [];
+  const monthAvgPct = [];
+  const monthColors = ['#4A90D9', '#FFC72C', '#4CAF6D'];
+  // monthlyPctDetail[kpiKey][monthIndex] = % capaian
+  const monthlyPctDetail = { mtbs:[], mttr:[], pmr:[], sa:[], ma:[], pa:[] };
+  const monthlyRawDetail = { mtbs:[], mttr:[], pmr:[], sa:[], ma:[], pa:[] };
+
   for(let i=0;i<3;i++){
     const d = new Date(qYear, qStartMonth+i, 1);
-    const start = toDateStr(new Date(d.getFullYear(), d.getMonth(), 1));
-    const end = toDateStr(new Date(d.getFullYear(), d.getMonth()+1, 0));
-    const kk = computeKPIsForRange(start, end);
-    monthLabels.push(d.toLocaleDateString('id-ID',{month:'short'}));
-    monthlyPct.mtbs.push(Math.min(100,(kk.mtbs/KPI_TARGET.mtbs*100)||0));
-    monthlyPct.mttr.push(Math.min(100,(kk.mttr/KPI_TARGET.mttr*100)||0));
-    monthlyPct.pmr.push(Math.min(100,(kk.pmr/KPI_TARGET.pmr*100)||0));
-    monthlyPct.sa.push(Math.min(100,(kk.sa/KPI_TARGET.sa*100)||0));
-    // MA & PA: otomatis per bulan dari data Monitoring HM bulan tsb; fallback ke total global (k.ma/k.pa)
-    // kalau bulan tsb belum ada data HM sama sekali.
-    const hmwsrMonth = hmWSRGlobal(start, end);
-    const monthMaPa = hmwsrMonth ? maPaFromWSR(hmwsrMonth) : { ma:k.ma, pa:k.pa };
-    monthlyPct.ma.push(Math.min(100,(monthMaPa.ma/KPI_TARGET.ma*100)||0));
-    monthlyPct.pa.push(Math.min(100,(monthMaPa.pa/KPI_TARGET.pa*100)||0));
+    const startD = toDateStr(new Date(d.getFullYear(), d.getMonth(), 1));
+    const endD = toDateStr(new Date(d.getFullYear(), d.getMonth()+1, 0));
+    const kk = computeKPIsForRange(startD, endD);
+    monthLabels.push(d.toLocaleDateString('id-ID',{month:'long', year:'numeric'}));
+    monthShort.push(d.toLocaleDateString('id-ID',{month:'short'}));
+    const hmwsrMonth = hmWSRGlobal(startD, endD);
+    const monthMaPa = hmwsrMonth ? maPaFromWSR(hmwsrMonth) : { ma:0, pa:0 };
+    const raw = {
+      mtbs: kk.mtbs||0, mttr: kk.mttr||0, pmr: kk.pmr||0, sa: kk.sa||0,
+      ma: monthMaPa.ma||0, pa: monthMaPa.pa||0
+    };
+    qKpiDefs.forEach(def=>{
+      monthlyRawDetail[def.key].push(raw[def.key]);
+      const pct = kpiAchievePct(def.key, raw[def.key]);
+      monthlyPctDetail[def.key].push(pct);
+    });
+    const avg = qKpiDefs.reduce((s,def)=> s + (monthlyPctDetail[def.key][i]||0), 0) / qKpiDefs.length;
+    monthAvgPct.push(avg);
   }
 
-  const combinedAvg = [0,1,2].map(i => (monthlyPct.mttr[i]+monthlyPct.pmr[i]+monthlyPct.sa[i])/3);
-  const lastVal = combinedAvg[2];
-  const firstVal = combinedAvg[0];
-  const delta = lastVal - firstVal;
+  const qAvg = monthAvgPct.length ? monthAvgPct.reduce((s,v)=>s+v,0)/monthAvgPct.length : 0;
+  const delta = (monthAvgPct[2]||0) - (monthAvgPct[0]||0);
 
   const quarterSelectHtml = `<select class="trend-quarter-select" onchange="onKpiTrendQuarterChange(this)">${quarterOptions.map(o=>
     `<option value="${o}" ${o===activeQuarter?'selected':''}>${quarterOptionLabel(o)}</option>`
   ).join('')}</select>`;
 
-  const kpiMiniCards = quarterKpiDefs.map(def=>{
-    const points = monthLabels.map((lbl,i)=>({ label: lbl, value: monthlyPct[def.key][i] }));
-    return `<div class="kpi-mini-card">
-      <div class="kpi-mini-title"><span>${def.label}</span><span class="kpi-mini-target">Target 100%</span></div>
-      ${kpiMiniComboSVG(points)}
-    </div>`;
+  const donutSegsQ = monthLabels.map((lbl,i)=>({
+    label: lbl,
+    value: Math.max(monthAvgPct[i], 0.01),
+    color: monthColors[i],
+    pct: monthAvgPct[i]
+  }));
+
+  const legendHtml = donutSegsQ.map((seg,i)=>`
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:8px 0; ${i<donutSegsQ.length-1?'border-bottom:1px solid rgba(255,255,255,0.06);':''}">
+      <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+        <span style="width:12px; height:12px; border-radius:3px; background:${seg.color}; flex-shrink:0;"></span>
+        <span style="font-size:13px; color:#c5c9d0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${seg.label}</span>
+      </div>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:#EDEEF0; flex-shrink:0;">${seg.pct.toFixed(0)}%</span>
+    </div>`).join('');
+
+  // Tabel detail % capaian semua KPI x 3 bulan di bawah donut
+  const detailHeader = `<tr>
+    <th style="text-align:left; padding:8px 10px;">KPI</th>
+    ${monthShort.map((m,i)=>`<th style="text-align:center; padding:8px 10px; color:${monthColors[i]};">${m}</th>`).join('')}
+    <th style="text-align:center; padding:8px 10px; color:var(--yellow);">AVG</th>
+  </tr>`;
+  const detailRows = qKpiDefs.map(def=>{
+    const cells = [0,1,2].map(i=>{
+      const pct = monthlyPctDetail[def.key][i]||0;
+      const raw = monthlyRawDetail[def.key][i]||0;
+      const col = pct>=100 ? 'var(--green)' : pct>=80 ? 'var(--yellow)' : 'var(--red)';
+      return `<td style="text-align:center; padding:8px 10px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-weight:700; color:${col}; font-size:13px;">${pct.toFixed(0)}%</div>
+        <div style="font-size:10px; color:var(--text-faint); margin-top:2px;">${raw.toFixed(0)}${def.unit}</div>
+      </td>`;
+    }).join('');
+    const avgPct = ((monthlyPctDetail[def.key][0]||0)+(monthlyPctDetail[def.key][1]||0)+(monthlyPctDetail[def.key][2]||0))/3;
+    const avgCol = avgPct>=100 ? 'var(--green)' : avgPct>=80 ? 'var(--yellow)' : 'var(--red)';
+    return `<tr style="border-top:1px solid rgba(255,255,255,0.06);">
+      <td style="padding:8px 10px; font-weight:600; color:var(--text); font-size:12px;">${def.label}<div style="font-size:9px; color:var(--text-faint); font-weight:500;">Target ${def.target}${def.unit}</div></td>
+      ${cells}
+      <td style="text-align:center; padding:8px 10px; font-family:'JetBrains Mono',monospace; font-weight:700; color:${avgCol}; font-size:13px;">${avgPct.toFixed(0)}%</td>
+    </tr>`;
   }).join('');
 
   const panel2 = `<div class="chart-panel">
@@ -7320,14 +7592,27 @@ function renderKPIChartDashboard(k, globalStats){
       ${quarterSelectHtml}
     </div>
     <div class="chart-panel-stats-row">
-      ${chartStatItem(lastVal.toFixed(0)+'%', monthLabels[2]||'Bulan Ini', 'var(--yellow)')}
+      ${chartStatItem(qAvg.toFixed(0)+'%', 'Rata-rata Capaian', 'var(--yellow)')}
       ${chartStatItem((delta>=0?'+':'')+delta.toFixed(0)+'%', 'vs Awal Triwulan', delta>=0?'var(--green)':'var(--red)')}
     </div>
-    <div class="kpi-mini-grid">${kpiMiniCards}</div>
-    <div class="chart-kpi-legend">Setiap grafik menampilkan persentase capaian per bulan terhadap target, dengan skala vertikal <b>0% – 100%</b>: <b>MA</b> (Mechanical Availability), <b>PA</b> (Physical Availability), <b>MTBS</b> (Mean Time Between Service), <b>MTTR</b> (Mean Time To Repair), <b>PM Ratio</b> (Planned Maintenance Ratio), dan <b>SA</b> (Service Accuracy).</div>
+    <div class="chart-panel-inner" style="align-items:center; gap:28px; margin-top:8px;">
+      <div class="chart-visual" style="flex:0 0 auto; display:flex; justify-content:center;">
+        ${kpiQuarterDonutSVG(donutSegsQ, qAvg, 'AVG CAPAIAN')}
+      </div>
+      <div class="chart-stat-col" style="flex:1; border-left:none; padding-left:0; min-width:180px;">
+        ${legendHtml}
+      </div>
+    </div>
+    <div style="margin-top:18px; overflow-x:auto; border:1px solid rgba(255,255,255,0.07); border-radius:8px;">
+      <table style="width:100%; border-collapse:collapse; min-width:420px; font-size:12px;">
+        <thead style="background:rgba(255,255,255,0.03);">${detailHeader}</thead>
+        <tbody>${detailRows}</tbody>
+      </table>
+    </div>
+    <div class="chart-kpi-legend">Skor tier 60/80/100% per KPI per bulan (format spreadsheet Maintenance KPI). Hijau=100% · Kuning=80% · Merah=60%.</div>
   </div>`;
 
-  // Panel 3: Donut — komposisi status Daily Maintenance
+// Panel 3: Donut — komposisi status Daily Maintenance
   const statusCounts = { Open:0, Progress:0, Close:0 };
   dailyRecords.forEach(r=>{ if(statusCounts[r.status]!==undefined) statusCounts[r.status]++; });
   const donutSegs = [
@@ -7358,32 +7643,130 @@ function renderKPIChartDashboard(k, globalStats){
     ${kpiColumnDiagramHTML(hbarItems)}
   </div>`;
 
-  wrap.innerHTML = panel1 + panel2 + panel3 + panel4;
+  
+  // Panel 5: Pre Inspection Achievement — target 4×/bulan per unit
+  const inspMonthOptions = getKPIPeriodOptions();
+  const nowInsp = new Date();
+  const defaultInspMonth = nowInsp.getFullYear()+'-'+pad2(nowInsp.getMonth()+1);
+  const activeInspMonth = (kpiInspectionMonthValue && inspMonthOptions.includes(kpiInspectionMonthValue))
+    ? kpiInspectionMonthValue
+    : (inspMonthOptions.includes(defaultInspMonth) ? defaultInspMonth : (inspMonthOptions[0]||defaultInspMonth));
+  const [inspY, inspM] = activeInspMonth.split('-').map(Number);
+  const inspTarget = 4; // 4× inspeksi per bulan per unit
+  const inspMonthStart = activeInspMonth + '-01';
+  const inspMonthEnd = toDateStr(new Date(inspY, inspM, 0));
+
+  const inspSelectHtml = `<select class="trend-quarter-select" onchange="onKpiInspectionMonthChange(this)">
+    ${inspMonthOptions.map(p=>{
+      const [y,m] = p.split('-').map(Number);
+      const label = new Date(y, m-1, 1).toLocaleDateString('id-ID', { month:'long', year:'numeric' });
+      return `<option value="${p}" ${p===activeInspMonth?'selected':''}>${label}</option>`;
+    }).join('')}
+  </select>`;
+
+  // Hitung per unit dari preInspectionRecords (sinkron data Pre Inspection)
+  const inspUnitRows = UNITS.map(u=>{
+    const recs = preInspectionRecords.filter(r=>
+      r.unitCode===u.code && r.tanggal && r.tanggal>=inspMonthStart && r.tanggal<=inspMonthEnd
+    );
+    const actual = recs.length;
+    const pct = inspTarget>0 ? (actual/inspTarget*100) : 0;
+    const okCount = recs.filter(r=>r.status==='OK').length;
+    const findingsCount = recs.filter(r=>r.status==='Ada Temuan').length;
+    const approvedCount = recs.filter(r=>(r.approvalStatus||'')==='Approved').length;
+    return {
+      unitCode: u.code, type: u.type, category: u.category,
+      actual, target: inspTarget, pct,
+      okCount, findingsCount, approvedCount, recs
+    };
+  });
+
+  const inspBarItems = inspUnitRows.map(r=>({ label: r.unitCode, pct: r.pct }));
+  const inspAvg = inspUnitRows.length ? inspUnitRows.reduce((s,r)=>s+Math.min(r.pct,130),0)/inspUnitRows.length : 0;
+  const inspDone = inspUnitRows.filter(r=>r.pct>=100).length;
+  const inspBelow = inspUnitRows.filter(r=>r.pct<100).length;
+
+  const inspDetailRows = inspUnitRows.map(r=>{
+    const col = r.pct>=100 ? 'var(--green)' : r.pct>=75 ? 'var(--yellow)' : 'var(--red)';
+    const status = r.pct>=100 ? 'ACHIEVED' : r.pct>=75 ? 'ON TRACK' : 'BELOW';
+    return `<tr style="border-top:1px solid rgba(255,255,255,0.06);">
+      <td style="padding:9px 12px; font-weight:600; color:var(--text); font-size:12px;">${r.unitCode}
+        <div style="font-size:9px; color:var(--text-faint); font-weight:500; margin-top:2px;">${r.type} · ${r.category}</div>
+      </td>
+      <td style="text-align:center; padding:9px 12px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text);">${r.actual}</td>
+      <td style="text-align:center; padding:9px 12px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text-dim);">${r.target}</td>
+      <td style="text-align:center; padding:9px 12px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-weight:700; color:${col}; font-size:14px;">${r.pct.toFixed(0)}%</div>
+      </td>
+      <td style="text-align:center; padding:9px 12px; font-size:11px; color:var(--text-dim);">
+        <span style="color:var(--green);">${r.okCount} OK</span> ·
+        <span style="color:var(--red);">${r.findingsCount} Temuan</span>
+      </td>
+      <td style="text-align:center; padding:9px 12px;">
+        <span class="pill ${r.pct>=100?'close':r.pct>=75?'progress':'open'}">${status}</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const panel5 = `<div class="chart-panel">
+    <div class="chart-panel-title-row">
+      <div class="chart-panel-title">Pre Inspection Achievement Monthly</div>
+      ${inspSelectHtml}
+    </div>
+    <div class="chart-panel-stats-row">
+      ${chartStatItem(inspAvg.toFixed(0)+'%', 'Rata-rata Capaian', 'var(--yellow)')}
+      ${chartStatItem(inspDone+'/'+inspUnitRows.length, 'Unit Target Tercapai', 'var(--green)')}
+      ${chartStatItem(String(inspTarget)+'×', 'Target / Unit (4×/bulan)', 'var(--blue)')}
+      ${chartStatItem(String(inspBelow), 'Unit Di Bawah Target', 'var(--red)')}
+    </div>
+    <div class="chart-visual">${kpiFullComboSVG(inspBarItems.length?inspBarItems:[{label:'—',pct:0}])}</div>
+    <div style="margin-top:18px; overflow-x:auto; border:1px solid rgba(255,255,255,0.07); border-radius:8px;">
+      <table style="width:100%; border-collapse:collapse; min-width:520px; font-size:12px;">
+        <thead style="background:rgba(255,255,255,0.03);">
+          <tr>
+            <th style="text-align:left; padding:9px 12px;">Unit</th>
+            <th style="text-align:center; padding:9px 12px;">Aktual</th>
+            <th style="text-align:center; padding:9px 12px;">Target</th>
+            <th style="text-align:center; padding:9px 12px;">% Capaian</th>
+            <th style="text-align:center; padding:9px 12px;">Hasil Inspection</th>
+            <th style="text-align:center; padding:9px 12px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>${inspDetailRows || '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-faint);">Belum ada data unit</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="chart-kpi-legend">Target: <b>4× Pre Inspection per bulan per unit</b>. Data disinkronkan dari record <b>Pre Inspection</b>. % Capaian = (Jumlah inspection aktual ÷ Target) × 100%. Hijau ≥100% · Kuning ≥75% · Merah &lt;75%.</div>
+  </div>`;
+
+  wrap.innerHTML = panel1 + panel2 + panel4 + panel5;
+
 }
 
 let gaugeUid = 0;
 function gaugeSVG(pct, color){
   const clamped = Math.max(0, Math.min(100, pct));
-  const r = 54, circumference = Math.PI*r; // half circle arc length
+  const r = 54, circumference = Math.PI*r;
   const offset = circumference * (1 - clamped/100);
   const uid = 'g' + (gaugeUid++);
-  // tick marks along the arc, from 180° (left) to 0° (right)
   let ticks = '';
   for(let i=0;i<=10;i++){
     const ang = Math.PI - (Math.PI*i/10);
-    const rInner = 44, rOuter = 49;
+    const rInner = (i%5===0) ? 42 : 44, rOuter = (i%5===0) ? 50 : 48;
     const x1 = 75 + rInner*Math.cos(ang), y1 = 82 - rInner*Math.sin(ang);
     const x2 = 75 + rOuter*Math.cos(ang), y2 = 82 - rOuter*Math.sin(ang);
-    ticks += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#3a4048" stroke-width="1.4"/>`;
+    ticks += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${i%5===0?'#4a515a':'#3a4048'}" stroke-width="${i%5===0?1.8:1.2}"/>`;
   }
+  const needleAng = Math.PI - (Math.PI*clamped/100);
+  const nx = 75 + 54*Math.cos(needleAng);
+  const ny = 82 - 54*Math.sin(needleAng);
   return `<svg width="150" height="90" viewBox="0 0 150 90">
     <defs>
       <linearGradient id="grad-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="${color}" stop-opacity="0.45"/>
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
         <stop offset="100%" stop-color="${color}" stop-opacity="1"/>
       </linearGradient>
       <filter id="glow-${uid}" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="3.2" result="blur"/>
+        <feGaussianBlur stdDeviation="3.5" result="blur"/>
         <feMerge>
           <feMergeNode in="blur"/>
           <feMergeNode in="SourceGraphic"/>
@@ -7391,23 +7774,24 @@ function gaugeSVG(pct, color){
       </filter>
     </defs>
     ${ticks}
-    <path d="M 15 82 A 54 54 0 0 1 135 82" fill="none" stroke="#2a2e35" stroke-width="11" stroke-linecap="round"/>
-    <path d="M 15 82 A 54 54 0 0 1 135 82" fill="none" stroke="url(#grad-${uid})" stroke-width="11" stroke-linecap="round"
+    <path d="M 15 82 A 54 54 0 0 1 135 82" fill="none" stroke="#252932" stroke-width="12" stroke-linecap="round"/>
+    <path d="M 15 82 A 54 54 0 0 1 135 82" fill="none" stroke="url(#grad-${uid})" stroke-width="12" stroke-linecap="round"
       stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" filter="url(#glow-${uid})"/>
-    <circle cx="${75 + 54*Math.cos(Math.PI - (Math.PI*clamped/100))}" cy="${82 - 54*Math.sin(Math.PI - (Math.PI*clamped/100))}" r="4.2" fill="#fff" stroke="${color}" stroke-width="2.5"/>
+    <circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="5" fill="#fff" stroke="${color}" stroke-width="2.5" filter="url(#glow-${uid})"/>
+    <circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="2" fill="${color}"/>
   </svg>`;
 }
 function computeKPIs(){
   const approvedRecords = dailyRecords.filter(r=>r.approvalStatus==='Approved');
   const bdCount = approvedRecords.filter(r=>r.category==='Breakdown').length;
-  const hmValues = approvedRecords.map(r=>Number(r.hm)||0).filter(v=>v>0);
-  const totalHM = hmValues.length ? Math.max(...hmValues) - Math.min(...hmValues) : 0;
+  // PERBAIKAN: totalHM dihitung PER UNIT (lihat totalHMByUnit) — bukan lagi Math.max/Math.min
+  // dari HM yang tercampur lintas-unit, supaya MTBS tidak selalu mentok 100%.
+  const totalHM = totalHMByUnit(approvedRecords);
   const mtbs = bdCount>0 ? (totalHM / bdCount) : totalHM;
 
-  const onTimeTarget = 4; // hours: standard repair benchmark for MTTR achievement
-  const mttrEligible = approvedRecords.filter(r=>r.duration!==null);
-  const mttrOk = mttrEligible.filter(r=>r.duration<=onTimeTarget).length;
-  const mttr = mttrEligible.length ? (mttrOk/mttrEligible.length*100) : 0;
+  // MTTR = rata-rata jam repair (Total Jam Breakdown / Jumlah Repair) — format spreadsheet
+  const mttrEligible = approvedRecords.filter(r=>r.duration!==null && r.duration!==undefined);
+  const mttr = mttrEligible.length ? (mttrEligible.reduce((s,r)=>s+(Number(r.duration)||0),0)/mttrEligible.length) : 0;
 
   const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
   const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
@@ -7446,15 +7830,16 @@ function renderKPICard(title, value, unit, target, achievedPct, isPercentTarget)
   const color = achievedPct>=100 ? 'var(--green)' : achievedPct>=75 ? 'var(--yellow)' : 'var(--red)';
   const colorHex = achievedPct>=100 ? '#4CAF6D' : achievedPct>=75 ? '#FFC72C' : '#E5484D';
   const barPct = Math.max(0, Math.min(100, achievedPct));
+  const statusTxt = achievedPct>=100 ? 'ACHIEVED' : achievedPct>=75 ? 'ON TRACK' : 'BELOW TARGET';
   return `<div class="kpi-card">
     <div class="kpi-title">${title}</div>
     ${gaugeSVG(achievedPct, colorHex)}
     <div class="kpi-value" style="color:${color}">${value}${unit}</div>
     <div class="kpi-target">TARGET ${target}${unit}</div>
-    <div style="height:4px; border-radius:3px; background:#2a2e35; margin:10px 2px 0; overflow:hidden;">
-      <div style="height:100%; width:${barPct}%; border-radius:3px; background:linear-gradient(90deg, ${colorHex}66, ${colorHex}); box-shadow:0 0 8px ${colorHex}99;"></div>
+    <div style="height:5px; border-radius:4px; background:#252932; margin:12px 2px 0; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,0.35);">
+      <div style="height:100%; width:${barPct}%; border-radius:4px; background:linear-gradient(90deg, ${colorHex}55, ${colorHex}); box-shadow:0 0 12px ${colorHex}aa;"></div>
     </div>
-    <div class="kpi-status"><span class="pill ${achievedPct>=100?'close':achievedPct>=75?'progress':'open'}">${achievedPct.toFixed(0)}% of target</span></div>
+    <div class="kpi-status" style="margin-top:12px;"><span class="pill ${achievedPct>=100?'close':achievedPct>=75?'progress':'open'}">${achievedPct.toFixed(0)}% · ${statusTxt}</span></div>
   </div>`;
 }
 
@@ -7465,14 +7850,15 @@ function toDateStr(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(
 function computeKPIsForRange(startStr, endStr){
   const approvedRecords = dailyRecords.filter(r=>r.approvalStatus==='Approved' && r.tanggal && r.tanggal>=startStr && r.tanggal<=endStr);
   const bdCount = approvedRecords.filter(r=>r.category==='Breakdown').length;
-  const hmValues = approvedRecords.map(r=>Number(r.hm)||0).filter(v=>v>0);
-  const totalHM = hmValues.length ? Math.max(...hmValues) - Math.min(...hmValues) : 0;
+  // PERBAIKAN: totalHM dihitung PER UNIT (lihat totalHMByUnit) — bukan lagi Math.max/Math.min
+  // dari HM yang tercampur lintas-unit, supaya MTBS per bulan di "Rekap KPI Triwulan" tidak
+  // selalu mentok 100% walau data breakdown sudah approved.
+  const totalHM = totalHMByUnit(approvedRecords);
   const mtbs = bdCount>0 ? (totalHM / bdCount) : totalHM;
 
-  const onTimeTarget = 4;
-  const mttrEligible = approvedRecords.filter(r=>r.duration!==null);
-  const mttrOk = mttrEligible.filter(r=>r.duration<=onTimeTarget).length;
-  const mttr = mttrEligible.length ? (mttrOk/mttrEligible.length*100) : 0;
+  // MTTR = rata-rata jam repair (Total Jam Breakdown / Jumlah Repair) — format spreadsheet
+  const mttrEligible = approvedRecords.filter(r=>r.duration!==null && r.duration!==undefined);
+  const mttr = mttrEligible.length ? (mttrEligible.reduce((s,r)=>s+(Number(r.duration)||0),0)/mttrEligible.length) : 0;
 
   const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
   const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
@@ -7556,14 +7942,9 @@ function renderDashboard(){
   const k = computeKPIsFor(kpiMonthlyChartPeriodValue);
   const globalStats = computeKPIs(); // overdue plan & pending approval selalu snapshot terkini, tidak tergantung filter periode
   renderKPIChartDashboard(k, globalStats);
+  // Kartu gauge KPI individual dihapus — detail % sudah ada di tabel KPI Report Monthly & Rekap Triwulan
   const grid = document.getElementById('kpi-grid');
-  grid.innerHTML =
-    renderKPICard('MTBS — Mean Time Between Service', k.mtbs.toFixed(0), ' jam', KPI_TARGET.mtbs, (k.mtbs/KPI_TARGET.mtbs*100)||0) +
-    renderKPICard('MTTR — Mean Time To Repair', k.mttr.toFixed(0), '%', KPI_TARGET.mttr, (k.mttr/KPI_TARGET.mttr*100)||0) +
-    renderKPICard('Planned Maintenance Ratio', k.pmr.toFixed(0), '%', KPI_TARGET.pmr, (k.pmr/KPI_TARGET.pmr*100)||0) +
-    renderKPICard('Service Accuracy', k.sa.toFixed(0), '%', KPI_TARGET.sa, (k.sa/KPI_TARGET.sa*100)||0) +
-    renderKPICard('MA — Mechanical Availability', k.ma.toFixed(0), '%', KPI_TARGET.ma, (k.ma/KPI_TARGET.ma*100)||0) +
-    renderKPICard('PA — Physical Availability', k.pa.toFixed(0), '%', KPI_TARGET.pa, (k.pa/KPI_TARGET.pa*100)||0);
+  if(grid) grid.innerHTML = '';
 
   const maPaStatusEl = document.getElementById('ma-pa-source-status');
   if(maPaStatusEl){
