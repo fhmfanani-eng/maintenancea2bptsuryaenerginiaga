@@ -45,93 +45,98 @@ body{
 
 /* SIDEBAR */
 .sidebar{
-  width:300px; flex-shrink:0;
-  background:#0f1115;
-  border-right:1px solid rgba(255,255,255,0.05);
+  width:322px; flex-shrink:0;
+  background:linear-gradient(180deg, #14171c 0%, #0e1014 100%);
+  border-right:1px solid rgba(255,255,255,0.06);
   display:flex; flex-direction:column;
   position:sticky; top:0; height:100vh;
+  box-shadow:4px 0 24px rgba(0,0,0,0.25);
 }
 .brand{
-  padding:22px 18px 18px;
-  border-bottom:1px solid rgba(255,255,255,0.05);
+  padding:24px 20px 20px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
   display:flex; flex-direction:column; align-items:center;
   text-align:center;
+  background:linear-gradient(180deg, rgba(255,199,44,0.04) 0%, transparent 100%);
 }
 .brand .logo-badge{
-  background:#fff; border-radius:12px; padding:10px 12px; margin-bottom:12px;
+  background:#fff; border-radius:10px; padding:10px 12px; margin-bottom:14px;
   display:inline-flex; align-items:center; justify-content:center;
-  box-shadow:0 2px 12px rgba(0,0,0,0.35);
+  box-shadow:0 4px 16px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08);
 }
-.brand .logo-badge img{ display:block; height:34px; width:auto; }
+.brand .logo-badge img{ display:block; height:36px; width:auto; }
 .brand .mark{
-  font-family:'Oswald',sans-serif; font-weight:700; font-size:14px;
-  letter-spacing:0.7px; color:var(--yellow); display:flex; align-items:center; gap:8px;
-  line-height:1.3;
+  font-family:'Oswald',sans-serif; font-weight:700; font-size:15px;
+  letter-spacing:0.8px; color:var(--yellow); display:flex; align-items:center; gap:8px;
+  line-height:1.3; text-shadow:0 0 20px rgba(255,199,44,0.25);
 }
 .brand .mark svg{ flex-shrink:0; }
-.brand .sub{ font-size:8.5px; color:var(--text-faint); letter-spacing:1.6px; margin-top:5px; text-transform:uppercase; font-family:'JetBrains Mono',monospace; line-height:1.4;}
+.brand .sub{ font-size:9px; color:var(--text-faint); letter-spacing:1.8px; margin-top:6px; text-transform:uppercase; font-family:'JetBrains Mono',monospace; line-height:1.4; opacity:0.85;}
 .nav{
-  flex:1; padding:16px 12px; overflow-y:auto;
-  display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;
+  flex:1; padding:18px 14px 14px; overflow-y:auto;
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;
   align-content:start;
 }
 .nav-item{
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:7px; text-align:center;
-  padding:12px 4px 10px; border-radius:14px;
-  color:#8b929a; cursor:pointer; font-size:9px; font-weight:600; line-height:1.25;
-  border:1px solid transparent;
-  background:rgba(255,255,255,0.02);
-  transition:all .15s ease;
+  gap:8px; text-align:center;
+  padding:14px 6px 12px; border-radius:16px;
+  color:var(--text-dim); cursor:pointer; font-size:9.5px; font-weight:600; line-height:1.3;
+  border:1px solid rgba(255,255,255,0.06);
+  background:linear-gradient(160deg, #1c2026 0%, #16191e 100%);
+  box-shadow:0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.03);
+  transition:background .18s ease, color .18s ease, border-color .18s ease, transform .12s ease, box-shadow .18s ease;
   user-select:none;
   position:relative;
 }
 .nav-item .label{
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
   overflow:hidden; width:100%;
-  letter-spacing:0.15px;
+  letter-spacing:0.2px;
 }
 .nav-item .num{
   display:inline-flex; align-items:center; justify-content:center;
-  width:42px; height:42px; flex-shrink:0; border-radius:13px;
-  background:rgba(255,255,255,0.04);
-  transition:all .15s ease;
+  width:40px; height:40px; flex-shrink:0; border-radius:12px;
+  background:var(--panel-2); color:var(--text-dim);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);
+  transition:background .18s ease, color .18s ease, box-shadow .18s ease, transform .12s ease;
 }
-.nav-item .num svg{ width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
-/* Soft accent per menu — gaya aplikasi modern */
-.nav-item:nth-child(1) .num{ background:rgba(74,144,217,0.12); color:#6eafef; }
-.nav-item:nth-child(2) .num{ background:rgba(255,140,66,0.12); color:#ff9d5c; }
-.nav-item:nth-child(3) .num{ background:rgba(76,175,109,0.12); color:#6ed492; }
-.nav-item:nth-child(4) .num{ background:rgba(168,120,255,0.12); color:#b99aff; }
-.nav-item:nth-child(5) .num{ background:rgba(255,199,44,0.12); color:#ffc72c; }
-.nav-item:nth-child(6) .num{ background:rgba(229,72,77,0.12); color:#f07075; }
-.nav-item:nth-child(7) .num{ background:rgba(64,196,196,0.12); color:#6edbdb; }
-.nav-item:nth-child(8) .num{ background:rgba(255,105,180,0.12); color:#ff8fc4; }
-.nav-item:nth-child(9) .num{ background:rgba(120,144,255,0.12); color:#95a8ff; }
+.nav-item .num svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+/* Warna ikon per menu — soft tint profesional */
+.nav-item:nth-child(1) .num{ background:rgba(74,144,217,0.15); color:#7db3ee; }
+.nav-item:nth-child(2) .num{ background:rgba(255,140,66,0.15); color:#ffab6b; }
+.nav-item:nth-child(3) .num{ background:rgba(76,175,109,0.15); color:#7ed99a; }
+.nav-item:nth-child(4) .num{ background:rgba(168,120,255,0.15); color:#c3a6ff; }
+.nav-item:nth-child(5) .num{ background:rgba(255,199,44,0.15); color:var(--yellow); }
+.nav-item:nth-child(6) .num{ background:rgba(229,72,77,0.15); color:#f28b8e; }
+.nav-item:nth-child(7) .num{ background:rgba(64,196,196,0.15); color:#7fe0e0; }
+.nav-item:nth-child(8) .num{ background:rgba(255,105,180,0.15); color:#ff9fcb; }
+.nav-item:nth-child(9) .num{ background:rgba(120,144,255,0.15); color:#a3b3ff; }
 .nav-item:hover{
-  background:rgba(255,255,255,0.05);
-  color:var(--text);
-  border-color:rgba(255,255,255,0.06);
+  background:linear-gradient(160deg, #242830 0%, #1c2026 100%);
+  color:var(--text); border-color:rgba(255,255,255,0.1);
+  transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
 }
-.nav-item:hover .num{ transform:scale(1.08); }
-.nav-item:active{ transform:scale(0.96); }
+.nav-item:hover .num{ transform:scale(1.06); }
+.nav-item:active{ transform:scale(0.97); }
 .nav-item.active{
-  background:rgba(255,199,44,0.1);
-  color:var(--yellow);
-  border-color:rgba(255,199,44,0.28);
+  background:linear-gradient(160deg, rgba(255,199,44,0.18) 0%, rgba(255,199,44,0.06) 100%);
+  color:var(--yellow); border-color:rgba(255,199,44,0.4);
+  box-shadow:0 4px 18px rgba(255,199,44,0.12), inset 0 1px 0 rgba(255,199,44,0.15);
 }
 .nav-item.active .num{
-  background:var(--yellow); color:#1a1400;
-  box-shadow:0 4px 14px rgba(255,199,44,0.3);
+  background:var(--yellow); color:#1b1500;
+  box-shadow:0 0 0 1px rgba(255,199,44,0.5), 0 4px 12px rgba(255,199,44,0.35);
 }
-.nav-item .nav-badge{ position:absolute; top:6px; right:8px; margin-left:0; }
+.nav-item .nav-badge{ position:absolute; top:8px; right:10px; margin-left:0; }
 .sidebar-foot{
-  padding:12px 16px; border-top:1px solid rgba(255,255,255,0.05);
-  font-size:9.5px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; letter-spacing:1.1px;
-  display:flex; align-items:center;
+  padding:14px 20px; border-top:1px solid rgba(255,255,255,0.06);
+  font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; letter-spacing:1.2px;
+  background:rgba(0,0,0,0.15);
 }
-.status-dot{ width:6px; height:6px; border-radius:50%; background:var(--green); display:inline-block; margin-right:7px; box-shadow:0 0 6px var(--green); animation:pulse-dot 2.2s ease-in-out infinite; }
-@keyframes pulse-dot{ 0%,100%{ opacity:1; } 50%{ opacity:0.45; } }
+.status-dot{ width:6px; height:6px; border-radius:50%; background:var(--green); display:inline-block; margin-right:6px; box-shadow:0 0 8px var(--green); animation:pulse-dot 2s ease-in-out infinite; }
+@keyframes pulse-dot{ 0%,100%{ opacity:1; } 50%{ opacity:0.5; } }
 
 /* MAIN */
 .main{ flex:1; min-width:0; }
@@ -774,10 +779,15 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
   .main{ width:100%; }
   .menu-toggle{
     display:flex; align-items:center; justify-content:center;
-    width:36px; height:36px; border-radius:var(--radius); flex-shrink:0;
-    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
-    cursor:pointer; font-size:18px;
+    min-width:56px; height:34px; padding:0 12px; border-radius:8px; flex-shrink:0;
+    background:linear-gradient(160deg, rgba(255,199,44,0.18), rgba(255,199,44,0.06));
+    border:1px solid rgba(255,199,44,0.4); color:var(--yellow);
+    cursor:pointer; font-size:11px; font-weight:700; letter-spacing:1px;
+    font-family:'Oswald',sans-serif; text-transform:uppercase;
+    box-shadow:0 2px 8px rgba(255,199,44,0.12);
+    transition:transform .12s, box-shadow .15s;
   }
+  .menu-toggle:active{ transform:scale(0.96); }
   .topbar{ padding:10px 14px; height:auto; min-height:56px; flex-wrap:wrap; gap:10px; }
   .topbar h1{ font-size:15px; }
   .topbar .role-bar{ flex-wrap:wrap; }
@@ -935,7 +945,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
   <main class="main">
     <div class="topbar">
       <div style="display:flex; align-items:center; gap:12px; min-width:0;">
-        <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Buka menu">☰</button>
+        <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Buka menu">HOME</button>
         <h1 id="topbar-title">KPI REPORT</h1>
       </div>
       <div style="display:flex; align-items:center; gap:18px;">
@@ -1015,17 +1025,17 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 
       <!-- DATABASE UNIT -->
       <section class="view" id="view-database">
-        <div class="panel-head" style="margin-bottom:16px;"><h2>Performance Unit Alat Berat</h2></div>
+        <div class="panel-head" style="margin-bottom:16px;"><h2>Performance Unit A2B</h2></div>
         <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy, MA, PA) tiap unit dihitung otomatis dari data Daily Maintenance dan data Monitoring HM — Plan Service hanya untuk monitoring jadwal, tidak perlu input manual.</div>
 
         <div class="panel period-panel" style="margin-bottom:16px;">
           <div class="panel-head" style="margin-bottom:8px;">
-            <h2><span class="tag">FILTER</span> Periode KPI <span id="unit-period-mode-label">Mingguan</span></h2>
+            <h2><span class="tag">FILTER</span> PERIODE KPI REKAP <span id="unit-period-mode-label">Weekly</span></h2>
             <div class="toolbar" style="align-items:center;">
               <div class="field period-input-group" style="margin-bottom:0; min-width:170px;">
                 <select id="unit-period-type-select">
-                  <option value="week">Mingguan</option>
-                  <option value="month">Bulanan</option>
+                  <option value="week">Weekly</option>
+                  <option value="month">Monthly</option>
                 </select>
                 <span class="period-input-caret">▾</span>
               </div>
@@ -3844,7 +3854,7 @@ async function saveHM(){
 const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 const titleMap = {
-  dashboard:'KPI REPORT', database:'Performance Unit', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
+  dashboard:'KPI REPORT', database:'Performance Unit A2B', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
   plan:'Plan Service', planningsystem:'Plan Shcedule Maintenance', summary:'Mechanic Activity Report',
   hm:'Monitoring HM'
 };
@@ -4504,7 +4514,7 @@ function populateUnitWeekPeriodSelect(){
   }
   const modeLabel = document.getElementById('unit-period-mode-label');
   const hintEl = document.getElementById('unit-period-hint');
-  if(modeLabel) modeLabel.textContent = mode==='month' ? 'Bulanan' : 'Mingguan';
+  if(modeLabel) modeLabel.textContent = mode==='month' ? 'Monthly' : 'Weekly';
   if(hintEl){
     hintEl.innerHTML = mode==='month'
       ? 'Pilih periode bulan (tanggal 1 s/d akhir bulan) untuk melihat pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy) tiap unit pada bulan tersebut. MA &amp; PA ikut dihitung ulang dari data Monitoring HM pada bulan yang sama.'
@@ -4605,6 +4615,12 @@ function renderUnitCards(){
     const bd = jobs.filter(r=>r.category==='Breakdown').length;
     const lastHM = jobs.length ? Math.max(...jobs.map(r=>Number(r.hm)||0)) : '—';
     const k = computeUnitKPIsFor(u.code, weekPeriod);
+    // Average Achievement — weighted (Σ Score ÷ Σ Bobot × 100), ikut filter Weekly/Monthly
+    const unitKpiKeys = ['mtbs','mttr','pmr','sa','ma','pa'];
+    const totalW = unitKpiKeys.reduce((s,key)=> s + (KPI_WEIGHT[key]||0), 0);
+    const sumSc = unitKpiKeys.reduce((s,key)=> s + kpiWeightedScore(key, k[key]||0), 0);
+    const avgAch = totalW > 0 ? (sumSc / totalW * 100) : 0;
+    const avgCol = avgAch>=90 ? 'var(--green)' : avgAch>=75 ? 'var(--yellow)' : 'var(--red)';
     return `<div class="unit-card">
       <div class="unit-visual">${(()=>{ const photo = getUnitPhoto(u.category, u.type); return photo ? `<img src="${photo}" alt="${u.type}" class="unit-photo">` : unitIconSVG(u.category); })()}</div>
       <div class="cat-label">${u.category}</div>
@@ -4614,6 +4630,10 @@ function renderUnitCards(){
         <div onclick="openUnitHistory('${u.code}','all','${weekPeriod}','${escUH(weekPeriodLabel)}')" title="Klik untuk lihat histori">Total Job<b>${jobs.length}</b></div>
         <div onclick="openUnitHistory('${u.code}','breakdown','${weekPeriod}','${escUH(weekPeriodLabel)}')" title="Klik untuk lihat histori breakdown">Breakdown<b style="color:${bd>0?'var(--red)':'var(--text)'}">${bd}</b></div>
         <div>HM Terakhir<b>${lastHM}</b></div>
+      </div>
+      <div style="margin:10px 0 4px; padding:8px 10px; background:rgba(255,199,44,0.08); border:1px solid rgba(255,199,44,0.25); border-radius:6px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+        <span style="font-size:10px; font-weight:700; letter-spacing:0.5px; color:var(--text-dim); text-transform:uppercase; font-family:'JetBrains Mono',monospace;">Average Achievement</span>
+        <span style="font-family:'Oswald',sans-serif; font-size:18px; font-weight:700; color:${avgCol}; line-height:1;">${avgAch.toFixed(1)}%</span>
       </div>
       <div class="kpi-mini">
         ${kpiMiniItem('MTBS', k.mtbs, ' jam', KPI_TARGET.mtbs, 'mtbs')}
