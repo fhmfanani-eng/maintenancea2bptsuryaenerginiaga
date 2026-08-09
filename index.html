@@ -1353,7 +1353,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>Record Daily Maintenance</h2><div class="toolbar"><button type="button" class="btn secondary" id="daily-import-service-btn">⤓ Import Service Report (Historis)</button><button type="button" class="btn secondary" id="daily-refresh-btn" title="Ambil ulang data terbaru dari database">⟲ Refresh Data</button><button type="button" class="btn" id="daily-sync-sheets-btn" title="Kirim semua record Daily Maintenance ke Google Sheets tab data">☁ Sync ke Sheet data</button><button type="button" class="btn danger" id="daily-bulk-delete-btn" title="Hapus banyak record sekaligus berdasarkan rentang Code BD, mis. 363-371">🗑 Hapus by Code BD</button></div></div>
+          <div class="panel-head"><h2>Record Daily Maintenance</h2><div class="toolbar"><button type="button" class="btn secondary" id="daily-import-service-btn">⤓ Import Service Report (Historis)</button><button type="button" class="btn secondary" id="daily-refresh-btn" title="Ambil ulang data terbaru dari database">⟲ Refresh Data</button><button type="button" class="btn" id="daily-sync-sheets-btn" title="Kirim semua record Daily Maintenance ke Google Sheets tab Daily Maintenance">☁ Sync ke Sheet Daily Maintenance</button><button type="button" class="btn danger" id="daily-bulk-delete-btn" title="Hapus banyak record sekaligus berdasarkan rentang Code BD, mis. 363-371">🗑 Hapus by Code BD</button></div></div>
           <div class="scroll-top-track" id="daily-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="daily-scroll-top-inner"></div></div>
           <div class="table-wrap" id="daily-table-wrap">
             <table id="daily-record-table">
@@ -3320,7 +3320,7 @@ const BACKEND_CONFIG = {
   // Spreadsheet: https://docs.google.com/spreadsheets/d/1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4
   // Pasang GoogleAppsScript-UNIT-CARE.gs di spreadsheet → Deploy Web App → tempel URL /exec di bawah.
   sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
-  sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbxrDR670sDBYzjoopvI1GeCDsfpzE8UgP5FtnDx0u-cWWvbfzhfZnSK9ARxfKbC1TQ/exec',
+  sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbynFEsmu4bzN2DE--luyhBgCal_-WqkmTQw_EF_1cl_TEAAFLzCmstinRWsRXwx8YY/exec',
 };
 
 const localFallbackStorage = {
@@ -5299,7 +5299,7 @@ async function syncDailyToSheets(opts){
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         action: 'sync',
-        sheet: 'data',
+        sheet: 'Daily Maintenance',
         spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
         records: dailyRecords.map(dailyRecToRow),
         syncedAt: new Date().toISOString()
@@ -5309,11 +5309,11 @@ async function syncDailyToSheets(opts){
     try{ data = await res.json(); }catch(_e){ data = null; }
     if(opts.manual){
       if(data && data.ok){
-        alert('✓ Berhasil sync '+ (data.written||dailyRecords.length) +' record ke sheet "data".\nBuka spreadsheet dan refresh tab data.');
+        alert('✓ Berhasil sync '+ (data.written||dailyRecords.length) +' record ke sheet "Daily Maintenance".\nBuka spreadsheet dan refresh tab data.');
       } else if(data && data.error){
         alert('⚠ Sync gagal: '+ data.error);
       } else {
-        alert('✓ Permintaan sync terkirim ('+ dailyRecords.length +' record).\nCek tab "data" di spreadsheet (refresh halaman sheet).');
+        alert('✓ Permintaan sync terkirim ('+ dailyRecords.length +' record).\nCek tab "Daily Maintenance" di spreadsheet (refresh halaman sheet).');
       }
     }
     return data || { ok:true };
@@ -5328,7 +5328,7 @@ document.getElementById('daily-sync-sheets-btn')?.addEventListener('click', asyn
   const btn = document.getElementById('daily-sync-sheets-btn');
   if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
   try{ await syncDailyToSheets({ manual:true }); }
-  finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet data'; } }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet Daily Maintenance'; } }
 });
 
 function approvalPillHTML(r){
