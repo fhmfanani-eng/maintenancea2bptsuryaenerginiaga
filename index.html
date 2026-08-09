@@ -3320,7 +3320,7 @@ const BACKEND_CONFIG = {
   // Spreadsheet: https://docs.google.com/spreadsheets/d/1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4
   // Pasang GoogleAppsScript-UNIT-CARE.gs di spreadsheet → Deploy Web App → tempel URL /exec di bawah.
   sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
-  sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbynFEsmu4bzN2DE--luyhBgCal_-WqkmTQw_EF_1cl_TEAAFLzCmstinRWsRXwx8YY/exec',
+  sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbzdP0NVdyvI984xjhu3KH3wK60CwZBIVkpBqIjbj-g4A6Xk0vh83UwW9YjTBWCCYQ/exec',
 };
 
 const localFallbackStorage = {
@@ -5301,7 +5301,21 @@ async function syncDailyToSheets(opts){
         action: 'sync',
         sheet: 'Daily Maintenance',
         spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
-        records: dailyRecords.map(dailyRecToRow),
+        records: dailyRecords.map(r=>{
+          const row = dailyRecToRow(r);
+          // Samakan dengan data validation Google Sheet kolom Category:
+          // Breakdown | Daily Maintenance | Priodic Maintenance
+          const c = String(row.category||'').trim();
+          if(/^breakdown$/i.test(c)) row.category = 'Breakdown';
+          else if(/^daily/i.test(c)) row.category = 'Daily Maintenance';
+          else if(/period|priodic/i.test(c)) row.category = 'Priodic Maintenance';
+          else row.category = 'Breakdown';
+          // Plan/Unplan → Planned / UnPlanned
+          const p = String(row.plan_unplan||'').trim();
+          if(/^plan/i.test(p)) row.plan_unplan = 'Planned';
+          else if(/unplan/i.test(p)) row.plan_unplan = 'UnPlanned';
+          return row;
+        }),
         syncedAt: new Date().toISOString()
       })
     });
