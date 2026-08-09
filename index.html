@@ -1461,7 +1461,10 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
             <div class="grid grid-4">
               <div class="field"><label>Unit Code</label><select id="ps-unitcode" required></select></div>
               <div class="field"><label>Type Unit</label><input type="text" id="ps-typeunit" disabled></div>
-              <div class="field"><label>PIC Mechanic</label><select id="ps-pic" required></select></div>
+              <div class="field"><label>PIC Mechanic 1</label><select id="ps-pic1" required></select></div>
+              <div class="field"><label>PIC Mechanic 2</label><select id="ps-pic2"><option value="">— Tidak ada —</option></select></div>
+            </div>
+            <div class="grid grid-2">
               <div class="field"><label>Component</label>
                 <select id="ps-component" required>
                   <option value="Engine">Engine</option>
@@ -1473,12 +1476,21 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
                   <option value="Other">Other</option>
                 </select>
               </div>
+              <div class="field"><label>No PR</label><input type="text" id="ps-nopr" placeholder="e.g. PR-2607-001"></div>
             </div>
-            <div class="field"><label>No PR</label><input type="text" id="ps-nopr" placeholder="e.g. PR-2607-001"></div>
             <div class="field"><label>Job Description</label><textarea id="ps-jobdesc" required placeholder="Uraian rencana pekerjaan..."></textarea></div>
-            <div class="grid grid-3">
+            <div class="grid grid-2">
               <div class="field"><label>Plan Tanggal Eksekusi</label><input type="date" id="ps-plandate" required></div>
               <div class="field"><label>Due Date Eksekusi</label><input type="date" id="ps-duedate" required></div>
+            </div>
+            <div id="ps-exec-fields">
+              <div class="hint" style="margin:4px 0 10px;">Kolom di bawah ini diisi oleh mekanik pelaksana saat mengerjakan rencana ini.</div>
+              <div class="grid grid-4">
+                <div class="field"><label>Tgl Pekerjaan</label><input type="date" id="ps-workdate"></div>
+                <div class="field"><label>Jam Mulai Pekerjaan</label><input type="time" id="ps-jammulai"></div>
+                <div class="field"><label>Jam Selesai Pekerjaan</label><input type="time" id="ps-jamselesai"></div>
+                <div class="field"><label>Duration Pekerjaan</label><input type="text" id="ps-duration" disabled placeholder="Otomatis"></div>
+              </div>
               <div class="field"><label>Status</label>
                 <select id="ps-status" required>
                   <option value="Open">Open</option>
@@ -1515,8 +1527,8 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
           <div class="table-wrap" id="planningsystem-table-wrap">
             <table id="planningsystem-table">
               <thead><tr>
-                <th>Unit Code</th><th>Type Unit</th><th>PIC Mechanic</th><th>Job Description</th><th>Component</th><th>No PR</th>
-                <th>Plan Tgl Eksekusi</th><th>Due Date</th><th>Status</th><th></th>
+                <th>Unit Code</th><th>Type Unit</th><th>PIC Mechanic 1</th><th>PIC Mechanic 2</th><th>Job Description</th><th>Component</th><th>No PR</th>
+                <th>Plan Tgl Eksekusi</th><th>Due Date</th><th>Tgl Pekerjaan</th><th>Jam Mulai</th><th>Jam Selesai</th><th>Duration</th><th>Status</th><th></th>
               </tr></thead>
               <tbody id="planningsystem-tbody"></tbody>
             </table>
@@ -3828,6 +3840,17 @@ async function savePlan(){
   try{ await appStorage.set('plan-records', JSON.stringify(planRecords)); }
   catch(e){ console.error('save plan failed', e); }
 }
+/* Ambil ulang planningSystemRecords langsung dari database, tidak bergantung channel realtime
+   (Plan Schedule Maintenance tidak punya channel realtime seperti Daily Maintenance). Dipakai
+   sebagai jaring pengaman berkala supaya mekanik yang sedang login otomatis melihat & mendapat
+   notifikasi begitu Supervisor membuat rencana baru berstatus Open untuk dirinya, tanpa perlu
+   me-refresh halaman secara manual. */
+async function refreshPlanningSystemRecords(){
+  try{
+    const ps = await appStorage.get('planning-system-records');
+    if(ps) planningSystemRecords = JSON.parse(ps.value);
+  }catch(e){ console.error('refresh planning system records gagal', e); }
+}
 async function savePlanningSystem(){
   try{ await appStorage.set('planning-system-records', JSON.stringify(planningSystemRecords)); }
   catch(e){ console.error('save planning system failed', e); }
@@ -5883,21 +5906,72 @@ document.getElementById('daily-bulk-delete-btn').addEventListener('click', bulkD
 
 /* ================= PLANNING SYSTEM (MONTHLY MAINTENANCE PLANNING) ================= */
 const psUnitSelect = document.getElementById('ps-unitcode');
-fillUnitSelect(psUnitSelect);
+fillUnitSelectCodeOnly(psUnitSelect);
 psUnitSelect.addEventListener('change', ()=>syncTypeFromUnit(psUnitSelect, document.getElementById('ps-typeunit')));
 syncTypeFromUnit(psUnitSelect, document.getElementById('ps-typeunit'));
 
-/* Isi dropdown PIC Mechanic dari akun terdaftar (posisi Mechanic) — dipakai untuk menandai
-   siapa mekanik yang bertanggung jawab, supaya notifikasi rencana bulanan bisa ditujukan tepat sasaran. */
-function populatePicMechanicSelect(){
-  const sel = document.getElementById('ps-pic');
+/* Form Rencana Maintenance Bulanan hanya diisi oleh Supervisor (pemberi rencana), sehingga
+   kolom eksekusi (Tgl Pekerjaan, Jam Mulai/Selesai, Duration, Status) disembunyikan untuk
+   Supervisor — form-nya cukup sampai Due Date Eksekusi. Kolom-kolom itu baru muncul & wajib
+   diisi mekanik pelaksana sendiri, karena merekalah yang benar-benar mengerjakan rencananya. */
+function toggleSupervisorExecFields(){
+  const box = document.getElementById('ps-exec-fields');
+  if(!box) return;
+  const isSupervisor = currentRole()==='Supervisor';
+  box.style.display = isSupervisor ? 'none' : '';
+  document.getElementById('ps-workdate').required = false;
+  document.getElementById('ps-jammulai').required = false;
+  document.getElementById('ps-jamselesai').required = false;
+  document.getElementById('ps-status').required = !isSupervisor;
+}
+
+/* PIC Mechanic 1 adalah mekanik pelaksana utama. Jika yang login adalah Mechanic, field ini
+   otomatis terkunci ke dirinya sendiri (user tersebut yang mengerjakan & menginput data).
+   Jika yang login adalah Supervisor, field ini WAJIB dipilih manual dari daftar mekanik —
+   supervisor hanya menugaskan rencana, bukan menjadi PIC pelaksana. */
+function updatePicMechanic1Field(){
+  toggleSupervisorExecFields();
+  const sel = document.getElementById('ps-pic1');
   if(!sel) return;
   const prev = sel.value;
   const mechanics = getAllUsers().filter(u=>u.position==='Mechanic' || u.role==='Mechanic');
   sel.innerHTML = mechanics.map(m=>`<option value="${m.username}">${m.name}</option>`).join('');
+  if(loggedInUser && currentRole()==='Mechanic'){
+    sel.value = loggedInUser.username;
+    sel.disabled = true;
+  } else {
+    sel.disabled = false;
+    sel.value = mechanics.some(m=>m.username===prev) ? prev : '';
+  }
+}
+
+/* Isi dropdown PIC Mechanic 2 dari akun terdaftar (posisi Mechanic) — dipakai bila ada mekanik
+   kedua yang membantu pengerjaan, supaya notifikasi rencana bulanan bisa ditujukan tepat sasaran. */
+function populatePicMechanicSelect(){
+  updatePicMechanic1Field();
+  const sel = document.getElementById('ps-pic2');
+  if(!sel) return;
+  const prev = sel.value;
+  const mechanics = getAllUsers().filter(u=>u.position==='Mechanic' || u.role==='Mechanic');
+  sel.innerHTML = '<option value="">— Tidak ada —</option>' + mechanics.map(m=>`<option value="${m.username}">${m.name}</option>`).join('');
   if(mechanics.some(m=>m.username===prev)) sel.value = prev;
 }
 populatePicMechanicSelect();
+
+/* Menghitung Duration Pekerjaan otomatis dari Jam Mulai - Jam Selesai pada form input. */
+function computePsDurationField(){
+  const mulai = document.getElementById('ps-jammulai').value;
+  const selesai = document.getElementById('ps-jamselesai').value;
+  const out = document.getElementById('ps-duration');
+  if(!mulai || !selesai){ out.value=''; return; }
+  const [mh,mm] = mulai.split(':').map(Number);
+  const [sh,sm] = selesai.split(':').map(Number);
+  let mins = (sh*60+sm) - (mh*60+mm);
+  if(mins < 0) mins += 24*60; // lewat tengah malam
+  out.value = (mins/60).toFixed(1) + ' jam';
+}
+document.getElementById('ps-jammulai').addEventListener('change', computePsDurationField);
+document.getElementById('ps-jamselesai').addEventListener('change', computePsDurationField);
 
 const psFilterUnit = document.getElementById('ps-filter-unit');
 psFilterUnit.innerHTML = '<option value="">Semua Unit</option>' + UNITS.map(u=>`<option value="${u.code}">${u.code}</option>`).join('');
@@ -5916,19 +5990,32 @@ document.getElementById('ps-clear-filter').addEventListener('click', ()=>{
 
 document.getElementById('form-planningsystem').addEventListener('submit', async (e)=>{
   e.preventDefault();
-  const picUser = getAllUsers().find(u=>u.username===document.getElementById('ps-pic').value);
+  const mech1User = getAllUsers().find(u=>u.username===document.getElementById('ps-pic1').value);
+  if(!mech1User){
+    alert('PIC Mechanic 1 wajib dipilih.');
+    return;
+  }
+  const isSupervisor = currentRole()==='Supervisor';
+  const mech2User = getAllUsers().find(u=>u.username===document.getElementById('ps-pic2').value);
+  const jamMulai = isSupervisor ? '' : document.getElementById('ps-jammulai').value;
+  const jamSelesai = isSupervisor ? '' : document.getElementById('ps-jamselesai').value;
   const rec = {
     id: uid(),
     unitCode: document.getElementById('ps-unitcode').value,
     typeUnit: document.getElementById('ps-typeunit').value,
-    picUsername: picUser ? picUser.username : '',
-    picName: picUser ? picUser.name : '',
+    picUsername: mech1User.username,
+    picName: mech1User.name,
+    pic2Username: mech2User ? mech2User.username : '',
+    pic2Name: mech2User ? mech2User.name : '',
     jobDesc: document.getElementById('ps-jobdesc').value,
     component: document.getElementById('ps-component').value,
     noPR: document.getElementById('ps-nopr').value,
     planDate: document.getElementById('ps-plandate').value,
     dueDate: document.getElementById('ps-duedate').value,
-    status: document.getElementById('ps-status').value,
+    workDate: isSupervisor ? '' : document.getElementById('ps-workdate').value,
+    jamMulai, jamSelesai,
+    jamTotal: isSupervisor ? '' : document.getElementById('ps-duration').value,
+    status: isSupervisor ? 'Open' : document.getElementById('ps-status').value,
     createdBy: currentUserName(),
   };
   planningSystemRecords.unshift(rec);
@@ -5936,6 +6023,7 @@ document.getElementById('form-planningsystem').addEventListener('submit', async 
   document.getElementById('form-planningsystem').reset();
   syncTypeFromUnit(psUnitSelect, document.getElementById('ps-typeunit'));
   populatePicMechanicSelect();
+  document.getElementById('ps-duration').value = '';
   renderPlanningTable();
 });
 
@@ -5954,7 +6042,7 @@ function renderPlanningMechanicNotify(){
 
   const curMonth = new Date().toISOString().slice(0,7);
   const myPlans = planningSystemRecords.filter(r=>
-    r.picUsername===loggedInUser.username &&
+    (r.picUsername===loggedInUser.username || r.pic2Username===loggedInUser.username) &&
     r.status==='Open' &&
     r.planDate && r.planDate.startsWith(curMonth)
   );
@@ -5998,29 +6086,50 @@ function filterPlanningRows(){
   });
 }
 function renderPlanningTable(){
+  updatePicMechanic1Field();
   const rows = filterPlanningRows();
   const tbody = document.getElementById('planningsystem-tbody');
   const today = new Date().toISOString().slice(0,10);
   const isSupervisor = currentRole()==='Supervisor';
 
   if(!rows.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Belum ada rencana maintenance untuk filter ini.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="15">Belum ada rencana maintenance untuk filter ini.</td></tr>`;
   } else {
     tbody.innerHTML = rows.map(r=>{
       const isOverdue = r.status==='Open' && r.dueDate && r.dueDate<today;
       const statusPill = isOverdue
         ? `<span class="pill overdue">Overdue</span>`
         : `<span class="pill ${r.status==='Close'?'close':'open'}">${r.status}</span>`;
+      /* Jam Pekerjaan hanya boleh diisi/diubah oleh user Mechanic yang menjadi PIC 1 pada rencana
+         tersebut (mekanik pelaksana utama). Supervisor/mekanik lain hanya bisa lihat. */
+      const isAssignedMechanic = !isSupervisor && loggedInUser && loggedInUser.username===r.picUsername;
+      let jamMulaiCell, jamSelesaiCell, durasiCell;
+      if(r.jamMulai && r.jamSelesai){
+        jamMulaiCell = `<span style="font-family:'JetBrains Mono',monospace; font-size:12px;">${r.jamMulai}</span>`;
+        jamSelesaiCell = `<span style="font-family:'JetBrains Mono',monospace; font-size:12px;">${r.jamSelesai}</span>`;
+        durasiCell = `<b>${r.jamTotal||'—'}</b>`;
+      } else if(isAssignedMechanic){
+        const fillBtn = `<button type="button" class="btn small secondary" onclick="promptJamPekerjaan('${r.id}')">＋ Isi Jam</button>`;
+        jamMulaiCell = fillBtn; jamSelesaiCell = `<span class="hint">—</span>`; durasiCell = `<span class="hint">—</span>`;
+      } else {
+        jamMulaiCell = `<span class="hint">—</span>`; jamSelesaiCell = `<span class="hint">—</span>`;
+        durasiCell = `<span class="hint">Menunggu diisi mekanik pelaksana</span>`;
+      }
       return `
       <tr>
         <td>${r.unitCode}</td>
         <td>${r.typeUnit}</td>
         <td>${r.picName||'—'}</td>
+        <td>${r.pic2Name||'—'}</td>
         <td style="white-space:normal; min-width:200px;">${r.jobDesc||'—'}</td>
         <td><span class="cat ${r.component}">${r.component}</span></td>
         <td>${r.noPR||'—'}</td>
         <td>${r.planDate||'—'}</td>
         <td>${r.dueDate||'—'}</td>
+        <td>${r.workDate||'—'}</td>
+        <td>${jamMulaiCell}</td>
+        <td>${jamSelesaiCell}</td>
+        <td>${durasiCell}</td>
         <td>${statusPill}</td>
         <td>${isSupervisor ? `<button class="btn danger" onclick="deletePlanningSystem('${r.id}')">Hapus</button>` : ''}</td>
       </tr>`;
@@ -6039,6 +6148,44 @@ function renderPlanningTable(){
 }
 window.deletePlanningSystem = async function(id){
   planningSystemRecords = planningSystemRecords.filter(r=>r.id!==id);
+  await savePlanningSystem();
+  renderPlanningTable();
+}
+/* Mengisi Tgl Pekerjaan & Jam Mulai/Selesai eksekusi — dibatasi hanya untuk user Mechanic
+   yang menjadi PIC Mechanic 1 pada rencana tersebut (mekanik pelaksana). Supervisor maupun
+   mekanik lain tidak bisa mengisi jam pekerjaan mekanik lain. Status otomatis berubah
+   menjadi Close begitu jam pekerjaan berhasil diisi. */
+window.promptJamPekerjaan = async function(id){
+  const r = planningSystemRecords.find(x=>x.id===id);
+  if(!r) return;
+  const isSupervisor = currentRole()==='Supervisor';
+  const isAssignedMechanic = !isSupervisor && loggedInUser && loggedInUser.username===r.picUsername;
+  if(!isAssignedMechanic){
+    alert('Jam pekerjaan hanya bisa diisi oleh mekanik yang menjadi PIC pada rencana ini.');
+    return;
+  }
+  if(!r.workDate){
+    const tgl = prompt('Tanggal Pekerjaan (format YYYY-MM-DD):', r.workDate||new Date().toISOString().slice(0,10));
+    if(tgl===null) return;
+    r.workDate = tgl;
+  }
+  const mulai = prompt('Jam Mulai Eksekusi (format HH:MM, contoh 08:00):', r.jamMulai||'');
+  if(mulai===null) return;
+  const selesai = prompt('Jam Selesai Eksekusi (format HH:MM, contoh 10:30):', r.jamSelesai||'');
+  if(selesai===null) return;
+  const timeRe = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  if(!timeRe.test(mulai) || !timeRe.test(selesai)){
+    alert('Format jam tidak valid. Gunakan format HH:MM, contoh 08:00.');
+    return;
+  }
+  const [mh,mm] = mulai.split(':').map(Number);
+  const [sh,sm] = selesai.split(':').map(Number);
+  let mins = (sh*60+sm) - (mh*60+mm);
+  if(mins < 0) mins += 24*60; // lewat tengah malam
+  r.jamMulai = mulai;
+  r.jamSelesai = selesai;
+  r.jamTotal = (mins/60).toFixed(1) + ' jam';
+  r.status = 'Close';
   await savePlanningSystem();
   renderPlanningTable();
 }
@@ -8168,14 +8315,17 @@ function computeMechanicNotifications(){
       });
     });
 
-  // Plan Schedule Maintenance (Planning System) yang ditujukan ke mekanik ybs & masih Open.
-  planningSystemRecords.filter(r=> r.picUsername===loggedInUser.username && r.status==='Open')
+  // Plan Schedule Maintenance (Planning System) yang ditujukan ke mekanik ybs (sebagai PIC 1
+  // maupun PIC 2) & masih Open — dibuat oleh Supervisor.
+  planningSystemRecords.filter(r=> r.status==='Open' &&
+      (r.picUsername===loggedInUser.username || r.pic2Username===loggedInUser.username))
     .forEach(r=>{
       const overdue = !!(r.dueDate && r.dueDate < today);
+      const asPic2 = r.pic2Username===loggedInUser.username && r.picUsername!==loggedInUser.username;
       notifs.push({
         id:'planning-'+r.id, view:'planningsystem', icon:'📋', urgent:overdue,
-        title: overdue ? 'Jadwal Maintenance Terlambat' : 'Rencana Jadwal Maintenance',
-        body:`${r.unitCode||'-'} — ${r.component||'-'} · Due ${r.dueDate||'-'}`,
+        title: overdue ? 'Jadwal Maintenance Terlambat' : 'Rencana Jadwal Maintenance Baru',
+        body:`${r.unitCode||'-'} — ${r.component||'-'} · Due ${r.dueDate||'-'}${asPic2?' · sebagai PIC Mechanic 2':''}`,
         date: r.dueDate||''
       });
     });
@@ -8391,6 +8541,17 @@ function subscribeDailyRealtime(){
       await enforceCodeBDLock();
       await syncCodeBDChronological();
       const after = JSON.stringify(dailyRecords.map(r=>r.id+r.updatedAt));
+      if(before!==after) renderAll();
+    }, 30000);
+    // Jaring pengaman: refresh planningSystemRecords dari database setiap 30 detik, supaya
+    // mekanik yang sedang login otomatis mendapat notifikasi (lonceng, banner, & notifikasi
+    // sistem browser) begitu Supervisor membuat rencana maintenance baru berstatus Open,
+    // tanpa perlu me-refresh halaman secara manual.
+    setInterval(async ()=>{
+      if(!loggedInUser) return;
+      const before = JSON.stringify(planningSystemRecords.map(r=>r.id+r.status));
+      await refreshPlanningSystemRecords();
+      const after = JSON.stringify(planningSystemRecords.map(r=>r.id+r.status));
       if(before!==after) renderAll();
     }, 30000);
     // Cek ulang notifikasi (Plan Service jatuh tempo, approval baru, dll) tiap 1 menit —
