@@ -1353,7 +1353,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>Record Daily Maintenance</h2><div class="toolbar"><button type="button" class="btn secondary" id="daily-import-service-btn">⤓ Import Service Report (Historis)</button><button type="button" class="btn secondary" id="daily-refresh-btn" title="Ambil ulang data terbaru dari database">⟲ Refresh Data</button><button type="button" class="btn danger" id="daily-bulk-delete-btn" title="Hapus banyak record sekaligus berdasarkan rentang Code BD, mis. 363-371">🗑 Hapus by Code BD</button></div></div>
+          <div class="panel-head"><h2>Record Daily Maintenance</h2><div class="toolbar"><button type="button" class="btn secondary" id="daily-import-service-btn">⤓ Import Service Report (Historis)</button><button type="button" class="btn secondary" id="daily-refresh-btn" title="Ambil ulang data terbaru dari database">⟲ Refresh Data</button><button type="button" class="btn" id="daily-sync-sheets-btn" title="Kirim semua record Daily Maintenance ke Google Sheets tab data">☁ Sync ke Sheet data</button><button type="button" class="btn danger" id="daily-bulk-delete-btn" title="Hapus banyak record sekaligus berdasarkan rentang Code BD, mis. 363-371">🗑 Hapus by Code BD</button></div></div>
           <div class="scroll-top-track" id="daily-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="daily-scroll-top-inner"></div></div>
           <div class="table-wrap" id="daily-table-wrap">
             <table id="daily-record-table">
@@ -3317,8 +3317,10 @@ const BACKEND_CONFIG = {
   supabaseAnonKey: 'sb_publishable_k6bgzzLNwk8_1QKxl_5uEg_EzAlkj5L',
 
   // ---- Sinkron Google Sheets (pilot: Daily Maintenance) ----
-  // Isi setelah deploy Apps Script sebagai Web App (URL berakhiran /exec).
-  sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbyMe-1g_epOKMFzmIaJDwbsUKtDcXpColidsuCIjlGvIpB7IYU85yLEwddWzt28WsI/exec',
+  // Spreadsheet: https://docs.google.com/spreadsheets/d/1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4
+  // Pasang GoogleAppsScript-UNIT-CARE.gs di spreadsheet → Deploy Web App → tempel URL /exec di bawah.
+  sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
+  sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbxrDR670sDBYzjoopvI1GeCDsfpzE8UgP5FtnDx0u-cWWvbfzhfZnSK9ARxfKbC1TQ/exec',
 };
 
 const localFallbackStorage = {
@@ -5281,16 +5283,53 @@ async function syncCodeBDChronological(){
    Dikirim sebagai text/plain supaya tidak kena CORS preflight ke Apps Script.
    Data dipetakan lewat dailyRecToRow() supaya nama kolom di sheet rapi (snake_case),
    konsisten dengan skema tabel Supabase — bukan nama field internal JS (camelCase). */
-async function syncDailyToSheets(){
-  if(!BACKEND_CONFIG.sheetsWebAppUrl) return;
+async function syncDailyToSheets(opts){
+  opts = opts || {};
+  if(!BACKEND_CONFIG.sheetsWebAppUrl){
+    if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG. Deploy Apps Script dulu, lalu tempel URL /exec.');
+    return { ok:false, error:'no_url' };
+  }
+  if(!dailyRecords.length){
+    if(opts.manual) alert('Tidak ada record Daily Maintenance untuk disinkronkan.');
+    return { ok:true, written:0 };
+  }
   try{
-    await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+    const res = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ sheet: 'Daily Maintenance', records: dailyRecords.map(dailyRecToRow) })
+      body: JSON.stringify({
+        action: 'sync',
+        sheet: 'data',
+        spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
+        records: dailyRecords.map(dailyRecToRow),
+        syncedAt: new Date().toISOString()
+      })
     });
-  }catch(e){ console.error('Sync ke Google Sheets gagal', e); }
+    let data = null;
+    try{ data = await res.json(); }catch(_e){ data = null; }
+    if(opts.manual){
+      if(data && data.ok){
+        alert('✓ Berhasil sync '+ (data.written||dailyRecords.length) +' record ke sheet "data".\nBuka spreadsheet dan refresh tab data.');
+      } else if(data && data.error){
+        alert('⚠ Sync gagal: '+ data.error);
+      } else {
+        alert('✓ Permintaan sync terkirim ('+ dailyRecords.length +' record).\nCek tab "data" di spreadsheet (refresh halaman sheet).');
+      }
+    }
+    return data || { ok:true };
+  }catch(e){
+    console.error('Sync ke Google Sheets gagal', e);
+    if(opts.manual) alert('⚠ Sync ke Google Sheets gagal: '+ (e.message||e) +'\nPastikan Apps Script sudah di-deploy (Who has access: Anyone).');
+    return { ok:false, error:String(e) };
+  }
 }
+
+document.getElementById('daily-sync-sheets-btn')?.addEventListener('click', async ()=>{
+  const btn = document.getElementById('daily-sync-sheets-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
+  try{ await syncDailyToSheets({ manual:true }); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet data'; } }
+});
 
 function approvalPillHTML(r){
   const a = r.approvalStatus || 'Pending';
