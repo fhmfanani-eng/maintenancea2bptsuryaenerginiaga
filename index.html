@@ -3318,7 +3318,7 @@ const BACKEND_CONFIG = {
 
   // ---- Sinkron Google Sheets (pilot: Daily Maintenance) ----
   // Isi setelah deploy Apps Script sebagai Web App (URL berakhiran /exec).
-  sheetsWebAppUrl: '',
+  sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbyMe-1g_epOKMFzmIaJDwbsUKtDcXpColidsuCIjlGvIpB7IYU85yLEwddWzt28WsI/exec',
 };
 
 const localFallbackStorage = {
@@ -5278,14 +5278,16 @@ async function syncCodeBDChronological(){
 
 /* ---- Sinkron ke Google Sheets (pilot: Daily Maintenance) ----
    Dipanggil tiap kali dailyRecords berubah (simpan/approve/reject/hapus).
-   Dikirim sebagai text/plain supaya tidak kena CORS preflight ke Apps Script. */
+   Dikirim sebagai text/plain supaya tidak kena CORS preflight ke Apps Script.
+   Data dipetakan lewat dailyRecToRow() supaya nama kolom di sheet rapi (snake_case),
+   konsisten dengan skema tabel Supabase — bukan nama field internal JS (camelCase). */
 async function syncDailyToSheets(){
   if(!BACKEND_CONFIG.sheetsWebAppUrl) return;
   try{
     await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ sheet: 'Daily Maintenance', records: dailyRecords })
+      body: JSON.stringify({ sheet: 'Daily Maintenance', records: dailyRecords.map(dailyRecToRow) })
     });
   }catch(e){ console.error('Sync ke Google Sheets gagal', e); }
 }
