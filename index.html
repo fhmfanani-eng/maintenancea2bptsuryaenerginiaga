@@ -102,18 +102,19 @@ body{
   transition:background .18s ease, color .18s ease, box-shadow .18s ease, transform .12s ease;
 }
 .nav-item .num svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-/* Warna ikon per menu — soft tint profesional */
-.nav-item:nth-child(1) .num{ background:rgba(74,144,217,0.15); color:#7db3ee; }
-.nav-item:nth-child(2) .num{ background:rgba(255,140,66,0.15); color:#ffab6b; }
-.nav-item:nth-child(3) .num{ background:rgba(76,175,109,0.15); color:#7ed99a; }
-.nav-item:nth-child(4) .num{ background:rgba(168,120,255,0.15); color:#c3a6ff; }
-.nav-item:nth-child(5) .num{ background:rgba(255,199,44,0.15); color:var(--yellow); }
-.nav-item:nth-child(6) .num{ background:rgba(229,72,77,0.15); color:#f28b8e; }
-.nav-item:nth-child(7) .num{ background:rgba(64,196,196,0.15); color:#7fe0e0; }
-.nav-item:nth-child(8) .num{ background:rgba(255,105,180,0.15); color:#ff9fcb; }
-.nav-item:nth-child(9) .num{ background:rgba(120,144,255,0.15); color:#a3b3ff; }
-.nav-item:nth-child(10) .num{ background:rgba(255,107,53,0.15); color:var(--orange); }
-.nav-item:nth-child(11) .num{ background:rgba(168,120,255,0.15); color:#c3a6ff; }
+/* Warna ikon per menu — soft tint profesional (dikunci ke data-view, bukan urutan posisi,
+   supaya warna ikon tetap sama walau menu dipindah-pindah lewat drag & drop) */
+.nav-item[data-view="dashboard"] .num{ background:rgba(74,144,217,0.15); color:#7db3ee; }
+.nav-item[data-view="database"] .num{ background:rgba(255,140,66,0.15); color:#ffab6b; }
+.nav-item[data-view="accounts"] .num{ background:rgba(76,175,109,0.15); color:#7ed99a; }
+.nav-item[data-view="preinspection"] .num{ background:rgba(168,120,255,0.15); color:#c3a6ff; }
+.nav-item[data-view="p2h"] .num{ background:rgba(255,199,44,0.15); color:var(--yellow); }
+.nav-item[data-view="daily"] .num{ background:rgba(229,72,77,0.15); color:#f28b8e; }
+.nav-item[data-view="plan"] .num{ background:rgba(64,196,196,0.15); color:#7fe0e0; }
+.nav-item[data-view="planningsystem"] .num{ background:rgba(255,105,180,0.15); color:#ff9fcb; }
+.nav-item[data-view="summary"] .num{ background:rgba(120,144,255,0.15); color:#a3b3ff; }
+.nav-item[data-view="hm"] .num{ background:rgba(255,107,53,0.15); color:var(--orange); }
+.nav-item[data-view="bdreport"] .num{ background:rgba(168,120,255,0.15); color:#c3a6ff; }
 .nav-item:hover{
   background:linear-gradient(160deg, #242830 0%, #1c2026 100%);
   color:var(--text); border-color:rgba(255,255,255,0.1);
@@ -132,6 +133,22 @@ body{
   box-shadow:0 0 0 1px rgba(255,199,44,0.5), 0 4px 12px rgba(255,199,44,0.35);
 }
 .nav-item .nav-badge{ position:absolute; top:8px; right:10px; margin-left:0; }
+.nav-drag-handle{
+  position:absolute; top:6px; left:6px; width:22px; height:22px;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--text-dim); cursor:grab; touch-action:none;
+  border-radius:6px; opacity:0.55; transition:opacity .15s ease, background .15s ease, color .15s ease;
+}
+.nav-drag-handle:hover{ opacity:1; background:rgba(255,255,255,0.08); color:var(--text); }
+.nav-drag-handle:active{ cursor:grabbing; }
+.nav-drag-handle svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
+.nav-item.nav-dragging{
+  opacity:0.55; border-color:rgba(255,199,44,0.5);
+  box-shadow:0 8px 20px rgba(0,0,0,0.4);
+}
+.nav-item.nav-drop-before{ box-shadow:inset 0 3px 0 0 var(--yellow); }
+.nav-item.nav-drop-after{ box-shadow:inset 0 -3px 0 0 var(--yellow); }
+.nav.nav-reordering .nav-item{ cursor:default; }
 .sidebar-foot{
   padding:14px 20px; border-top:1px solid rgba(255,255,255,0.06);
   font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; letter-spacing:1.2px;
@@ -793,6 +810,24 @@ body.role-pjo .view > .banner{ display:none !important; }
 /* MOBILE / RESPONSIVE ACCESS (HP & LAPTOP) */
 .menu-toggle{ display:none; }
 .sidebar-overlay{ display:none; }
+@media(min-width:861px){
+  /* Tombol MENU di topbar tetap terlihat (letaknya di dalam .main, bukan .sidebar) untuk
+     menyembunyikan / memunculkan kembali sidebar kapan saja. */
+  .menu-toggle{
+    display:flex; align-items:center; justify-content:center;
+    width:auto; height:36px; padding:0 14px; border-radius:var(--radius); flex-shrink:0;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    cursor:pointer; font-size:11.5px; font-weight:700; letter-spacing:1px;
+    font-family:'JetBrains Mono',monospace; transition:background .15s ease, color .15s ease;
+  }
+  .menu-toggle:hover{ background:var(--panel-3, #23262c); color:var(--yellow); }
+  .app{ transition:none; }
+  .sidebar{ transition:margin-left .22s ease, opacity .18s ease; }
+  .app.sidebar-collapsed .sidebar{
+    margin-left:-322px; opacity:0; pointer-events:none;
+    border-right-color:transparent;
+  }
+}
 @media(max-width:860px){
   .app{ display:block; }
   .sidebar{
@@ -809,9 +844,10 @@ body.role-pjo .view > .banner{ display:none !important; }
   .main{ width:100%; }
   .menu-toggle{
     display:flex; align-items:center; justify-content:center;
-    width:36px; height:36px; border-radius:var(--radius); flex-shrink:0;
+    width:auto; height:36px; padding:0 14px; border-radius:var(--radius); flex-shrink:0;
     background:var(--panel-2); border:1px solid var(--line); color:var(--text);
-    cursor:pointer; font-size:18px;
+    cursor:pointer; font-size:11.5px; font-weight:700; letter-spacing:1px;
+    font-family:'JetBrains Mono',monospace;
   }
   .topbar{ padding:10px 14px; height:auto; min-height:56px; flex-wrap:wrap; gap:10px; }
   .topbar h1{ font-size:15px; }
@@ -979,17 +1015,17 @@ body.role-pjo .view > .banner{ display:none !important; }
       <div class="sub">MECHANIC MAINTENANCE A2B PANEL</div>
     </div>
     <nav class="nav">
-      <div class="nav-item active" data-view="dashboard"><span class="num"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span><span class="label">KPI REPORT</span></div>
-      <div class="nav-item" data-view="database"><span class="num"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span><span class="label">Master Unit</span></div>
-      <div class="nav-item" data-view="accounts"><span class="num"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle><path d="M16 3.13a4 4 0 0 1 0 7.75"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path></svg></span><span class="label">Database Akun</span></div>
-      <div class="nav-item" data-view="preinspection"><span class="num"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span><span class="label">Pre Inspection</span><span id="nav-preins-badge" class="nav-badge" style="display:none;"></span></div>
-      <div class="nav-item" data-view="p2h"><span class="num"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 3h6v2H9z"></path><path d="M9 12l2 2 4-4"></path></svg></span><span class="label">P2H (Pemeriksaan Harian)</span></div>
-      <div class="nav-item" data-view="daily"><span class="num"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></span><span class="label">Daily Maintenance</span></div>
-      <div class="nav-item" data-view="plan"><span class="num"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span><span class="label">Plan Service</span></div>
-      <div class="nav-item" data-view="planningsystem"><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span><span class="label">Plan Shcedule Maintenance</span><span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
-      <div class="nav-item" data-view="summary"><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><span class="label">Mechanic Activity Report</span></div>
-      <div class="nav-item" data-view="hm"><span class="num"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span><span class="label">Monitoring HM</span></div>
-      <div class="nav-item" data-view="bdreport"><span class="num"><svg viewBox="0 0 24 24"><path d="M10.29 3.86l-8.18 14.18A2 2 0 0 0 3.82 21h16.36a2 2 0 0 0 1.71-2.96L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span><span class="label">Laporan Breakdown Unit</span></div>
+      <div class="nav-item active" data-view="dashboard"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span><span class="label">KPI REPORT</span></div>
+      <div class="nav-item" data-view="database"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span><span class="label">Master Unit</span></div>
+      <div class="nav-item" data-view="accounts"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle><path d="M16 3.13a4 4 0 0 1 0 7.75"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path></svg></span><span class="label">Database Akun</span></div>
+      <div class="nav-item" data-view="preinspection"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span><span class="label">Pre Inspection</span><span id="nav-preins-badge" class="nav-badge" style="display:none;"></span></div>
+      <div class="nav-item" data-view="p2h"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 3h6v2H9z"></path><path d="M9 12l2 2 4-4"></path></svg></span><span class="label">P2H (Pemeriksaan Harian)</span></div>
+      <div class="nav-item" data-view="daily"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></span><span class="label">Daily Maintenance</span></div>
+      <div class="nav-item" data-view="plan"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span><span class="label">Plan Service</span></div>
+      <div class="nav-item" data-view="planningsystem"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span><span class="label">Plan Shcedule Maintenance</span><span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
+      <div class="nav-item" data-view="summary"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><span class="label">Mechanic Activity Report</span></div>
+      <div class="nav-item" data-view="hm"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span><span class="label">Monitoring HM</span></div>
+      <div class="nav-item" data-view="bdreport"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M10.29 3.86l-8.18 14.18A2 2 0 0 0 3.82 21h16.36a2 2 0 0 0 1.71-2.96L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span><span class="label">Laporan Breakdown Unit</span></div>
     </nav>
     <div class="sidebar-foot" id="sidebar-status"><span class="status-dot"></span>SYSTEM ONLINE</div>
   </aside>
@@ -997,7 +1033,7 @@ body.role-pjo .view > .banner{ display:none !important; }
   <main class="main">
     <div class="topbar">
       <div style="display:flex; align-items:center; gap:12px; min-width:0;">
-        <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Buka menu">☰</button>
+        <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Buka/tutup menu">MENU</button>
         <h1 id="topbar-title">KPI REPORT</h1>
       </div>
       <div style="display:flex; align-items:center; gap:14px;">
@@ -4101,6 +4137,94 @@ navItems.forEach(item=>{
     if(item.dataset.view==='preinspection'){ renderPreInspectionPlans(); renderPreInspectionMechanicNotify(); }
   });
 });
+
+/* ================= NAV REORDER (drag & drop via ikon ⠿, mouse & touch/HP) =================
+   Setiap user bisa menyeret ikon ⠿ pada menu untuk mengubah urutan penempatan menu sesuai
+   keinginan mereka. Urutan disimpan per-akun (localStorage) di browser/device yang
+   bersangkutan, jadi tidak mengubah urutan default untuk user lain. */
+(function initNavReorder(){
+  const navEl = document.querySelector('.nav');
+  if(!navEl) return;
+  let draggedItem = null;
+
+  function navOrderKey(){
+    const id = loggedInUser ? (loggedInUser.username || loggedInUser.name || 'default') : 'default';
+    return 'ucare_nav-order_' + id;
+  }
+  function saveNavOrder(){
+    const order = Array.from(navEl.querySelectorAll('.nav-item')).map(el=>el.dataset.view);
+    try{ localStorage.setItem(navOrderKey(), JSON.stringify(order)); }catch(e){}
+  }
+  window.applySavedNavOrder = function(){
+    let order;
+    try{ order = JSON.parse(localStorage.getItem(navOrderKey())||'null'); }catch(e){ order = null; }
+    if(!Array.isArray(order) || !order.length) return;
+    order.forEach(view=>{
+      const el = navEl.querySelector(`.nav-item[data-view="${view}"]`);
+      if(el) navEl.appendChild(el);
+    });
+    // Menu baru yang belum tercatat di urutan tersimpan (mis. fitur baru dirilis) otomatis
+    // tetap tampil di posisi paling akhir karena tidak ikut dipindah di atas.
+  };
+
+  function clearDropMarkers(){
+    navEl.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('nav-drop-before','nav-drop-after'));
+  }
+
+  navEl.querySelectorAll('.nav-drag-handle').forEach(handle=>{
+    // Jangan biarkan tap/klik pada ikon handle ikut memicu perpindahan view.
+    handle.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); });
+    handle.addEventListener('pointerdown', e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const item = handle.closest('.nav-item');
+      if(!item) return;
+      draggedItem = item;
+      item.classList.add('nav-dragging');
+      navEl.classList.add('nav-reordering');
+      try{ handle.setPointerCapture(e.pointerId); }catch(err){}
+
+      function findOverItem(x,y){
+        const target = document.elementFromPoint(x,y);
+        const overItem = target ? target.closest('.nav-item') : null;
+        return (overItem && navEl.contains(overItem)) ? overItem : null;
+      }
+      function onMove(ev){
+        if(!draggedItem) return;
+        clearDropMarkers();
+        const overItem = findOverItem(ev.clientX, ev.clientY);
+        if(overItem && overItem!==draggedItem){
+          const rect = overItem.getBoundingClientRect();
+          const before = (ev.clientY - rect.top) < rect.height/2;
+          overItem.classList.add(before ? 'nav-drop-before' : 'nav-drop-after');
+        }
+      }
+      function onUp(ev){
+        try{ handle.releasePointerCapture(ev.pointerId); }catch(err){}
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onUp);
+        if(draggedItem){
+          const overItem = findOverItem(ev.clientX, ev.clientY);
+          if(overItem && overItem!==draggedItem){
+            const rect = overItem.getBoundingClientRect();
+            const before = (ev.clientY - rect.top) < rect.height/2;
+            if(before) navEl.insertBefore(draggedItem, overItem);
+            else navEl.insertBefore(draggedItem, overItem.nextSibling);
+            saveNavOrder();
+          }
+          draggedItem.classList.remove('nav-dragging');
+        }
+        clearDropMarkers();
+        navEl.classList.remove('nav-reordering');
+        draggedItem = null;
+      }
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
+    });
+  });
+})();
 function updateTopbarDateTime(){
   const now = new Date();
   const clockEl = document.getElementById('topbar-clock');
@@ -4111,19 +4235,34 @@ function updateTopbarDateTime(){
 updateTopbarDateTime();
 setInterval(updateTopbarDateTime, 1000);
 
-/* ================= MOBILE SIDEBAR (HP / LAPTOP ACCESS) ================= */
+/* ================= SIDEBAR (mobile off-canvas & desktop collapsible) ================= */
 const sidebarEl = document.querySelector('.sidebar');
 const menuToggleBtn = document.getElementById('menu-toggle');
 const sidebarOverlayEl = document.getElementById('sidebar-overlay');
+const appLayoutEl = document.querySelector('.app');
+const isDesktopSidebarMode = ()=> window.matchMedia('(min-width:861px)').matches;
 function closeMobileSidebar(){ sidebarEl.classList.remove('open'); sidebarOverlayEl.classList.remove('show'); }
 function openMobileSidebar(){ sidebarEl.classList.add('open'); sidebarOverlayEl.classList.add('show'); }
+function collapseDesktopSidebar(){ if(appLayoutEl) appLayoutEl.classList.add('sidebar-collapsed'); }
+function expandDesktopSidebar(){ if(appLayoutEl) appLayoutEl.classList.remove('sidebar-collapsed'); }
 if(menuToggleBtn){
   menuToggleBtn.addEventListener('click', ()=>{
-    sidebarEl.classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
+    if(isDesktopSidebarMode()){
+      appLayoutEl.classList.contains('sidebar-collapsed') ? expandDesktopSidebar() : collapseDesktopSidebar();
+    } else {
+      sidebarEl.classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
+    }
   });
 }
 if(sidebarOverlayEl){ sidebarOverlayEl.addEventListener('click', closeMobileSidebar); }
-navItems.forEach(item=> item.addEventListener('click', closeMobileSidebar));
+// Begitu salah satu menu panel diklik (berlaku untuk semua panel), sidebar otomatis
+// tersembunyi supaya konten di kanan tampil full screen — baik di HP (off-canvas)
+// maupun di layar desktop/laptop (collapsible). Tombol ☰ di topbar tetap terlihat
+// untuk memunculkan kembali sidebar kapan saja.
+navItems.forEach(item=> item.addEventListener('click', ()=>{
+  closeMobileSidebar();
+  if(isDesktopSidebarMode()) collapseDesktopSidebar();
+}));
 
 /* ================= AUTH / LOGIN (username & password per user) ================= */
 /* CATATAN KEAMANAN: karena file ini murni HTML/JS berjalan di browser (tanpa server
@@ -4595,6 +4734,7 @@ loginForm.addEventListener('submit', async (e)=>{
   await loadData();
   renderAll();
   updateRoleUI();
+  applySavedNavOrder();
 });
 
 /* Auto-isi "User Name" dari "Nama Lengkap" — memakai spasi (bukan titik) supaya lebih
@@ -9503,6 +9643,7 @@ function subscribeDailyRealtime(){
     await syncCodeBDChronological();
     renderAll();
     updateRoleUI();
+    applySavedNavOrder();
     requestNotifPermission();
     subscribeDailyRealtime();
     // Jaring pengaman: refresh dailyRecords dari database setiap 30 detik.
