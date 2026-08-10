@@ -1432,6 +1432,14 @@ body.role-pjo .view > .banner{ display:none !important; }
                 <select id="d-unitcode" required></select>
               </div>
             </div>
+            <div class="grid grid-2">
+              <div class="field"><label>Equipment Code Baru (Opsional)</label>
+                <input type="text" id="d-unitcode-new" placeholder="Isi HANYA jika unit belum ada di daftar Equipment Code di atas...">
+              </div>
+              <div class="field"><label>Type Unit Baru (Opsional)</label>
+                <input type="text" id="d-typeunit-new" placeholder="Type unit untuk Equipment Code baru di atas...">
+              </div>
+            </div>
             <div class="grid grid-4">
               <div class="field"><label>Type Unit</label><input type="text" id="d-typeunit" disabled></div>
               <div class="field"><label>HM (Hour Meter)</label><input type="number" id="d-hm" min="0" step="1" required placeholder="e.g. 12450"></div>
@@ -5503,6 +5511,22 @@ function syncTypeFromUnit(selectEl, typeEl){
 dUnitSelect.addEventListener('change', ()=>syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit')));
 syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
 
+/* Equipment Code Baru (Opsional) — dropdown Equipment Code lama TETAP ada & tetap bisa
+   dipakai seperti biasa. Kalau field ini diisi, nilainya yang dipakai sebagai Equipment
+   Code saat Simpan (dropdown lama otomatis dinonaktifkan sementara supaya tidak ambigu). */
+const dUnitCodeNew = document.getElementById('d-unitcode-new');
+const dTypeUnitNew = document.getElementById('d-typeunit-new');
+function toggleCustomUnitCode(){
+  const useCustom = dUnitCodeNew.value.trim().length > 0;
+  dUnitSelect.disabled = useCustom;
+  dTypeUnitNew.disabled = !useCustom;
+  if(useCustom){ document.getElementById('d-typeunit').value = dTypeUnitNew.value; }
+  else{ syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit')); }
+}
+dUnitCodeNew.addEventListener('input', toggleCustomUnitCode);
+dTypeUnitNew.addEventListener('input', toggleCustomUnitCode);
+toggleCustomUnitCode();
+
 function updateDurationPreview(){
   const startDate = document.getElementById('d-startdate').value;
   const start = document.getElementById('d-start').value;
@@ -5788,8 +5812,16 @@ window.editDaily = function(id){
   editingDailyId = id;
   document.getElementById('d-tanggal').value = r.tanggal || '';
   document.getElementById('d-shift').value = r.shift || 'Shift 1';
-  dUnitSelect.value = r.unitCode || '';
-  syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
+  const isKnownUnit = UNITS.some(u=>u.code===r.unitCode);
+  if(isKnownUnit){
+    dUnitSelect.value = r.unitCode || '';
+    document.getElementById('d-unitcode-new').value = '';
+    document.getElementById('d-typeunit-new').value = '';
+  }else{
+    document.getElementById('d-unitcode-new').value = r.unitCode || '';
+    document.getElementById('d-typeunit-new').value = r.typeUnit || '';
+  }
+  toggleCustomUnitCode();
   document.getElementById('d-hm').value = r.hm || '';
   document.getElementById('d-category').value = r.category || 'Breakdown';
   document.getElementById('d-planunplan').value = r.planUnplan || 'Plan';
@@ -5834,7 +5866,7 @@ document.getElementById('form-daily').addEventListener('reset', ()=>{
   cancelEditDaily();
   // Native reset() mengosongkan semua field termasuk yang disabled — kunci ulang setelahnya.
   setTimeout(()=>{
-    syncTypeFromUnit(dUnitSelect, document.getElementById('d-typeunit'));
+    toggleCustomUnitCode();
     document.getElementById('d-duration').value='';
     document.getElementById('d-totalbreakdown').value='';
     if(loggedInUser && currentRole()!=='Supervisor'){
@@ -5865,13 +5897,21 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
     alert('Man Power 3 tidak boleh sama dengan Man Power utama atau Man Power 2. Pilih mekanik lain atau kosongkan.');
     return;
   }
+  const unitCodeNew = document.getElementById('d-unitcode-new').value.trim();
+  const typeUnitNew = document.getElementById('d-typeunit-new').value.trim();
+  if(unitCodeNew && !typeUnitNew){
+    alert('Isi juga "Type Unit Baru" untuk Equipment Code baru tsb, atau kosongkan kedua field ini kalau ingin pakai Equipment Code dari daftar.');
+    return;
+  }
+  const unitCode = unitCodeNew || document.getElementById('d-unitcode').value;
+  const typeUnit = unitCodeNew ? typeUnitNew : document.getElementById('d-typeunit').value;
   const duration = calcHoursBetween(startDate, start, endDate, end);
   const totalBreakdown = calcHoursBetween(breakdownDate, breakdownTime, endDate, end);
   const fields = {
     tanggal: document.getElementById('d-tanggal').value,
     shift: document.getElementById('d-shift').value,
-    unitCode: document.getElementById('d-unitcode').value,
-    typeUnit: document.getElementById('d-typeunit').value,
+    unitCode,
+    typeUnit,
     hm: document.getElementById('d-hm').value,
     category,
     bdCategory: document.getElementById('d-bdcategory').value,
