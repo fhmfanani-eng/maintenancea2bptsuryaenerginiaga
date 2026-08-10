@@ -112,6 +112,8 @@ body{
 .nav-item:nth-child(7) .num{ background:rgba(64,196,196,0.15); color:#7fe0e0; }
 .nav-item:nth-child(8) .num{ background:rgba(255,105,180,0.15); color:#ff9fcb; }
 .nav-item:nth-child(9) .num{ background:rgba(120,144,255,0.15); color:#a3b3ff; }
+.nav-item:nth-child(10) .num{ background:rgba(255,107,53,0.15); color:var(--orange); }
+.nav-item:nth-child(11) .num{ background:rgba(168,120,255,0.15); color:#c3a6ff; }
 .nav-item:hover{
   background:linear-gradient(160deg, #242830 0%, #1c2026 100%);
   color:var(--text); border-color:rgba(255,255,255,0.1);
@@ -708,6 +710,34 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 
 /* ROLE-BASED NAV VISIBILITY */
 .nav-item.role-hidden{ display:none !important; }
+
+/* Panel access control (Database Akun) */
+.access-matrix{ display:grid; gap:8px; margin-top:10px; }
+.access-matrix-row{ display:grid; grid-template-columns:1fr 140px; gap:10px; align-items:center; padding:8px 10px; background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius); }
+.access-matrix-row .am-label{ font-size:12px; color:var(--text); }
+.access-matrix-row select{ font-size:12px; padding:6px 8px; }
+.access-level-full{ color:var(--green); }
+.access-level-view{ color:var(--yellow); }
+.access-level-none{ color:var(--text-faint); }
+#access-modal-overlay{ display:none; position:fixed; inset:0; z-index:220; align-items:flex-start; justify-content:center; background:rgba(0,0,0,0.6); padding:26px 16px; overflow-y:auto; }
+#access-modal-overlay.show{ display:flex; }
+.view.access-readonly form button[type="submit"],
+.view.access-readonly .btn:not(.secondary):not(.small),
+.view.access-readonly .btn.danger,
+.view.access-readonly .btn.approve,
+.view.access-readonly .btn.reject,
+.view.access-readonly .btn.edit-report{ display:none !important; }
+.view.access-readonly #preins-plan-input-panel{ display:none !important; }
+.view.access-readonly #bdreport-input-panel{ display:none !important; }
+.view.access-readonly #daily-input-panel{ display:none !important; }
+.view.access-readonly #planningsystem-input-panel{ display:none !important; }
+.access-readonly-banner{ display:none !important; }
+/* Banner View Only disembunyikan untuk semua user (hanya Fahmi Fanani full access, tidak perlu banner ini) */
+.view.access-readonly .access-readonly-banner{ display:none !important; }
+/* PJO: sembunyikan juga banner info lain di atas panel */
+body.role-pjo #daily-role-banner{ display:none !important; }
+body.role-pjo .view > .banner{ display:none !important; }
+
 .nav-badge{
   display:inline-flex; align-items:center; justify-content:center;
   min-width:18px; height:18px; padding:0 5px; margin-left:auto;
@@ -832,6 +862,25 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
   </div>
 </div>
 
+
+<div id="access-modal-overlay">
+  <div class="detail-modal" style="max-width:560px;">
+    <div class="detail-modal-head">
+      <h3 id="access-modal-title">Atur Akses Panel</h3>
+      <button type="button" class="detail-modal-close" id="access-modal-close" title="Tutup">✕</button>
+    </div>
+    <div class="detail-modal-body">
+      <div class="hint" style="margin-bottom:12px;">Pilih level akses per panel untuk user <b id="access-modal-user">—</b>. Perubahan tersimpan otomatis dan berlaku saat user tersebut login (atau refresh).</div>
+      <div class="hint" style="margin-bottom:12px;"><b>Full</b> = lihat + input/edit · <b>View</b> = pantau saja (tanpa input) · <b>None</b> = menu disembunyikan</div>
+      <div class="access-matrix" id="access-matrix"></div>
+    </div>
+    <div class="detail-modal-foot">
+      <button type="button" class="btn secondary" id="access-modal-reset">Reset ke Default</button>
+      <button type="button" class="btn" id="access-modal-save">Simpan Akses</button>
+    </div>
+  </div>
+</div>
+
 <div id="login-overlay">
   <div class="login-card diamond-plate">
     <div class="login-brand">
@@ -869,7 +918,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
           <label>Nama Lengkap</label>
           <div class="login-input-group">
             <span class="login-input-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
-            <input type="text" id="reg-name" autocomplete="name" placeholder="cth: Budi Santoso" required>
+            <input type="text" id="reg-name" autocomplete="name" placeholder="" required>
           </div>
         </div>
         <div class="field">
@@ -878,8 +927,13 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
             <span class="login-input-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>
             <select id="reg-position" required>
               <option value="Mechanic">Mechanic</option>
+              <option value="Operator">Operator</option>
               <option value="Supervisor">Supervisor</option>
               <option value="PJO">PJO</option>
+              <option value="Deputy">Deputy</option>
+              <option value="HRGA">HRGA</option>
+              <option value="Inventory">Inventory</option>
+              <option value="Master Loading">Master Loading</option>
             </select>
           </div>
         </div>
@@ -887,8 +941,9 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
           <label>User Name</label>
           <div class="login-input-group">
             <span class="login-input-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
-            <input type="text" id="reg-username" autocomplete="username" placeholder="cth: budi.santoso" required>
+            <input type="text" id="reg-username" autocomplete="username" placeholder="" required>
           </div>
+          <div class="hint" style="margin-top:4px;">Otomatis terisi dari Nama Lengkap (spasi, tanpa tanda titik) — bisa diedit bila perlu.</div>
         </div>
         <div class="field">
           <label>Password</label>
@@ -926,13 +981,15 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
     <nav class="nav">
       <div class="nav-item active" data-view="dashboard"><span class="num"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span><span class="label">KPI REPORT</span></div>
       <div class="nav-item" data-view="database"><span class="num"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span><span class="label">Master Unit</span></div>
-      <div class="nav-item" data-view="preinspection"><span class="num"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span><span class="label">Pre Inspection</span></div>
+      <div class="nav-item" data-view="accounts"><span class="num"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle><path d="M16 3.13a4 4 0 0 1 0 7.75"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path></svg></span><span class="label">Database Akun</span></div>
+      <div class="nav-item" data-view="preinspection"><span class="num"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span><span class="label">Pre Inspection</span><span id="nav-preins-badge" class="nav-badge" style="display:none;"></span></div>
       <div class="nav-item" data-view="p2h"><span class="num"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 3h6v2H9z"></path><path d="M9 12l2 2 4-4"></path></svg></span><span class="label">P2H (Pemeriksaan Harian)</span></div>
       <div class="nav-item" data-view="daily"><span class="num"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></span><span class="label">Daily Maintenance</span></div>
       <div class="nav-item" data-view="plan"><span class="num"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span><span class="label">Plan Service</span></div>
       <div class="nav-item" data-view="planningsystem"><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span><span class="label">Plan Shcedule Maintenance</span><span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
       <div class="nav-item" data-view="summary"><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><span class="label">Mechanic Activity Report</span></div>
       <div class="nav-item" data-view="hm"><span class="num"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span><span class="label">Monitoring HM</span></div>
+      <div class="nav-item" data-view="bdreport"><span class="num"><svg viewBox="0 0 24 24"><path d="M10.29 3.86l-8.18 14.18A2 2 0 0 0 3.82 21h16.36a2 2 0 0 0 1.71-2.96L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span><span class="label">Laporan Breakdown Unit</span></div>
     </nav>
     <div class="sidebar-foot" id="sidebar-status"><span class="status-dot"></span>SYSTEM ONLINE</div>
   </aside>
@@ -1045,11 +1102,89 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
         </div>
 
         <div class="grid grid-2" id="unit-cards"></div>
+
+      </section>
+
+      <!-- DATABASE AKUN — khusus Supervisor / PJO -->
+      <section class="view" id="view-accounts">
+        <div class="banner">⛭ <b>Database Akun</b> — daftar seluruh user yang terdaftar di sistem (akun bawaan + hasil registrasi mandiri). Menu ini hanya tersedia untuk <b>Supervisor Fahmi Fanani</b>.</div>
+        <div class="grid grid-4" style="margin-bottom:20px;">
+          <div class="panel" style="margin-bottom:0;"><div class="panel-head"><h2>Total Akun</h2></div><div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700;" id="accounts-stat-total">0</div><div class="hint">Semua user terdaftar</div></div>
+          <div class="panel" style="margin-bottom:0;"><div class="panel-head"><h2>Akun Sistem</h2></div><div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700; color:var(--blue);" id="accounts-stat-system">0</div><div class="hint">Akun bawaan (tidak bisa dihapus)</div></div>
+          <div class="panel" style="margin-bottom:0;"><div class="panel-head"><h2>Registrasi Mandiri</h2></div><div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700; color:var(--yellow);" id="accounts-stat-registered">0</div><div class="hint">Self-register (bisa dihapus)</div></div>
+          <div class="panel" style="margin-bottom:0;"><div class="panel-head"><h2>Supervisor / PJO</h2></div><div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700; color:var(--green);" id="accounts-stat-supervisor">0</div><div class="hint">Hak akses penuh</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2><span class="tag">DB</span> Kelola Akun Terdaftar</h2>
+            <div class="toolbar"><button type="button" class="btn secondary" id="accounts-refresh-btn" title="Ambil ulang daftar akun terbaru dari database">⟲ Refresh</button></div>
+          </div>
+          <div class="hint" style="margin-bottom:12px;">Akun bawaan sistem tidak dapat dihapus. Hanya akun hasil <b>registrasi mandiri</b> yang dapat dihapus oleh Supervisor Fahmi Fanani. Kolom <b>Password</b> terisi otomatis dari data login akun (termasuk akun baru hasil registrasi).</div>
+          <div class="filters" style="margin-bottom:14px;">
+            <select id="accounts-filter-source"><option value="">Semua Sumber</option><option value="system">Akun Sistem</option><option value="registered">Registrasi Mandiri</option></select>
+            <select id="accounts-filter-position"><option value="">Semua Posisi</option><option value="Mechanic">Mechanic</option><option value="Operator">Operator</option><option value="Supervisor">Supervisor</option><option value="PJO">PJO</option><option value="Deputy">Deputy</option><option value="HRGA">HRGA</option><option value="Inventory">Inventory</option><option value="Master Loading">Master Loading</option></select>
+            <input type="text" id="accounts-filter-search" placeholder="Cari nama / username…" style="min-width:180px;">
+          </div>
+          <div class="table-wrap" id="accounts-table-wrap">
+            <table id="accounts-table">
+              <thead><tr><th>Nama Lengkap</th><th>User Name</th><th>Password</th><th>Posisi</th><th>Role Akses</th><th>Sumber</th><th>Akses Panel</th><th>Aksi</th></tr></thead>
+              <tbody id="accounts-tbody"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- PRE INSPECTION (PRESERVICE INSPECTION SHEET) -->
       <section class="view" id="view-preinspection">
         <div class="banner">⛭ Pre Inspection — pemeriksaan menyeluruh unit sebelum masuk service (Preservice Inspection), mengikuti checklist resmi sesuai tipe unit. Item berkondisi <b>&nbsp;NOT OK&nbsp;</b> otomatis tercatat sebagai temuan pada tabel Defect / Temuan Kerusakan.</div>
+        <div id="preins-mechanic-notify" style="display:none;"></div>
+
+        <div class="panel" id="preins-plan-input-panel" style="display:none;">
+          <div class="panel-head"><h2><span class="tag">PLAN</span> Jadwal Pre Inspection — Tugas ke Mekanik</h2></div>
+          <div class="hint" style="margin-bottom:12px;">Hanya <b>Supervisor / PJO</b> yang dapat membuat jadwal Pre Inspection. Mekanik yang ditugaskan akan menerima notifikasi di lonceng &amp; di panel ini.</div>
+          <form id="form-preins-plan">
+            <div class="grid grid-4">
+              <div class="field"><label>Unit No</label><select id="preins-plan-unitcode" required></select></div>
+              <div class="field"><label>Type Unit</label><input type="text" id="preins-plan-typeunit" disabled></div>
+              <div class="field"><label>Tanggal Inspeksi</label><input type="date" id="preins-plan-tanggal" required></div>
+              <div class="field"><label>PIC Mechanic</label><select id="preins-plan-mechanic" required></select></div>
+            </div>
+            <div class="grid grid-2">
+              <div class="field"><label>Catatan / Instruksi</label><input type="text" id="preins-plan-notes" placeholder="Opsional — instruksi khusus untuk mekanik"></div>
+              <div class="field"><label>Status</label>
+                <select id="preins-plan-status">
+                  <option value="Open" selected>Open</option>
+                  <option value="Done">Done</option>
+                </select>
+              </div>
+            </div>
+            <div class="toolbar">
+              <button type="submit" class="btn">＋ Simpan Jadwal Pre Inspection</button>
+              <button type="reset" class="btn secondary">Reset</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel" id="preins-plan-list-panel">
+          <div class="panel-head"><h2>Jadwal Pre Inspection</h2>
+            <div class="toolbar"><button type="button" class="btn secondary" id="preins-plan-refresh-btn" title="Refresh jadwal">⟲ Refresh</button></div>
+          </div>
+          <div class="filters" style="margin-bottom:12px;">
+            <select id="preins-plan-filter-status">
+              <option value="">Semua Status</option>
+              <option value="Open">Open</option>
+              <option value="Done">Done</option>
+            </select>
+            <select id="preins-plan-filter-unit"><option value="">Semua Unit</option></select>
+          </div>
+          <div class="table-wrap">
+            <table id="preins-plan-table">
+              <thead><tr>
+                <th>Tanggal</th><th>Unit</th><th>Type</th><th>PIC Mechanic</th><th>Catatan</th><th>Dibuat Oleh</th><th>Status</th><th></th>
+              </tr></thead>
+              <tbody id="preins-plan-tbody"><tr class="empty-row"><td colspan="8">Belum ada jadwal Pre Inspection.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
 
         <div class="grid grid-4" id="preins-stat-grid" style="margin-bottom:20px;">
           <div class="panel" style="margin-bottom:0;">
@@ -1086,8 +1221,6 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
             <div class="grid grid-3">
               <div class="field"><label>Check By</label>
                 <select id="preins-checkby" required>
-                  <option value="Robertus G M">Robertus G M</option>
-                  <option value="Alfius S">Alfius S</option>
                 </select>
               </div>
               <div class="field"><label>&nbsp;</label><div class="hint" style="margin-top:8px;">Pilih Unit No untuk menampilkan checklist Pre Inspection sesuai tipe unit.</div></div>
@@ -1247,7 +1380,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
       <section class="view" id="view-daily">
         <div class="banner" id="daily-role-banner">Setiap record baru berstatus <b>&nbsp;Pending Approval&nbsp;</b> dan menunggu konfirmasi Supervisor sebelum masuk perhitungan KPI resmi.</div>
         <div class="banner warn" id="daily-sync-warning" style="display:none;"></div>
-        <div class="panel">
+        <div class="panel" id="daily-input-panel">
           <div class="panel-head"><h2><span class="tag">INPUT</span> Daily Maintenance</h2></div>
           <form id="form-daily">
             <div class="grid grid-4">
@@ -1455,7 +1588,7 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
           </div>
         </div>
 
-        <div class="panel">
+        <div class="panel" id="planningsystem-input-panel">
           <div class="panel-head"><h2><span class="tag">INPUT</span> Rencana Maintenance Bulanan</h2></div>
           <form id="form-planningsystem">
             <div class="grid grid-4">
@@ -1636,6 +1769,59 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
                 <th>Pekerjaan</th><th>HM Awal</th><th>HM Akhir</th><th>HM Total</th><th>Fuel</th><th>Keterangan</th><th></th>
               </tr></thead>
               <tbody id="hm-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- LAPORAN BREAKDOWN UNIT -->
+      <section class="view" id="view-bdreport">
+        <div class="banner">⚠ Laporan cepat breakdown unit dari lapangan. Data tersimpan ke database bersama dan langsung terlihat oleh <b>semua user</b> (Mekanik, Supervisor &amp; PJO) begitu direfresh.</div>
+
+        <div class="panel" id="bdreport-input-panel">
+          <div class="panel-head"><h2><span class="tag">INPUT</span> Laporan Breakdown Unit</h2></div>
+          <form id="form-bdreport">
+            <div class="grid grid-4">
+              <div class="field"><label>Unit</label><select id="bdr-unitcode" required></select></div>
+              <div class="field"><label>Type Unit (auto)</label><input type="text" id="bdr-typeunit" disabled placeholder="—"></div>
+              <div class="field"><label>HM</label><input type="number" id="bdr-hm" min="0" step="1" required placeholder="e.g. 12450"></div>
+              <div class="field"><label>Shift</label>
+                <select id="bdr-shift" required>
+                  <option value="Shift 1">Shift 1</option>
+                  <option value="Shift 2">Shift 2</option>
+                  <option value="Malam">Malam</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-4">
+              <div class="field"><label>Tanggal</label><input type="date" id="bdr-tanggal" required></div>
+              <div class="field"><label>Jam Breakdown</label><input type="time" id="bdr-jam" required></div>
+              <div class="field"><label>Nama Operator</label><input type="text" id="bdr-operator" required placeholder="Nama operator unit"></div>
+            </div>
+            <div class="field"><label>Breakdown Description / Keterangan Kerusakan</label><textarea id="bdr-keterangan" required placeholder="Uraikan gejala/kerusakan yang dialami unit..."></textarea></div>
+
+            <div class="toolbar">
+              <button type="submit" class="btn" id="bdr-submit-btn">＋ Simpan Laporan Breakdown</button>
+              <button type="reset" class="btn secondary" id="bdr-reset-btn">Reset Form</button>
+            </div>
+          </form>
+        </div>
+        <div class="banner warn" id="bdreport-no-access-banner" style="display:none;">🔒 Hanya user dengan posisi <b>&nbsp;Operator&nbsp;</b> dan <b>&nbsp;Supervisor&nbsp;</b> yang dapat menginput Laporan Breakdown Unit. Anda tetap dapat melihat riwayatnya di bawah.</div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Riwayat Laporan Breakdown Unit</h2><div class="toolbar"><button type="button" class="btn secondary" id="bdreport-refresh-btn" title="Ambil ulang data terbaru dari database">⟲ Refresh Data</button></div></div>
+          <div class="filters">
+            <select id="bdreport-filter-unit"><option value="">Semua Unit</option></select>
+            <button class="btn small secondary" id="bdreport-clear-filter">Clear Filter</button>
+          </div>
+          <div class="scroll-top-track" id="bdreport-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="bdreport-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="bdreport-table-wrap">
+            <table id="bdreport-table">
+              <thead><tr>
+                <th>Tanggal</th><th>Jam Breakdown</th><th>Shift</th><th>Unit</th><th>Type Unit</th><th>HM</th><th>Nama Operator</th>
+                <th>Breakdown Description / Keterangan Kerusakan</th><th>Dilaporkan Oleh</th><th></th>
+              </tr></thead>
+              <tbody id="bdreport-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -3505,6 +3691,8 @@ let planRecords = [];
 let planningSystemRecords = [];
 let p2hRecords = [];
 let preInspectionRecords = [];
+let preInspectionPlans = []; // jadwal Pre Inspection (dibuat Supervisor, ditugaskan ke Mechanic)
+let breakdownReports = [];
 let hmRecords = [];
 let mapaData = null; // { rows:[{unit,w,s,r}], totalW, totalS, totalR, fileName, updatedAt }
 
@@ -3684,9 +3872,17 @@ async function loadData(){
     preInspectionRecords = pi ? JSON.parse(pi.value) : [];
   }catch(e){ preInspectionRecords = []; }
   try{
+    const pip = await appStorage.get('pre-inspection-plans');
+    preInspectionPlans = pip ? JSON.parse(pip.value) : [];
+  }catch(e){ preInspectionPlans = []; }
+  try{
     const hm = await appStorage.get('hm-records');
     hmRecords = hm ? JSON.parse(hm.value) : [];
   }catch(e){ hmRecords = []; }
+  try{
+    const bdr = await appStorage.get('breakdown-reports');
+    breakdownReports = bdr ? JSON.parse(bdr.value) : [];
+  }catch(e){ breakdownReports = []; }
 
   // one-time import of the HM.xlsx history, guarded so it never re-runs after being cleared
   let hmSeeded = false;
@@ -3865,18 +4061,26 @@ async function savePreInspection(){
   try{ await appStorage.set('pre-inspection-records', JSON.stringify(preInspectionRecords)); }
   catch(e){ console.error('save pre inspection failed', e); }
 }
+async function savePreInspectionPlans(){
+  try{ await appStorage.set('pre-inspection-plans', JSON.stringify(preInspectionPlans)); }
+  catch(e){ console.error('save pre inspection plans failed', e); }
+}
 async function saveHM(){
   try{ await appStorage.set('hm-records', JSON.stringify(hmRecords)); }
   catch(e){ console.error('save hm failed', e); }
+}
+async function saveBreakdownReports(){
+  try{ await appStorage.set('breakdown-reports', JSON.stringify(breakdownReports)); }
+  catch(e){ console.error('save breakdown report failed', e); }
 }
 
 /* ================= NAV ================= */
 const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 const titleMap = {
-  dashboard:'KPI REPORT', database:'Performance Unit A2B', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
+  dashboard:'KPI REPORT', database:'Performance Unit A2B', accounts:'Database Akun', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
   plan:'Plan Service', planningsystem:'Plan Shcedule Maintenance', summary:'Mechanic Activity Report',
-  hm:'Monitoring HM'
+  hm:'Monitoring HM', bdreport:'Laporan Breakdown Unit'
 };
 navItems.forEach(item=>{
   item.addEventListener('click', ()=>{
@@ -3893,6 +4097,8 @@ navItems.forEach(item=>{
     if(item.dataset.view==='p2h'){ renderP2HChecklist(); renderP2HTable(); }
     if(item.dataset.view==='plan'){ renderPlanTable(); }
     if(item.dataset.view==='hm') renderHMTable();
+    if(item.dataset.view==='accounts'){ loadRegisteredUsers().then(renderAccountsTable); }
+    if(item.dataset.view==='preinspection'){ renderPreInspectionPlans(); renderPreInspectionMechanicNotify(); }
   });
 });
 function updateTopbarDateTime(){
@@ -3948,6 +4154,306 @@ async function saveRegisteredUsers(){
   catch(e){ console.error('save registered users failed', e); }
 }
 
+
+/* ================= PANEL ACCESS CONTROL =================
+   Disimpan di appStorage key `user-panel-access`.
+   Hanya Fahmi Fanani yang mengatur. Format: { [username]: { [panelKey]: 'full'|'view'|'none' } }
+   Level:
+     full = lihat + input/edit
+     view = pantau saja (filter KPI/Master Unit tetap boleh)
+     none = menu disembunyikan
+*/
+const PANEL_DEFS = [
+  { key:'dashboard',      label:'KPI REPORT' },
+  { key:'database',       label:'Master Unit (Performance Unit)' },
+  { key:'accounts',       label:'Database Akun' },
+  { key:'preinspection',  label:'Pre Inspection' },
+  { key:'p2h',            label:'P2H (Pemeriksaan Harian)' },
+  { key:'daily',          label:'Daily Maintenance' },
+  { key:'plan',           label:'Plan Service' },
+  { key:'planningsystem', label:'Plan Schedule Maintenance' },
+  { key:'summary',        label:'Mechanic Activity Report' },
+  { key:'hm',             label:'Monitoring HM' },
+  { key:'bdreport',       label:'Laporan Breakdown Unit' },
+];
+let userPanelAccess = {}; // username -> { panelKey: level }
+let accessModalUsername = null;
+
+function isFahmiFanani(){
+  return !!(loggedInUser && (
+    loggedInUser.username === 'fahmi.fanani' ||
+    (loggedInUser.name || '').trim().toLowerCase() === 'fahmi fanani'
+  ));
+}
+
+async function loadUserPanelAccess(){
+  try{
+    const raw = await appStorage.get('user-panel-access');
+    userPanelAccess = raw ? JSON.parse(raw.value) : {};
+    if(!userPanelAccess || typeof userPanelAccess !== 'object') userPanelAccess = {};
+  }catch(e){ userPanelAccess = {}; }
+}
+async function saveUserPanelAccess(){
+  try{ await appStorage.set('user-panel-access', JSON.stringify(userPanelAccess)); }
+  catch(e){ console.error('save user panel access failed', e); }
+}
+
+/* Default akses berdasarkan posisi — dipakai kalau belum ada override manual. */
+function defaultPanelAccessForUser(u){
+  const map = {};
+  const pos = (u.position || u.role || '').trim();
+  const uname = (u.username || '').toLowerCase();
+  const isFahmi = uname === 'fahmi.fanani' || (u.name || '').trim().toLowerCase() === 'fahmi fanani';
+
+  // Semua panel default None dulu
+  PANEL_DEFS.forEach(p => { map[p.key] = 'none'; });
+
+  // HANYA username fahmi.fanani yang default Full di semua panel
+  if(isFahmi){
+    PANEL_DEFS.forEach(p => { map[p.key] = 'full'; });
+    return map;
+  }
+
+  // Selain Fahmi Fanani → otomatis View Only (pantau) pada panel sesuai posisi.
+  // Full access hanya bisa diberikan manual lewat "Atur Akses" di Database Akun.
+  // Posisi manajemen / support: pantau semua panel (view), tanpa Database Akun
+  const staffViewAll = ['PJO','Supervisor','Deputy','HRGA','Inventory','Master Loading'];
+  if(staffViewAll.includes(pos) || u.role === 'Supervisor'){
+    PANEL_DEFS.forEach(p => { map[p.key] = (p.key === 'accounts') ? 'none' : 'view'; });
+    return map;
+  }
+  if(pos === 'Operator'){
+    map.p2h = 'full';
+    map.bdreport = 'full';
+    return map;
+  }
+  // Mechanic (dan posisi lain): panel operasional view only,
+  // kecuali Pre Inspection, Daily Maintenance, P2H & Plan Schedule Maintenance yang bisa diinput.
+  ['preinspection','p2h','daily','plan','planningsystem','bdreport'].forEach(k => { map[k] = 'view'; });
+  if(pos === 'Mechanic' || u.role === 'Mechanic'){
+    ['preinspection','daily','p2h','planningsystem'].forEach(k => { map[k] = 'full'; });
+  }
+  return map;
+}
+
+function getEffectivePanelAccess(u){
+  if(!u) return {};
+  const base = defaultPanelAccessForUser(u);
+  const ov = userPanelAccess[u.username] || {};
+  const out = { ...base };
+  Object.keys(ov).forEach(k => {
+    if(['full','view','none'].includes(ov[k])) out[k] = ov[k];
+  });
+  // Fahmi selalu full di accounts & semua panel (tidak bisa dilock out)
+  if((u.username || '').toLowerCase() === 'fahmi.fanani' || (u.name || '').trim().toLowerCase() === 'fahmi fanani'){
+    PANEL_DEFS.forEach(p => { out[p.key] = 'full'; });
+  }
+  return out;
+}
+
+function currentPanelAccess(viewKey){
+  if(!loggedInUser) return 'none';
+  const map = getEffectivePanelAccess(loggedInUser);
+  return map[viewKey] || 'none';
+}
+function canViewPanel(viewKey){
+  const a = currentPanelAccess(viewKey);
+  return a === 'full' || a === 'view';
+}
+function canEditPanel(viewKey){
+  return currentPanelAccess(viewKey) === 'full';
+}
+
+function accessLevelLabel(level){
+  if(level === 'full') return '<span class="access-level-full">Full</span>';
+  if(level === 'view') return '<span class="access-level-view">View</span>';
+  return '<span class="access-level-none">None</span>';
+}
+function summarizeAccess(u){
+  const map = getEffectivePanelAccess(u);
+  const counts = { full:0, view:0, none:0 };
+  PANEL_DEFS.forEach(p => { counts[map[p.key] || 'none']++; });
+  return `${counts.full} full · ${counts.view} view · ${counts.none} none`;
+}
+
+function openAccessModal(username){
+  if(!isFahmiFanani()) return;
+  const u = getAllUsers().find(x => x.username === username);
+  if(!u) return;
+  accessModalUsername = username;
+  document.getElementById('access-modal-user').textContent = `${u.name} (${u.username})`;
+  const map = getEffectivePanelAccess(u);
+  const ov = userPanelAccess[username] || {};
+  const matrix = document.getElementById('access-matrix');
+  matrix.innerHTML = PANEL_DEFS.map(p => {
+    // Fahmi's own accounts always full — skip editing self accounts lock
+    const disabled = (username === 'fahmi.fanani' && p.key === 'accounts') ? 'disabled' : '';
+    const val = map[p.key] || 'none';
+    return `<div class="access-matrix-row">
+      <div class="am-label">${p.label}${ov[p.key] ? ' <span class="hint" style="margin:0;">(custom)</span>' : ''}</div>
+      <select data-panel="${p.key}" ${disabled}>
+        <option value="full" ${val==='full'?'selected':''}>Full (input)</option>
+        <option value="view" ${val==='view'?'selected':''}>View (pantau)</option>
+        <option value="none" ${val==='none'?'selected':''}>None (sembunyi)</option>
+      </select>
+    </div>`;
+  }).join('');
+  document.getElementById('access-modal-overlay').classList.add('show');
+}
+window.openAccessModal = openAccessModal;
+
+document.getElementById('access-modal-close')?.addEventListener('click', ()=>{
+  document.getElementById('access-modal-overlay').classList.remove('show');
+  accessModalUsername = null;
+});
+document.getElementById('access-modal-overlay')?.addEventListener('click', (e)=>{
+  if(e.target.id === 'access-modal-overlay'){
+    e.target.classList.remove('show');
+    accessModalUsername = null;
+  }
+});
+document.getElementById('access-modal-save')?.addEventListener('click', async ()=>{
+  if(!isFahmiFanani() || !accessModalUsername) return;
+  const selects = document.querySelectorAll('#access-matrix select[data-panel]');
+  const ov = {};
+  selects.forEach(sel => { ov[sel.dataset.panel] = sel.value; });
+  // simpan full override map (eksplisit) supaya jelas
+  userPanelAccess[accessModalUsername] = ov;
+  // Fahmi tidak boleh kehilangan akses accounts
+  if(accessModalUsername === 'fahmi.fanani') ov.accounts = 'full';
+  await saveUserPanelAccess();
+  document.getElementById('access-modal-overlay').classList.remove('show');
+  accessModalUsername = null;
+  renderAccountsTable();
+  // jika mengedit akses diri sendiri, apply segera
+  if(loggedInUser && loggedInUser.username === Object.keys(userPanelAccess).find(()=>false)){}
+  updateRoleUI();
+  alert('Akses panel berhasil disimpan.');
+});
+document.getElementById('access-modal-reset')?.addEventListener('click', async ()=>{
+  if(!isFahmiFanani() || !accessModalUsername) return;
+  if(!confirm('Reset akses panel user ini ke default sesuai posisinya?')) return;
+  delete userPanelAccess[accessModalUsername];
+  await saveUserPanelAccess();
+  openAccessModal(accessModalUsername);
+  renderAccountsTable();
+  alert('Akses direset ke default posisi.');
+});
+
+/* Kunci form/input pada panel ber-level view (pantau saja). Filter KPI & Master Unit tetap aktif. */
+function applyPanelAccessLocks(){
+  document.querySelectorAll('.view').forEach(viewEl => {
+    const viewKey = (viewEl.id || '').replace(/^view-/, '');
+    if(!viewKey) return;
+    const access = currentPanelAccess(viewKey);
+    const readonly = access === 'view';
+    viewEl.classList.toggle('access-readonly', readonly);
+
+    // Banner View Only: tidak ditampilkan untuk user mana pun (termasuk view-only).
+    // Hanya Fahmi Fanani yang full access; user lain view-only tanpa banner peringatan.
+    const ban = viewEl.querySelector('.access-readonly-banner');
+    if(ban) ban.remove();
+
+    viewEl.querySelectorAll('input, select, textarea, button').forEach(el => {
+      // Selalu izinkan navigasi/filter/logout/notif
+      if(el.closest('.filters') || el.closest('.period-panel') || el.closest('.topbar') || el.closest('.sidebar') || el.closest('.notif-wrap')){
+        return;
+      }
+      if(el.classList.contains('trend-quarter-select') || el.classList.contains('period-input-caret')) return;
+      if(el.id && (el.id.includes('filter') || el.id.includes('period') || el.id.includes('week-period') || el.id.includes('month'))) return;
+      // Type unit disabled fields stay disabled
+      if(el.disabled && el.hasAttribute('disabled') && (el.id||'').includes('typeunit')) return;
+
+      if(readonly){
+        if(el.tagName === 'BUTTON' || el.type === 'submit' || el.type === 'button' || el.type === 'reset'){
+          // hide handled by CSS for primary actions; secondary filter clear may be in .filters
+          if(!el.closest('.filters') && !el.closest('.period-panel')){
+            el.dataset.accessLocked = '1';
+            el.disabled = true;
+          }
+        } else {
+          el.dataset.accessLocked = '1';
+          el.disabled = true;
+        }
+      } else if(el.dataset.accessLocked === '1'){
+        el.disabled = false;
+        delete el.dataset.accessLocked;
+      }
+    });
+  });
+}
+
+/* ---- Database Akun (Supervisor/PJO) — SEMUA user + hapus hanya self-register. */
+function getAccountsList(){
+  const system = USERS.map(u=>({ ...u, source:'system' }));
+  const registered = registeredUsers.map(u=>({ ...u, source:'registered' }));
+  return system.concat(registered);
+}
+function renderAccountsTable(){
+  const tbody = document.getElementById('accounts-tbody');
+  if(!tbody) return;
+  const isSupervisor = currentRole()==='Supervisor';
+  const srcFilter = (document.getElementById('accounts-filter-source')||{}).value || '';
+  const posFilter = (document.getElementById('accounts-filter-position')||{}).value || '';
+  const q = ((document.getElementById('accounts-filter-search')||{}).value || '').trim().toLowerCase();
+  let list = getAccountsList();
+  if(srcFilter) list = list.filter(u=>u.source===srcFilter);
+  if(posFilter) list = list.filter(u=>(u.position||u.role)===posFilter);
+  if(q) list = list.filter(u=> (u.name||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q));
+  const all = getAccountsList();
+  const setStat = (id, val)=>{ const el=document.getElementById(id); if(el) el.textContent = val; };
+  setStat('accounts-stat-total', all.length);
+  setStat('accounts-stat-system', all.filter(u=>u.source==='system').length);
+  setStat('accounts-stat-registered', all.filter(u=>u.source==='registered').length);
+  setStat('accounts-stat-supervisor', all.filter(u=>u.role==='Supervisor').length);
+  if(!list.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">Tidak ada akun yang cocok dengan filter.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(u=>{
+    const pos = u.position || u.role || '—';
+    const sourceLabel = u.source==='system' ? `<span class="pill planned">Sistem</span>` : `<span class="pill progress">Registrasi</span>`;
+    const posKey = (u.position || u.role || '').trim();
+    let roleLabel;
+    if(posKey === 'Supervisor') roleLabel = `<span class="pill close">Supervisor</span>`;
+    else if(posKey === 'PJO') roleLabel = `<span class="pill close">PJO</span>`;
+    else if(posKey === 'Deputy') roleLabel = `<span class="pill planned">Deputy</span>`;
+    else if(posKey === 'HRGA') roleLabel = `<span class="pill planned">HRGA</span>`;
+    else if(posKey === 'Inventory') roleLabel = `<span class="pill planned">Inventory</span>`;
+    else if(posKey === 'Master Loading') roleLabel = `<span class="pill planned">Master Loading</span>`;
+    else if(posKey === 'Operator') roleLabel = `<span class="pill planned">Operator</span>`;
+    else roleLabel = `<span class="pill pending">Mechanic</span>`;
+    const canManageAccounts = isFahmiFanani();
+    const canDelete = canManageAccounts && u.source==='registered';
+    const accessBtn = canManageAccounts
+      ? `<button type="button" class="btn small secondary" onclick="openAccessModal('${escUH(u.username)}')">Atur Akses</button><div class="hint" style="margin-top:4px;">${summarizeAccess(u)}</div>`
+      : `<span class="hint" style="margin:0;">${summarizeAccess(u)}</span>`;
+    const action = canDelete ? `<button class="btn danger" onclick="deleteRegisteredAccount('${escUH(u.username)}')">Hapus</button>` : (u.source==='system' ? `<span class="hint" style="margin:0;">—</span>` : '');
+    const pw = u.password || '—';
+    const pwCell = `<span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--yellow); letter-spacing:0.3px;">${escUH(pw)}</span>`;
+    return `<tr><td>${escUH(u.name)}</td><td style="font-family:'JetBrains Mono',monospace; font-size:12px;">${escUH(u.username)}</td><td>${pwCell}</td><td>${escUH(pos)}</td><td>${roleLabel}</td><td>${sourceLabel}</td><td>${accessBtn}</td><td>${action}</td></tr>`;
+  }).join('');
+}
+window.deleteRegisteredAccount = async function(username){
+  const canManage = !!(loggedInUser && (loggedInUser.username==='fahmi.fanani' || (loggedInUser.name||'').trim().toLowerCase()==='fahmi fanani'));
+  if(!canManage) return;
+  const target = registeredUsers.find(u=>u.username===username);
+  if(!target) return;
+  if(!confirm(`Hapus akun "${target.name}" (${target.username})? Tindakan ini tidak dapat dibatalkan.`)) return;
+  registeredUsers = registeredUsers.filter(u=>u.username!==username);
+  await saveRegisteredUsers();
+  renderAccountsTable();
+  populateMechanicSelects();
+};
+document.getElementById('accounts-refresh-btn')?.addEventListener('click', async ()=>{
+  await loadRegisteredUsers();
+  renderAccountsTable();
+});
+['accounts-filter-source','accounts-filter-position'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('change', renderAccountsTable);
+});
+document.getElementById('accounts-filter-search')?.addEventListener('input', renderAccountsTable);
+
 /* Isi ulang dropdown "Man Power" (Daily Maintenance) & "Operator / Mekanik" (P2H) dari daftar
    user role Mechanic yang sebenarnya (USERS + registeredUsers) — bukan daftar statis 2 nama.
    Tanpa ini, mekanik yang mendaftar akun baru tidak bisa dipilih/terkunci di field ini,
@@ -3979,11 +4485,29 @@ function populateMechanicSelects(){
     p2hOp.innerHTML = optsHTML;
     if(mechanics.some(u=>u.name===prev)) p2hOp.value = prev;
   }
+  const preinsCheckBy = document.getElementById('preins-checkby');
+  if(preinsCheckBy){
+    const prev = preinsCheckBy.value;
+    preinsCheckBy.innerHTML = optsHTML;
+    if(mechanics.some(u=>u.name===prev)) preinsCheckBy.value = prev;
+  }
+  if(typeof populatePreinsPlanMechanicSelect==='function') populatePreinsPlanMechanicSelect();
 }
 
 let loggedInUser = null;
 function currentRole(){ return loggedInUser ? loggedInUser.role : 'Mechanic'; }
 function currentUserName(){ return loggedInUser ? loggedInUser.name : ''; }
+/* Posisi asli user (Mechanic/Operator/Supervisor/PJO) — lebih detail dari `role` yang cuma
+   Mechanic/Supervisor. Dipakai untuk aturan akses yang butuh granularitas posisi, mis. panel
+   Laporan Breakdown Unit yang input-nya khusus Operator & Supervisor (tidak termasuk PJO/Mechanic). */
+function currentPosition(){ return loggedInUser ? (loggedInUser.position || loggedInUser.role) : ''; }
+/* Hanya Operator & Supervisor (posisi persis "Supervisor", bukan PJO) yang boleh mengisi
+   form Laporan Breakdown Unit. Mechanic & PJO tetap bisa melihat riwayatnya. */
+function canInputBreakdownReport(){
+  if(!canEditPanel('bdreport')) return false;
+  const pos = currentPosition();
+  return pos==='Operator' || pos==='Supervisor';
+}
 
 const loginOverlayEl = document.getElementById('login-overlay');
 const appRootEl = document.querySelector('.app');
@@ -4073,6 +4597,24 @@ loginForm.addEventListener('submit', async (e)=>{
   updateRoleUI();
 });
 
+/* Auto-isi "User Name" dari "Nama Lengkap" — memakai spasi (bukan titik) supaya lebih
+   mudah saat daftar akun. Tetap bisa diedit manual; begitu user mengubahnya sendiri,
+   auto-sync berhenti supaya perubahan manual tidak tertimpa lagi. */
+const regNameInput = document.getElementById('reg-name');
+const regUsernameInput = document.getElementById('reg-username');
+function deriveUsernameFromName(raw){
+  return (raw||'').trim().replace(/\s+/g,' ').toLowerCase();
+}
+let regUsernameTouched = false;
+regNameInput.addEventListener('input', ()=>{
+  if(regUsernameTouched) return;
+  regUsernameInput.value = deriveUsernameFromName(regNameInput.value);
+});
+regUsernameInput.addEventListener('input', ()=>{
+  regUsernameTouched = regUsernameInput.value !== deriveUsernameFromName(regNameInput.value);
+});
+registerForm.addEventListener('reset', ()=>{ regUsernameTouched = false; });
+
 /* Registrasi akun baru — tersimpan di appStorage (shared) supaya bisa langsung dipakai login. */
 registerForm.addEventListener('submit', async (e)=>{
   e.preventDefault();
@@ -4088,8 +4630,8 @@ registerForm.addEventListener('submit', async (e)=>{
     registerError.style.display = 'block';
     return;
   }
-  if(!/^[a-z0-9._-]+$/.test(uVal)){
-    registerError.textContent = 'Username hanya boleh huruf kecil, angka, titik, garis bawah, atau strip (tanpa spasi).';
+  if(!/^[a-z0-9._ -]+$/.test(uVal)){
+    registerError.textContent = 'Username hanya boleh huruf kecil, angka, spasi, titik, garis bawah, atau strip.';
     registerError.style.display = 'block';
     return;
   }
@@ -4109,7 +4651,15 @@ registerForm.addEventListener('submit', async (e)=>{
     return;
   }
 
-  const role = position==='Mechanic' ? 'Mechanic' : 'Supervisor';
+  // "role" cuma dipakai untuk hak akses umum (Mechanic = terbatas, Supervisor = penuh).
+  // PJO ikut level Supervisor (approval dsb) seperti sebelumnya. Operator baru ditambahkan
+  // sebagai posisi lapangan (pelapor breakdown unit) — levelnya disamakan dengan Mechanic
+  // (akses terbatas) supaya tidak otomatis mendapat hak admin/approval Supervisor; posisi
+  // "Operator" tetap tersimpan terpisah di field `position` untuk aturan akses khusus
+  // (mis. panel Laporan Breakdown Unit) yang membaca `position`, bukan `role`.
+  // Role internal: Supervisor hanya untuk Supervisor & PJO (approval path).
+  // Deputy/HRGA/Inventory/Master Loading = Mechanic (akses dibatasi via panel access = view).
+  const role = (position==='Supervisor' || position==='PJO') ? 'Supervisor' : 'Mechanic';
   const newUser = { username:uVal, password:pVal, name, role, position };
   registeredUsers.push(newUser);
   await saveRegisteredUsers();
@@ -4129,40 +4679,65 @@ document.getElementById('btn-logout').addEventListener('click', async ()=>{
   showLoginScreen();
 });
 
-const MECHANIC_VISIBLE_VIEWS = ['preinspection','p2h','daily','plan','planningsystem','hm'];
+/* Mechanic: tanpa Monitoring HM. Operator: hanya P2H + Laporan Breakdown. */
+const MECHANIC_VISIBLE_VIEWS = ['preinspection','p2h','daily','plan','planningsystem','bdreport'];
+const OPERATOR_VISIBLE_VIEWS = ['p2h','bdreport'];
 function updateRoleUI(){
   const isSupervisor = currentRole()==='Supervisor';
+  const isOperator = !isSupervisor && currentPosition()==='Operator';
   document.body.classList.toggle('role-supervisor', isSupervisor);
+  document.body.classList.toggle('role-pjo', currentPosition()==='PJO');
   if(userInfoEl){ userInfoEl.textContent = loggedInUser ? `${loggedInUser.name} · ${loggedInUser.position || loggedInUser.role}` : '—'; }
   const banner = document.getElementById('daily-role-banner');
   if(banner){
-    banner.className = isSupervisor ? 'banner' : 'banner warn';
-    banner.innerHTML = isSupervisor
-      ? `⛭ Anda login sebagai <b>&nbsp;${loggedInUser ? loggedInUser.position : 'Supervisor'}&nbsp;</b> — Anda dapat menyetujui atau menolak record yang berstatus Pending Approval.`
-      : 'Setiap record baru berstatus <b>&nbsp;Pending Approval&nbsp;</b> dan menunggu konfirmasi Supervisor sebelum masuk perhitungan KPI resmi.';
+    if(currentPosition()==='PJO'){
+      banner.style.display = 'none';
+    } else {
+      banner.style.display = '';
+      banner.className = isSupervisor ? 'banner' : 'banner warn';
+      banner.innerHTML = isSupervisor
+        ? `⛭ Anda login sebagai <b>&nbsp;${loggedInUser ? loggedInUser.position : 'Supervisor'}&nbsp;</b> — Anda dapat menyetujui atau menolak record yang berstatus Pending Approval.`
+        : 'Setiap record baru berstatus <b>&nbsp;Pending Approval&nbsp;</b> dan menunggu konfirmasi Supervisor sebelum masuk perhitungan KPI resmi.';
+    }
   }
 
-  // Batasi menu untuk role Mechanic: hanya Daily Maintenance, Plan Service, Planning System, Mechanic Activity Report
+  // Visibilitas menu mengikuti akses panel efektif (default posisi + override dari Database Akun)
   navItems.forEach(item=>{
     const view = item.dataset.view;
-    const hideForMechanic = !isSupervisor && !MECHANIC_VISIBLE_VIEWS.includes(view);
-    item.classList.toggle('role-hidden', hideForMechanic);
+    const hide = !canViewPanel(view);
+    item.classList.toggle('role-hidden', hide);
   });
 
-  // Sembunyikan tombol hapus/hapus massal untuk role Mechanic di semua panel yang bisa
-  // diakses mekanik — mekanik hanya boleh menambah/mengedit data miliknya, penghapusan
-  // record/data hanya untuk Supervisor.
-  const dailyBulkDeleteBtn = document.getElementById('daily-bulk-delete-btn');
-  if(dailyBulkDeleteBtn) dailyBulkDeleteBtn.style.display = isSupervisor ? '' : 'none';
+  // Form jadwal Pre Inspection hanya jika akses full di preinspection
+  const preinsPlanInput = document.getElementById('preins-plan-input-panel');
+  if(preinsPlanInput) preinsPlanInput.style.display = canEditPanel('preinspection') && isSupervisor ? '' : 'none';
 
-  // Jika view yang sedang aktif tidak diizinkan untuk role saat ini, pindah otomatis ke Daily Maintenance
+  const dailyBulkDeleteBtn = document.getElementById('daily-bulk-delete-btn');
+  if(dailyBulkDeleteBtn) dailyBulkDeleteBtn.style.display = (isSupervisor && canEditPanel('daily')) ? '' : 'none';
+
+  ['daily-import-service-btn','daily-refresh-btn','daily-sync-sheets-btn'].forEach(id=>{
+    const btn = document.getElementById(id);
+    if(btn) btn.style.display = (isSupervisor && canEditPanel('daily')) ? '' : 'none';
+  });
+
   const activeItem = document.querySelector('.nav-item.active');
   if(activeItem && activeItem.classList.contains('role-hidden')){
-    const fallback = document.querySelector('.nav-item[data-view="daily"]');
-    if(fallback) fallback.click();
+    const fallbackOrder = isOperator ? ['p2h','bdreport','dashboard'] : ['dashboard','daily','p2h','bdreport'];
+    let clicked = false;
+    for(const v of fallbackOrder){
+      const fb = document.querySelector(`.nav-item[data-view="${v}"]`);
+      if(fb && !fb.classList.contains('role-hidden')){ fb.click(); clicked = true; break; }
+    }
+    if(!clicked){
+      const any = document.querySelector('.nav-item:not(.role-hidden)');
+      if(any) any.click();
+    }
   }
 
+  applyPanelAccessLocks();
+
   renderDailyTable();
+  applyPanelAccessLocks();
 
   // Isi ulang dropdown Man Power / Operator dari daftar user Mechanic terbaru (termasuk
   // akun yang baru mendaftar), SEBELUM field dikunci ke nama user yang login di bawah ini.
@@ -4188,7 +4763,20 @@ function updateRoleUI(){
       p2hOperatorField.disabled = false;
     }
   }
+  const preinsCheckByField = document.getElementById('preins-checkby');
+  if(preinsCheckByField && loggedInUser){
+    if(!isSupervisor){
+      preinsCheckByField.value = loggedInUser.name;
+      preinsCheckByField.disabled = true;
+    } else {
+      preinsCheckByField.disabled = false;
+    }
+  }
   renderHMTable();
+  updateBreakdownReportAccess();
+  renderPreInspectionPlans();
+  renderPreInspectionMechanicNotify();
+  applyPanelAccessLocks();
 }
 
 /* ================= HELPERS ================= */
@@ -5031,6 +5619,18 @@ async function fixOvershotCodeBD(){
    yang sudah tercatat (approvedBy/approvedAt) tidak berubah oleh koreksi ini. ---- */
 let editingDailyId = null;
 
+/* Batas waktu edit khusus mekanik: 24 jam sejak record pertama kali dibuat (createdAt).
+   Setelah lewat 24 jam, tautan "Edit" otomatis hilang & fungsi edit ditolak — berlaku
+   untuk semua status (Pending/Rejected/Approved). Supervisor tidak terkena batas ini. */
+const MECHANIC_EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+function isWithinMechanicEditWindow(r){
+  const ref = r.createdAt || r.updatedAt;
+  if(!ref) return true; // record lama tanpa timestamp — jangan diblokir
+  const t = new Date(ref).getTime();
+  if(isNaN(t)) return true;
+  return (Date.now() - t) < MECHANIC_EDIT_WINDOW_MS;
+}
+
 window.editDaily = function(id){
   const r = dailyRecords.find(x=>x.id===id);
   if(!r) return;
@@ -5038,9 +5638,11 @@ window.editDaily = function(id){
   const isSupervisorUser = currentRole()==='Supervisor';
   const canEdit = isSupervisorUser
     ? r.approvalStatus==='Approved'
-    : (isOwner && (r.approvalStatus||'Pending')!=='Approved');
+    : (isOwner && isWithinMechanicEditWindow(r));
   if(!canEdit){
-    alert('Record ini tidak bisa diedit (bukan milik Anda atau belum/sudah diproses Supervisor).');
+    alert(!isSupervisorUser && isOwner && !isWithinMechanicEditWindow(r)
+      ? 'Record ini sudah tidak bisa diedit karena sudah lebih dari 24 jam sejak diinput.'
+      : 'Record ini tidak bisa diedit (bukan milik Anda atau belum/sudah diproses Supervisor).');
     return;
   }
   editingDailyId = id;
@@ -5074,9 +5676,11 @@ window.editDaily = function(id){
   const editHint = document.getElementById('d-edit-hint');
   editHint.textContent = isSupervisorUser
     ? `✎ Mode edit (Supervisor): mengoreksi record milik ${r.mechanic||'mekanik'} yang sudah Approved. Status approval tidak berubah.`
-    : (r.approvalStatus==='Rejected'
-      ? '✎ Mode edit: memperbaiki record yang ditolak Supervisor. Setelah disimpan, record akan dikirim ulang sebagai Pending Approval.'
-      : '✎ Mode edit: memperbarui record yang sudah pernah diinput (masih Pending Approval).');
+    : (r.approvalStatus==='Approved'
+      ? '✎ Mode edit: memperbaiki record yang sudah Approved. Setelah disimpan, record akan dikirim ulang sebagai Pending Approval untuk dikonfirmasi ulang Supervisor.'
+      : (r.approvalStatus==='Rejected'
+        ? '✎ Mode edit: memperbaiki record yang ditolak Supervisor. Setelah disimpan, record akan dikirim ulang sebagai Pending Approval.'
+        : '✎ Mode edit: memperbarui record yang sudah pernah diinput (masih Pending Approval).'));
   editHint.style.display = '';
   document.getElementById('view-daily').scrollIntoView({behavior:'smooth', block:'start'});
 };
@@ -5152,14 +5756,15 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
     const isSupervisorUser = currentRole()==='Supervisor';
     const canSaveEdit = existing && (isSupervisorUser
       ? existing.approvalStatus==='Approved'
-      : (isOwner && (existing.approvalStatus||'Pending')!=='Approved'));
+      : (isOwner && isWithinMechanicEditWindow(existing)));
     if(canSaveEdit){
       const backup = { ...existing };
       // Koreksi oleh Supervisor pada record yang sudah Approved TIDAK mengubah
       // approvalStatus/approvedBy/approvedAt — hanya isi laporannya yang diperbarui.
-      // Kalau mekanik memperbaiki record yang sebelumnya Rejected, kirim ulang
-      // sebagai Pending Approval (alasan penolakan lama dibersihkan).
-      if(!isSupervisorUser && existing.approvalStatus==='Rejected'){
+      // Kalau mekanik memperbaiki record yang sebelumnya Rejected ATAU Approved, kirim
+      // ulang sebagai Pending Approval (status/alasan penolakan lama dibersihkan) supaya
+      // Supervisor mengonfirmasi ulang perubahan tersebut.
+      if(!isSupervisorUser && existing.approvalStatus!=='Pending'){
         existing.approvalStatus = 'Pending';
         existing.rejectNote = null;
         existing.approvedBy = null;
@@ -5188,6 +5793,7 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
       approvedBy: null,
       approvedAt: null,
       rejectNote: null,
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     dailyRecords.unshift(rec);
@@ -5369,22 +5975,23 @@ function renderDailyTable(){
   });
   tbody.innerHTML = sortedRecords.map(r=>{
     let actionCell;
-    if(isSupervisor && (r.approvalStatus||'Pending')==='Pending'){
+    if(isSupervisor && canEditPanel('daily') && (r.approvalStatus||'Pending')==='Pending'){
       actionCell = `<div class="approval-actions">
         <button class="btn approve" onclick="approveDaily('${r.id}')">✓ Approve</button>
         <button class="btn reject" onclick="rejectDaily('${r.id}')">✕ Reject</button>
       </div>`;
     } else if(r.approvalStatus==='Approved'){
-      actionCell = `<div class="approval-note">oleh ${r.approvedBy||'—'}<br>${r.approvedAt||''}${isSupervisor
+      const isOwnerApproved = !isSupervisor && loggedInUser && r.submittedBy===loggedInUser.name && isWithinMechanicEditWindow(r);
+      actionCell = `<div class="approval-note">oleh ${r.approvedBy||'—'}<br>${r.approvedAt||''}${((isSupervisor && canEditPanel('daily')) || isOwnerApproved)
         ? `<div class="edit-hint"><span class="edit-text-btn" onclick="editDaily('${r.id}')">Edit</span></div>`
         : ''}</div>`;
     } else if(r.approvalStatus==='Rejected'){
-      const isOwnerRejected = !isSupervisor && loggedInUser && r.submittedBy===loggedInUser.name;
+      const isOwnerRejected = !isSupervisor && loggedInUser && r.submittedBy===loggedInUser.name && isWithinMechanicEditWindow(r);
       actionCell = `<div class="approval-note">oleh ${r.approvedBy||'—'}${r.rejectNote?'<br>alasan: '+r.rejectNote:''}${isOwnerRejected
         ? `<div class="edit-hint"><span class="edit-text-btn" onclick="editDaily('${r.id}')">Edit</span></div>`
         : ''}</div>`;
     } else {
-      const isOwner = !isSupervisor && loggedInUser && r.submittedBy===loggedInUser.name;
+      const isOwner = !isSupervisor && loggedInUser && r.submittedBy===loggedInUser.name && isWithinMechanicEditWindow(r);
       actionCell = `<div class="approval-note">menunggu Supervisor${isOwner
         ? `<div class="edit-hint"><span class="edit-text-btn" onclick="editDaily('${r.id}')">Edit</span></div>`
         : ''}</div>`;
@@ -5414,7 +6021,7 @@ function renderDailyTable(){
       <td><span class="pill ${pillClass(r.status)}">${r.status==='Progress'?'On Progress':r.status}</span></td>
       <td style="white-space:normal; min-width:140px;">${r.bdCategory ? `<b>${r.bdCategory}</b>${r.keterangan?' — '+r.keterangan:''}` : (r.keterangan||'—')}</td>
       <td>${approvalPillHTML(r)}</td>
-      <td>${actionCell}${isSupervisor ? `<button class="btn danger" style="margin-top:6px;" onclick="deleteDaily('${r.id}')">Hapus</button>` : ''}</td>
+      <td>${actionCell}${(isSupervisor && canEditPanel('daily')) ? `<button class="btn danger" style="margin-top:6px;" onclick="deleteDaily('${r.id}')">Hapus</button>` : ''}</td>
     </tr>`;
   }).join('');
   syncDailyTopScroll();
@@ -5533,6 +6140,7 @@ if(dailyRefreshBtn){
   });
 }
 window.deleteDaily = async function(id){
+  if(!canEditPanel('daily')) return;
   const backup = dailyRecords;
   dailyRecords = dailyRecords.filter(r=>r.id!==id);
   if(usingDailyTable()){
@@ -5592,6 +6200,7 @@ window.bulkDeleteDailyByCodeRange = async function(){
   alert(`✓ ${targets.length - failed} record berhasil dihapus.`);
 }
 window.approveDaily = async function(id){
+  if(!canEditPanel('daily')) return;
   const r = dailyRecords.find(x=>x.id===id);
   if(!r) return;
   const backup = { ...r };
@@ -5608,6 +6217,7 @@ window.approveDaily = async function(id){
   syncDailyToSheets();
 }
 window.rejectDaily = async function(id){
+  if(!canEditPanel('daily')) return;
   const r = dailyRecords.find(x=>x.id===id);
   if(!r) return;
   const reason = prompt('Alasan penolakan record ini:','');
@@ -5951,6 +6561,7 @@ window.updatePlanExecDate = async function(id, value){
   renderAll();
 }
 window.deletePlan = async function(id){
+  if(!canEditPanel('plan')) return;
   planRecords = planRecords.filter(r=>r.id!==id);
   await savePlan();
   renderAll();
@@ -6687,7 +7298,183 @@ const PRE_INSPECTION_CHECKLIST = {
 };
 
 const preinsUnitSelect = document.getElementById('preins-unitcode');
+
 fillUnitSelectCodeOnly(preinsUnitSelect);
+
+/* ================= JADWAL PRE INSPECTION (Supervisor → Mechanic) ================= */
+const preinsPlanUnitSelect = document.getElementById('preins-plan-unitcode');
+if(preinsPlanUnitSelect){
+  fillUnitSelectCodeOnly(preinsPlanUnitSelect);
+  preinsPlanUnitSelect.addEventListener('change', ()=>syncTypeFromUnit(preinsPlanUnitSelect, document.getElementById('preins-plan-typeunit')));
+  syncTypeFromUnit(preinsPlanUnitSelect, document.getElementById('preins-plan-typeunit'));
+}
+const preinsPlanFilterUnit = document.getElementById('preins-plan-filter-unit');
+if(preinsPlanFilterUnit){
+  preinsPlanFilterUnit.innerHTML = '<option value="">Semua Unit</option>' + UNITS.map(u=>`<option value="${u.code}">${u.code}</option>`).join('');
+  preinsPlanFilterUnit.addEventListener('change', renderPreInspectionPlans);
+}
+document.getElementById('preins-plan-filter-status')?.addEventListener('change', renderPreInspectionPlans);
+document.getElementById('preins-plan-refresh-btn')?.addEventListener('click', async ()=>{
+  try{
+    const pip = await appStorage.get('pre-inspection-plans');
+    preInspectionPlans = pip ? JSON.parse(pip.value) : [];
+  }catch(e){}
+  renderPreInspectionPlans();
+  renderPreInspectionMechanicNotify();
+  renderNotificationCenter();
+});
+
+function populatePreinsPlanMechanicSelect(){
+  const sel = document.getElementById('preins-plan-mechanic');
+  if(!sel) return;
+  const prev = sel.value;
+  const mechanics = getAllUsers().filter(u=> (u.position==='Mechanic' || (u.role==='Mechanic' && u.position!=='Operator')));
+  sel.innerHTML = '<option value="">— Pilih Mekanik —</option>' + mechanics.map(m=>`<option value="${m.username}">${m.name}</option>`).join('');
+  if(mechanics.some(m=>m.username===prev)) sel.value = prev;
+}
+populatePreinsPlanMechanicSelect();
+
+document.getElementById('form-preins-plan')?.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  if(currentRole()!=='Supervisor' || !canEditPanel('preinspection')){
+    alert('Hanya Supervisor dengan akses Full Pre Inspection yang dapat membuat jadwal.');
+    return;
+  }
+  const unit = UNITS.find(u=>u.code===document.getElementById('preins-plan-unitcode').value);
+  const mechUser = getAllUsers().find(u=>u.username===document.getElementById('preins-plan-mechanic').value);
+  if(!unit){ alert('Pilih Unit terlebih dahulu.'); return; }
+  if(!mechUser){ alert('Pilih PIC Mechanic terlebih dahulu.'); return; }
+  const rec = {
+    id: uid(),
+    tanggal: document.getElementById('preins-plan-tanggal').value,
+    unitCode: unit.code,
+    typeUnit: unit.type,
+    mechanicUsername: mechUser.username,
+    mechanicName: mechUser.name,
+    notes: (document.getElementById('preins-plan-notes').value||'').trim(),
+    status: document.getElementById('preins-plan-status').value || 'Open',
+    createdBy: currentUserName(),
+    createdAt: new Date().toISOString(),
+  };
+  preInspectionPlans.unshift(rec);
+  await savePreInspectionPlans();
+  document.getElementById('form-preins-plan').reset();
+  document.getElementById('preins-plan-status').value = 'Open';
+  syncTypeFromUnit(preinsPlanUnitSelect, document.getElementById('preins-plan-typeunit'));
+  populatePreinsPlanMechanicSelect();
+  renderPreInspectionPlans();
+  renderPreInspectionMechanicNotify();
+  renderNotificationCenter();
+  alert('Jadwal Pre Inspection tersimpan. Mekanik ' + mechUser.name + ' akan menerima notifikasi.');
+});
+
+function renderPreInspectionPlans(){
+  const tbody = document.getElementById('preins-plan-tbody');
+  if(!tbody) return;
+  const isSupervisor = currentRole()==='Supervisor';
+  const stFilter = (document.getElementById('preins-plan-filter-status')||{}).value || '';
+  const unitFilter = (document.getElementById('preins-plan-filter-unit')||{}).value || '';
+  let rows = preInspectionPlans.slice();
+  if(!isSupervisor && loggedInUser){
+    rows = rows.filter(r=> r.mechanicUsername===loggedInUser.username || (r.mechanicName||'').toLowerCase()===(loggedInUser.name||'').toLowerCase());
+  }
+  if(stFilter) rows = rows.filter(r=>r.status===stFilter);
+  if(unitFilter) rows = rows.filter(r=>r.unitCode===unitFilter);
+  if(!rows.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">Belum ada jadwal Pre Inspection.</td></tr>`;
+    return;
+  }
+  const today = toDateStr(new Date());
+  tbody.innerHTML = rows.map(r=>{
+    const overdue = r.status==='Open' && r.tanggal && r.tanggal < today;
+    const statusPill = r.status==='Done'
+      ? `<span class="pill close">Done</span>`
+      : (overdue ? `<span class="pill open">Open · Overdue</span>` : `<span class="pill progress">Open</span>`);
+    let actions = '';
+    if(isSupervisor){
+      actions += `<button class="btn danger" onclick="deletePreInspectionPlan('${r.id}')">Hapus</button> `;
+    }
+    if(r.status==='Open' && (isSupervisor || (loggedInUser && r.mechanicUsername===loggedInUser.username))){
+      actions += `<button class="btn small secondary" onclick="markPreInspectionPlanDone('${r.id}')">Tandai Done</button>`;
+    }
+    return `<tr>
+      <td>${r.tanggal||'—'}</td>
+      <td>${escUH(r.unitCode)}</td>
+      <td>${escUH(r.typeUnit)}</td>
+      <td>${escUH(r.mechanicName)}</td>
+      <td style="white-space:normal; min-width:140px;">${escUH(r.notes||'—')}</td>
+      <td>${escUH(r.createdBy||'—')}</td>
+      <td>${statusPill}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+window.deletePreInspectionPlan = async function(id){
+  if(currentRole()!=='Supervisor') return;
+  if(!confirm('Hapus jadwal Pre Inspection ini?')) return;
+  preInspectionPlans = preInspectionPlans.filter(r=>r.id!==id);
+  await savePreInspectionPlans();
+  renderPreInspectionPlans();
+  renderPreInspectionMechanicNotify();
+  renderNotificationCenter();
+};
+window.markPreInspectionPlanDone = async function(id){
+  const r = preInspectionPlans.find(x=>x.id===id);
+  if(!r) return;
+  r.status = 'Done';
+  r.doneAt = new Date().toISOString();
+  r.doneBy = currentUserName();
+  await savePreInspectionPlans();
+  renderPreInspectionPlans();
+  renderPreInspectionMechanicNotify();
+  renderNotificationCenter();
+};
+
+function renderPreInspectionMechanicNotify(){
+  const box = document.getElementById('preins-mechanic-notify');
+  const badge = document.getElementById('nav-preins-badge');
+  if(!box) return;
+  if(!loggedInUser || currentRole()==='Supervisor' || currentPosition()==='Operator'){
+    box.style.display = 'none';
+    if(badge) badge.style.display = 'none';
+    return;
+  }
+  const today = toDateStr(new Date());
+  const myPlans = preInspectionPlans.filter(r=>
+    r.status==='Open' &&
+    (r.mechanicUsername===loggedInUser.username || (r.mechanicName||'').toLowerCase()===(loggedInUser.name||'').toLowerCase())
+  );
+  if(badge){
+    if(myPlans.length){
+      badge.textContent = myPlans.length > 99 ? '99+' : String(myPlans.length);
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+  if(!myPlans.length){
+    box.style.display = 'none';
+    return;
+  }
+  const list = myPlans.slice(0,6).map(r=>{
+    const overdue = r.tanggal && r.tanggal < today;
+    return `<li style="margin-bottom:4px;"><b>${escUH(r.unitCode)}</b> — ${escUH(r.typeUnit||'')} · Jadwal <b>${r.tanggal||'—'}</b>${overdue?' <span style="color:var(--red);">(terlambat)</span>':''}${r.notes?` · ${escUH(r.notes)}`:''}</li>`;
+  }).join('');
+  box.style.display = '';
+  box.innerHTML = `
+    <div class="banner warn" style="align-items:flex-start; display:block;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        <span>🔔</span>
+        <b>Halo ${escUH(loggedInUser.name)}, Anda punya ${myPlans.length} jadwal Pre Inspection terbuka</b>
+      </div>
+      <ul style="margin:0 0 0 22px; padding:0; font-size:12px;">${list}</ul>
+      ${myPlans.length>6 ? `<div class="hint" style="margin-top:6px;">+${myPlans.length-6} jadwal lainnya. Lihat tabel Jadwal Pre Inspection di bawah.</div>` : ''}
+      <div class="hint" style="margin-top:8px;">Isi Form Pre Inspection sesuai unit &amp; tanggal jadwal, lalu tandai jadwal sebagai Done setelah selesai.</div>
+    </div>`;
+}
+
+
 preinsUnitSelect.addEventListener('change', ()=>{
   syncTypeFromUnit(preinsUnitSelect, document.getElementById('preins-typeunit'));
   renderPreInspectionChecklist();
@@ -6763,6 +7550,15 @@ document.getElementById('preins-defect-body').addEventListener('click', (e)=>{
   }
 });
 
+document.getElementById('form-preins').addEventListener('reset', ()=>{
+  // Native reset() mengosongkan semua field termasuk yang disabled — kunci ulang setelahnya.
+  setTimeout(()=>{
+    if(loggedInUser && currentRole()!=='Supervisor'){
+      const cb = document.getElementById('preins-checkby');
+      if(cb){ cb.value = loggedInUser.name; cb.disabled = true; }
+    }
+  }, 0);
+});
 document.getElementById('form-preins').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const rows = Array.from(document.querySelectorAll('#preins-checklist-body tr[data-no]'));
@@ -6813,6 +7609,9 @@ document.getElementById('form-preins').addEventListener('submit', async (e)=>{
   document.getElementById('preins-tanggal').value = new Date().toISOString().slice(0,10);
   document.getElementById('preins-defect-body').innerHTML = `<tr class="empty-row"><td colspan="4">Belum ada temuan ditambahkan.</td></tr>`;
   preinsUnitSelect.value = keepUnit;
+  if(currentRole()!=='Supervisor' && loggedInUser){
+    document.getElementById('preins-checkby').value = loggedInUser.name;
+  }
   syncTypeFromUnit(preinsUnitSelect, document.getElementById('preins-typeunit'));
   renderPreInspectionChecklist();
 });
@@ -6890,11 +7689,13 @@ function renderPreInspectionTable(){
   attachTopScroll('preins');
 }
 window.deletePreInspection = async function(id){
+  if(!canEditPanel('preinspection')) return;
   preInspectionRecords = preInspectionRecords.filter(r=>r.id!==id);
   await savePreInspection();
   renderPreInspectionTable();
 }
 window.approvePreInspection = async function(id){
+  if(!canEditPanel('preinspection')) return;
   const r = preInspectionRecords.find(x=>x.id===id);
   if(!r) return;
   r.approvalStatus = 'Approved';
@@ -8385,6 +9186,19 @@ function computeMechanicNotifications(){
       });
     });
 
+  // Jadwal Pre Inspection yang ditugaskan ke mekanik ybs & masih Open.
+  preInspectionPlans.filter(r=> r.status==='Open' &&
+      (r.mechanicUsername===loggedInUser.username || (r.mechanicName||'').trim().toLowerCase()===myName))
+    .forEach(r=>{
+      const overdue = !!(r.tanggal && r.tanggal < today);
+      notifs.push({
+        id:'preins-plan-'+r.id, view:'preinspection', icon:'🔍', urgent:overdue,
+        title: overdue ? 'Jadwal Pre Inspection Terlambat' : 'Jadwal Pre Inspection Baru',
+        body:`${r.unitCode||'-'} — ${r.typeUnit||''} · Tanggal ${r.tanggal||'-'}${r.notes?' · '+r.notes:''}`,
+        date: r.tanggal||''
+      });
+    });
+
   notifs.sort((a,b)=> (b.urgent-a.urgent) || (a.date||'').localeCompare(b.date||''));
   return notifs;
 }
@@ -8524,6 +9338,105 @@ document.addEventListener('click', (e)=>{
   if(wrap && !wrap.contains(e.target)) document.getElementById('notif-panel').classList.remove('show');
 });
 
+/* ================= LAPORAN BREAKDOWN UNIT ================= */
+const bdrUnitSelect = document.getElementById('bdr-unitcode');
+fillUnitSelectCodeOnly(bdrUnitSelect);
+bdrUnitSelect.addEventListener('change', ()=>syncTypeFromUnit(bdrUnitSelect, document.getElementById('bdr-typeunit')));
+syncTypeFromUnit(bdrUnitSelect, document.getElementById('bdr-typeunit'));
+document.getElementById('bdr-tanggal').value = new Date().toISOString().slice(0,10);
+
+/* Hanya posisi Operator & Supervisor yang boleh mengisi form Laporan Breakdown Unit —
+   Mechanic & PJO tetap bisa melihat riwayatnya di panel bawah, form input-nya disembunyikan. */
+function updateBreakdownReportAccess(){
+  const inputPanel = document.getElementById('bdreport-input-panel');
+  const noAccessBanner = document.getElementById('bdreport-no-access-banner');
+  if(!inputPanel || !noAccessBanner) return;
+  const canInput = canInputBreakdownReport();
+  inputPanel.style.display = canInput ? '' : 'none';
+  noAccessBanner.style.display = (loggedInUser && !canInput) ? '' : 'none';
+}
+
+const bdreportFilterUnit = document.getElementById('bdreport-filter-unit');
+bdreportFilterUnit.innerHTML = '<option value="">Semua Unit</option>' + UNITS.map(u=>`<option value="${u.code}">${u.code}</option>`).join('');
+bdreportFilterUnit.addEventListener('change', renderBreakdownReportTable);
+document.getElementById('bdreport-clear-filter').addEventListener('click', ()=>{
+  bdreportFilterUnit.value = '';
+  renderBreakdownReportTable();
+});
+document.getElementById('bdreport-refresh-btn').addEventListener('click', async ()=>{
+  try{
+    const bdr = await appStorage.get('breakdown-reports');
+    breakdownReports = bdr ? JSON.parse(bdr.value) : [];
+  }catch(e){ /* keep current in-memory data on failure */ }
+  renderBreakdownReportTable();
+});
+
+document.getElementById('form-bdreport').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  if(!canInputBreakdownReport()){
+    alert('Hanya user dengan posisi Operator atau Supervisor yang dapat menginput Laporan Breakdown Unit.');
+    return;
+  }
+  const unit = UNITS.find(u=>u.code===bdrUnitSelect.value);
+  if(!unit){ alert('Pilih Unit terlebih dahulu.'); return; }
+
+  const record = {
+    id: uid(),
+    tanggal: document.getElementById('bdr-tanggal').value,
+    jamBreakdown: document.getElementById('bdr-jam').value,
+    shift: document.getElementById('bdr-shift').value,
+    unitCode: unit.code,
+    typeUnit: unit.type,
+    hm: document.getElementById('bdr-hm').value,
+    operator: document.getElementById('bdr-operator').value.trim(),
+    keterangan: document.getElementById('bdr-keterangan').value.trim(),
+    createdBy: currentUserName(),
+    createdAt: new Date().toISOString(),
+  };
+  breakdownReports.unshift(record);
+  await saveBreakdownReports();
+  renderBreakdownReportTable();
+
+  const keepUnit = bdrUnitSelect.value;
+  document.getElementById('form-bdreport').reset();
+  document.getElementById('bdr-tanggal').value = new Date().toISOString().slice(0,10);
+  bdrUnitSelect.value = keepUnit;
+  syncTypeFromUnit(bdrUnitSelect, document.getElementById('bdr-typeunit'));
+});
+
+function filterBreakdownReportRows(){
+  const unit = bdreportFilterUnit.value;
+  return breakdownReports.filter(r=> !unit || r.unitCode===unit);
+}
+function renderBreakdownReportTable(){
+  const rows = filterBreakdownReportRows();
+  const tbody = document.getElementById('bdreport-tbody');
+  const isSupervisor = currentRole()==='Supervisor';
+  if(!rows.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Belum ada laporan breakdown unit.</td></tr>`;
+  } else {
+    tbody.innerHTML = rows.map(r=>`
+      <tr>
+        <td>${r.tanggal||'—'}</td>
+        <td>${r.jamBreakdown||'—'}</td>
+        <td>${r.shift||'—'}</td>
+        <td>${escUH(r.unitCode)}</td>
+        <td>${escUH(r.typeUnit)}</td>
+        <td>${r.hm||'—'}</td>
+        <td>${escUH(r.operator)}</td>
+        <td style="white-space:normal; min-width:220px;">${escUH(r.keterangan)}</td>
+        <td>${escUH(r.createdBy||'—')}</td>
+        <td>${isSupervisor ? `<button class="btn danger" onclick="deleteBreakdownReport('${r.id}')">Hapus</button>` : ''}</td>
+      </tr>`).join('');
+  }
+  attachTopScroll('bdreport');
+}
+window.deleteBreakdownReport = async function(id){
+  breakdownReports = breakdownReports.filter(r=>r.id!==id);
+  await saveBreakdownReports();
+  renderBreakdownReportTable();
+};
+
 /* ================= RENDER ALL ================= */
 function renderAll(){
   renderUnitCards();
@@ -8532,11 +9445,16 @@ function renderAll(){
   renderPlanningTable();
   renderP2HTable();
   renderPreInspectionTable();
+  renderPreInspectionPlans();
+  renderPreInspectionMechanicNotify();
   renderHMTable();
+  renderBreakdownReportTable();
+  renderAccountsTable();
   renderHistory();
   renderSummary();
   renderDashboard();
   renderNotificationCenter();
+  applyPanelAccessLocks();
 }
 
 /* ---- Realtime: auto-refresh dailyRecords kalau berubah dari luar panel
@@ -8573,6 +9491,7 @@ function subscribeDailyRealtime(){
   updateStorageStatusUI();
   if(appRootEl) appRootEl.style.display = 'none';
   await loadRegisteredUsers();
+  await loadUserPanelAccess();
   await loadActiveUser();
   if(loggedInUser){
     hideLoginScreen();
@@ -8612,6 +9531,9 @@ function subscribeDailyRealtime(){
     // Cek ulang notifikasi (Plan Service jatuh tempo, approval baru, dll) tiap 1 menit —
     // supaya lonceng & notifikasi sistem tetap up-to-date walau tidak ada perubahan data lain.
     setInterval(()=>{ if(loggedInUser) renderNotificationCenter(); }, 60000);
+    // Render ulang tabel Daily Maintenance tiap 1 menit supaya tautan "Edit" milik mekanik
+    // otomatis hilang begitu lewat batas 24 jam, walau tidak ada perubahan data lain.
+    setInterval(()=>{ if(loggedInUser && document.getElementById('daily-tbody')) renderDailyTable(); }, 60000);
   } else {
     showLoginScreen();
   }
