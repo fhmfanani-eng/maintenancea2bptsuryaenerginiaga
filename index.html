@@ -648,6 +648,15 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
   .uh-row .uh-hm, .uh-row .uh-status{ text-align:left; }
 }
 
+
+/* WA NOTIFY OVERLAY */
+#wa-notify-overlay{
+  display:none; position:fixed; inset:0; z-index:230;
+  align-items:flex-start; justify-content:center;
+  background:rgba(0,0,0,0.6); padding:26px 16px; overflow-y:auto;
+}
+#wa-notify-overlay.show{ display:flex; }
+
 /* LOGIN SCREEN */
 #login-overlay{
   position:fixed; inset:0; top:0; right:0; bottom:0; left:0; z-index:200;
@@ -913,6 +922,30 @@ body.role-pjo .view > .banner{ display:none !important; }
     <div class="detail-modal-foot">
       <button type="button" class="btn secondary" id="access-modal-reset">Reset ke Default</button>
       <button type="button" class="btn" id="access-modal-save">Simpan Akses</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="wa-notify-overlay">
+  <div class="detail-modal" style="max-width:640px;">
+    <div class="detail-modal-head">
+      <h3 id="wa-notify-title">Notifikasi WhatsApp</h3>
+      <button type="button" class="detail-modal-close" id="wa-notify-close" title="Tutup">✕</button>
+    </div>
+    <div class="detail-modal-body">
+      <div class="banner warn" id="wa-notify-summary" style="margin-bottom:14px;"></div>
+      <div style="background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px; margin-bottom:14px; max-height:280px; overflow-y:auto;">
+        <pre id="wa-notify-preview" style="margin:0; white-space:pre-wrap; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--text); line-height:1.55;"></pre>
+      </div>
+      <div class="toolbar" id="wa-notify-buttons" style="margin-bottom:10px; flex-wrap:wrap;"></div>
+      <div class="hint">Tombol <b>Kirim ke Grup WA</b> membuka WhatsApp dengan pesan sudah terisi — pilih grup tujuan lalu tekan Kirim. Tombol kontak membuka chat personal. Atau salin pesan lalu tempel manual ke grup.</div>
+    </div>
+    <div class="detail-modal-foot" style="flex-wrap:wrap;">
+      <button type="button" class="btn" id="wa-notify-gateway-btn" style="background:#25D366; color:#07301c;">⚡ Kirim Otomatis (Gateway)</button>
+      <a class="btn secondary" id="wa-notify-group-btn" style="text-decoration:none;" target="_blank" rel="noopener" href="#">📲 Buka WA / Pilih Grup</a>
+      <button type="button" class="btn secondary" id="wa-notify-copy">📋 Salin Pesan</button>
+      <button type="button" class="btn secondary" id="wa-notify-close-2">Tutup</button>
     </div>
   </div>
 </div>
@@ -6395,6 +6428,16 @@ window.approveDaily = async function(id){
   } else { await saveDaily(); }
   renderAll();
   syncDailyToSheets();
+  // Notifikasi WA otomatis (gateway) + panel manual cadangan
+  try{
+    const openCount = planningSystemRecords.filter(x => (x.status||'')==='Open').length;
+    const msg = buildApprovedDailyWAMessage(r);
+    await notifyWAAuto(
+      'Daily Maintenance Approved — Notifikasi WA',
+      `Record <b>${r.unitCode||'-'}</b> (${r.category||'-'}) sudah di-<b>Approve</b>. Pesan mencakup detail record + <b>${openCount}</b> Plan Schedule Maintenance berstatus Open.`,
+      msg
+    );
+  }catch(e){ console.error('WA notify (approve daily) failed', e); }
 }
 window.rejectDaily = async function(id){
   if(!canEditPanel('daily')) return;
@@ -7163,6 +7206,321 @@ const WA_CONTACTS = [
   { name:'Alfius S',     role:'Mechanic',   phone:'6281243097433' },
   { name:'Robertus G M', role:'Mechanic',   phone:'6282334937771' },
 ];
+
+/* ================= GATEWAY WHATSAPP OTOMATIS =================
+   Isi konfigurasi di bawah agar notifikasi terkirim otomatis ke grup/kontak
+   tanpa klik manual. Mendukung Fonnte, Wablas, dan endpoint custom (JSON).
+
+   Cara setup (contoh Fonnte):
+   1. Daftar di https://fonnte.com → dapatkan API Token
+   2. Hubungkan nomor WA device, masukkan nomor/ID grup sebagai target
+      (grup: klik kanan grup di WA Web → "Undang via link" / ID grup, atau
+       pakai format ID grup Fonnte)
+   3. Set enabled:true, isi token & target, simpan file ini
+   ============================================================= */
+const WA_GATEWAY = {
+  enabled: true,
+  provider: 'fonnte',
+  // Fonnte — device: SEN Maintenance A2B (082135568527)
+  fonnteUrl: 'https://api.fonnte.com/send',
+  fonnteToken: '45ELekeNmLujrrfM8Auk',
+  // Wablas (cadangan, tidak dipakai)
+  wablasUrl: 'https://pati.wablas.com/api/send-message',
+  wablasToken: '',
+  // Custom endpoint
+  customUrl: '',
+  customHeaders: {},
+  // Target awal: nomor sendiri untuk tes. Ganti ke Group ID Fonnte jika ingin ke grup.
+  target: '120363426481245734@g.us', // Mechanic A2B SEN
+  alsoSendToContacts: false,
+};
+
+function isWAGatewayReady(){
+  if(!WA_GATEWAY || !WA_GATEWAY.enabled) return false;
+  if(!WA_GATEWAY.target) return false;
+  if(WA_GATEWAY.provider==='fonnte' && !WA_GATEWAY.fonnteToken) return false;
+  if(WA_GATEWAY.provider==='wablas' && !WA_GATEWAY.wablasToken) return false;
+  if(WA_GATEWAY.provider==='custom' && !WA_GATEWAY.customUrl) return false;
+  return true;
+}
+
+/** Kirim satu pesan ke satu target lewat gateway. Return { ok, error, raw } */
+async function sendWAGatewayTo(target, message){
+  const provider = (WA_GATEWAY.provider || 'fonnte').toLowerCase();
+  try{
+    if(provider === 'fonnte'){
+      // Pakai GET + token di query (dokumentasi Fonnte) agar tidak kena preflight CORS
+      // yang sering gagal saat file dibuka dari browser / host lokal.
+      const params = new URLSearchParams();
+      params.set('token', WA_GATEWAY.fonnteToken || '');
+      params.set('target', String(target));
+      params.set('message', message || '');
+      const url = (WA_GATEWAY.fonnteUrl || 'https://api.fonnte.com/send').replace(/\/?$/, '') + '?' + params.toString();
+
+      // 1) Coba CORS biasa (bisa baca response)
+      try{
+        const res = await fetch(url, { method: 'GET', mode: 'cors' });
+        const raw = await res.text();
+        let data = null;
+        try{ data = JSON.parse(raw); }catch(e){}
+        const ok = res.ok && (data
+          ? (data.status === true || data.status === 'true' || data.status === 1
+             || String(data.detail||'').toLowerCase().includes('success')
+             || data.reason === 'success')
+          : true);
+        if(ok) return { ok: true, error: null, raw: data || raw };
+        // jika server menolak, jangan langsung no-cors; kembalikan error
+        if(data && data.status === false){
+          return { ok: false, error: data.detail || data.reason || data.message || raw, raw: data };
+        }
+      }catch(corsErr){
+        console.warn('[WA Gateway] fetch CORS gagal, fallback no-cors/Image', corsErr);
+      }
+
+      // 2) Fallback: no-cors (request tetap terkirim, response tidak bisa dibaca)
+      try{
+        await fetch(url, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+        return { ok: true, error: null, raw: 'sent-via-no-cors' };
+      }catch(e2){
+        console.warn('[WA Gateway] no-cors gagal, fallback Image beacon', e2);
+      }
+
+      // 3) Fallback terakhir: Image beacon (hampir selalu lolos dari browser)
+      try{
+        await new Promise((resolve, reject)=>{
+          const img = new Image();
+          const t = setTimeout(()=>{ resolve('timeout'); }, 8000);
+          img.onload = ()=>{ clearTimeout(t); resolve('load'); };
+          img.onerror = ()=>{ clearTimeout(t); resolve('error'); }; // error event tetap berarti request sampai
+          img.src = url;
+        });
+        return { ok: true, error: null, raw: 'sent-via-image-beacon' };
+      }catch(e3){
+        return { ok: false, error: e3.message || String(e3), raw: null };
+      }
+    }
+    if(provider === 'wablas'){
+      const res = await fetch(WA_GATEWAY.wablasUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': WA_GATEWAY.wablasToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone: String(target), message }),
+      });
+      const raw = await res.text();
+      let data = null;
+      try{ data = JSON.parse(raw); }catch(e){}
+      const ok = res.ok && (data ? (data.status === true || data.status === 'success' || data.message === 'success') : true);
+      return { ok, error: ok ? null : (data?.message || raw || ('HTTP '+res.status)), raw: data || raw };
+    }
+    // custom
+    const res = await fetch(WA_GATEWAY.customUrl, {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, WA_GATEWAY.customHeaders || {}),
+      body: JSON.stringify({ target: String(target), message }),
+    });
+    const raw = await res.text();
+    let data = null;
+    try{ data = JSON.parse(raw); }catch(e){}
+    const ok = res.ok;
+    return { ok, error: ok ? null : (data?.message || raw || ('HTTP '+res.status)), raw: data || raw };
+  }catch(err){
+    return { ok: false, error: err.message || String(err), raw: null };
+  }
+}
+
+/**
+ * Kirim notifikasi otomatis lewat gateway.
+ * - Selalu ke WA_GATEWAY.target (grup/nomor utama)
+ * - Opsional juga ke tiap nomor di WA_CONTACTS jika alsoSendToContacts=true
+ * Return { ok, detail } — ok=true jika minimal 1 target berhasil.
+ */
+async function sendWAViaGateway(message){
+  if(!isWAGatewayReady()){
+    return { ok: false, skipped: true, detail: 'Gateway belum dikonfigurasi (enabled/token/target).' };
+  }
+  const targets = [];
+  if(WA_GATEWAY.target) targets.push({ label: 'Grup/Target', id: WA_GATEWAY.target });
+  if(WA_GATEWAY.alsoSendToContacts && Array.isArray(WA_CONTACTS)){
+    WA_CONTACTS.forEach(c=>{
+      if(c.phone && !targets.some(t=>t.id===c.phone)) targets.push({ label: c.name, id: c.phone });
+    });
+  }
+  const results = [];
+  for(const t of targets){
+    const r = await sendWAGatewayTo(t.id, message);
+    results.push({ ...t, ...r });
+  }
+  const anyOk = results.some(r=>r.ok);
+  const lines = results.map(r=> r.ok ? `✓ ${r.label}` : `✗ ${r.label}: ${r.error||'gagal'}`);
+  return { ok: anyOk, skipped: false, detail: lines.join(' · '), results };
+}
+
+/** Kirim via gateway (jika aktif) lalu tampilkan panel manual sebagai cadangan / konfirmasi. */
+async function notifyWAAuto(title, summaryHtml, message){
+  let gatewayNote = '';
+  try{
+    if(isWAGatewayReady()){
+      console.log('[WA Gateway] mengirim...', { target: WA_GATEWAY.target, provider: WA_GATEWAY.provider, len: (message||'').length });
+      const res = await sendWAViaGateway(message);
+      console.log('[WA Gateway] hasil:', res);
+      if(res.skipped){
+        gatewayNote = `<div style="margin-top:8px;font-size:12px;color:var(--text-dim);">Gateway: ${res.detail}</div>`;
+      } else if(res.ok){
+        gatewayNote = `<div style="margin-top:8px;font-size:12px;color:var(--green);">✓ Terkirim otomatis via gateway (${WA_GATEWAY.provider}): ${res.detail}</div>`;
+      } else {
+        gatewayNote = `<div style="margin-top:8px;font-size:12px;color:var(--red);">⚠ Gateway gagal kirim: ${res.detail}. Gunakan tombol manual di bawah.</div>`;
+        // Tampilkan alert supaya user langsung tahu jika gagal
+        try{ alert('⚠ Gagal kirim WA via gateway:\n' + res.detail + '\n\nGunakan tombol di panel notifikasi untuk kirim manual / coba ulang.'); }catch(e){}
+      }
+    } else {
+      gatewayNote = `<div style="margin-top:8px;font-size:12px;color:var(--text-dim);">Gateway otomatis belum aktif — isi <code>WA_GATEWAY</code> di kode (enabled, token, target) agar pesan terkirim sendiri ke grup.</div>`;
+      console.warn('[WA Gateway] belum ready', WA_GATEWAY);
+    }
+  }catch(err){
+    console.error('[WA Gateway] exception', err);
+    gatewayNote = `<div style="margin-top:8px;font-size:12px;color:var(--red);">⚠ Error gateway: ${err.message||err}</div>`;
+  }
+  showWANotifyPanel(title, (summaryHtml || '') + gatewayNote, message);
+}
+
+
+
+/* ================= NOTIFIKASI WHATSAPP (Daily Approve / Plan Open / Breakdown) ================= */
+/* Pola sama dengan P2H: buka wa.me dengan pesan terisi, atau salin teks untuk ditempel ke grup WA. */
+
+function getOpenPlanScheduleLines(){
+  const openPlans = planningSystemRecords.filter(r => (r.status || '') === 'Open');
+  if(!openPlans.length) return ['(Tidak ada Plan Schedule Maintenance berstatus Open)'];
+  // Urut dueDate terdekat dulu
+  const sorted = openPlans.slice().sort((a,b)=> (a.dueDate||'').localeCompare(b.dueDate||''));
+  return sorted.map((r,i)=>{
+    const pic = [r.picName, r.pic2Name].filter(Boolean).join(' / ') || '—';
+    return `${i+1}. ${r.unitCode||'-'} · ${r.component||r.jobDesc||'-'} · Due ${r.dueDate||'-'} · PIC ${pic}`;
+  });
+}
+
+function buildApprovedDailyWAMessage(record){
+  const lines = [];
+  lines.push('*DAILY MAINTENANCE — APPROVED*');
+  lines.push(`Unit: ${record.unitCode||'-'} (${record.typeUnit||'-'})`);
+  lines.push(`Tanggal: ${record.tanggal||'-'}   Shift: ${record.shift||'-'}`);
+  lines.push(`Kategori: ${record.category||'-'}`);
+  if(record.codeBD) lines.push(`Code BD: ${record.codeBD}`);
+  lines.push(`HM: ${record.hm ?? '-'}`);
+  lines.push(`Status Job: ${record.status||'-'}`);
+  if(record.planUnplan) lines.push(`Plan/Unplan: ${record.planUnplan}`);
+  if(record.breakdownDesc || record.jobDesc) lines.push(`Deskripsi: ${record.breakdownDesc || record.jobDesc || '-'}`);
+  if(record.repairAction) lines.push(`Repair Action: ${record.repairAction}`);
+  if(record.duration != null && record.duration !== '') lines.push(`Durasi: ${record.duration} jam`);
+  lines.push(`Mechanic: ${record.mechanic || record.submittedBy || '-'}`);
+  lines.push(`Approved by: ${record.approvedBy||'-'} · ${record.approvedAt||'-'}`);
+  lines.push('');
+  lines.push('*PLAN SCHEDULE MAINTENANCE (Status OPEN)*');
+  getOpenPlanScheduleLines().forEach(l => lines.push(l));
+  lines.push('');
+  lines.push('_Notifikasi otomatis — Unit Care Heavy Equipment / Panel Maintenance A2B_');
+  return lines.join('\n');
+}
+
+function buildBreakdownWAMessage(record){
+  const lines = [];
+  lines.push('*LAPORAN BREAKDOWN UNIT — DATA BARU*');
+  lines.push(`Unit: ${record.unitCode||'-'} (${record.typeUnit||'-'})`);
+  lines.push(`Tanggal: ${record.tanggal||'-'}   Jam: ${record.jamBreakdown||'-'}   Shift: ${record.shift||'-'}`);
+  lines.push(`HM: ${record.hm ?? '-'}`);
+  lines.push(`Operator: ${record.operator||'-'}`);
+  lines.push(`Keterangan: ${record.keterangan||'-'}`);
+  lines.push(`Dilaporkan oleh: ${record.createdBy||'-'}`);
+  lines.push('');
+  lines.push('*PLAN SCHEDULE MAINTENANCE (Status OPEN)*');
+  getOpenPlanScheduleLines().forEach(l => lines.push(l));
+  lines.push('');
+  lines.push('_Notifikasi otomatis — Unit Care Heavy Equipment / Panel Maintenance A2B_');
+  return lines.join('\n');
+}
+
+let _waNotifyCurrentMessage = '';
+
+function showWANotifyPanel(title, summaryHtml, message){
+  _waNotifyCurrentMessage = message || '';
+  const overlay = document.getElementById('wa-notify-overlay');
+  const titleEl = document.getElementById('wa-notify-title');
+  const summaryEl = document.getElementById('wa-notify-summary');
+  const previewEl = document.getElementById('wa-notify-preview');
+  const btnWrap = document.getElementById('wa-notify-buttons');
+  const groupBtn = document.getElementById('wa-notify-group-btn');
+  if(!overlay) return;
+  if(titleEl) titleEl.textContent = title || 'Notifikasi WhatsApp';
+  if(summaryEl) summaryEl.innerHTML = summaryHtml || '';
+  if(previewEl) previewEl.textContent = message || '';
+  const encoded = encodeURIComponent(message || '');
+  // Tombol utama: buka WhatsApp tanpa nomor → user pilih grup, pesan sudah terisi
+  if(groupBtn){
+    groupBtn.href = 'https://wa.me/?text=' + encoded;
+    groupBtn.style.display = message ? '' : 'none';
+  }
+  if(btnWrap){
+    const contactBtns = (typeof WA_CONTACTS !== 'undefined' ? WA_CONTACTS : []).map(c=>
+      `<a class="btn small" style="background:#25D366; color:#07301c;" target="_blank" rel="noopener" href="https://wa.me/${c.phone}?text=${encoded}">📲 ${c.name}</a>`
+    ).join('');
+    btnWrap.innerHTML = contactBtns
+      ? ('<span style="font-size:11px;color:var(--text-dim);width:100%;margin-bottom:4px;">Atau kirim ke kontak:</span>' + contactBtns)
+      : '';
+  }
+  overlay.classList.add('show');
+}
+
+function closeWANotifyPanel(){
+  const overlay = document.getElementById('wa-notify-overlay');
+  if(overlay) overlay.classList.remove('show');
+}
+
+async function copyWANotifyMessage(){
+  const msg = _waNotifyCurrentMessage || '';
+  if(!msg){ alert('Tidak ada pesan untuk disalin.'); return; }
+  try{
+    await navigator.clipboard.writeText(msg);
+    alert('✓ Pesan berhasil disalin. Tempel di grup WhatsApp lalu kirim.');
+  }catch(e){
+    // Fallback: select text in preview
+    const preview = document.getElementById('wa-notify-preview');
+    if(preview){
+      const range = document.createRange();
+      range.selectNodeContents(preview);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      try{ document.execCommand('copy'); alert('✓ Pesan berhasil disalin. Tempel di grup WhatsApp lalu kirim.'); }
+      catch(e2){ alert('Gagal menyalin otomatis. Silakan salin manual dari preview pesan.'); }
+    }
+  }
+}
+
+
+document.getElementById('wa-notify-close')?.addEventListener('click', closeWANotifyPanel);
+document.getElementById('wa-notify-close-2')?.addEventListener('click', closeWANotifyPanel);
+document.getElementById('wa-notify-copy')?.addEventListener('click', copyWANotifyMessage);
+document.getElementById('wa-notify-gateway-btn')?.addEventListener('click', async ()=>{
+  const msg = _waNotifyCurrentMessage || '';
+  if(!msg){ alert('Tidak ada pesan untuk dikirim.'); return; }
+  if(!isWAGatewayReady()){
+    alert('Gateway belum dikonfigurasi.\n\nBuka file HTML, cari konstanta WA_GATEWAY, lalu isi:\n- enabled: true\n- provider: \'fonnte\' / \'wablas\' / \'custom\'\n- token API\n- target (nomor atau ID grup)\n\nSetelah itu refresh halaman.');
+    return;
+  }
+  const btn = document.getElementById('wa-notify-gateway-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Mengirim...'; }
+  const res = await sendWAViaGateway(msg);
+  if(btn){ btn.disabled = false; btn.textContent = '⚡ Kirim Otomatis (Gateway)'; }
+  if(res.ok) alert('✓ Berhasil dikirim via gateway:\n' + res.detail);
+  else alert('⚠ Gagal mengirim via gateway:\n' + res.detail);
+});
+document.getElementById('wa-notify-overlay')?.addEventListener('click', (e)=>{
+  if(e.target === document.getElementById('wa-notify-overlay')) closeWANotifyPanel();
+});
+
+
 
 const p2hUnitSelect = document.getElementById('p2h-unitcode');
 fillUnitSelect(p2hUnitSelect);
@@ -9576,6 +9934,17 @@ document.getElementById('form-bdreport').addEventListener('submit', async (e)=>{
   breakdownReports.unshift(record);
   await saveBreakdownReports();
   renderBreakdownReportTable();
+
+  // Notifikasi WA otomatis (gateway) + panel manual cadangan
+  try{
+    const openCount = planningSystemRecords.filter(x => (x.status||'')==='Open').length;
+    const msg = buildBreakdownWAMessage(record);
+    await notifyWAAuto(
+      'Laporan Breakdown Baru — Notifikasi WA',
+      `Laporan breakdown unit <b>${record.unitCode||'-'}</b> berhasil disimpan. Pesan mencakup detail laporan + <b>${openCount}</b> Plan Schedule Maintenance berstatus Open.`,
+      msg
+    );
+  }catch(e){ console.error('WA notify (breakdown) failed', e); }
 
   const keepUnit = bdrUnitSelect.value;
   document.getElementById('form-bdreport').reset();
