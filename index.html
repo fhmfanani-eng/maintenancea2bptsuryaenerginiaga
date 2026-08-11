@@ -359,8 +359,10 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 .unit-card .type{ font-family:'Oswald',sans-serif; font-size:17px; font-weight:600; letter-spacing:0.4px; margin-bottom:2px;}
 .unit-card .cat-label{ font-size:10px; color:var(--text-faint); letter-spacing:1px; text-transform:uppercase; margin-bottom:12px; }
 .unit-card .code{ font-family:'JetBrains Mono',monospace; font-size:13px; background:#15171b; display:inline-block; padding:4px 9px; border-radius:2px; color:var(--yellow); border:1px solid var(--line); margin-bottom:10px;}
-.unit-card .stats{ display:flex; gap:16px; margin-top:10px; font-size:11px; color:var(--text-dim); }
-.unit-card .stats b{ color:var(--text); display:block; font-size:15px; font-family:'JetBrains Mono',monospace; font-weight:500;}
+.unit-card .stats{ display:flex; flex-wrap:wrap; gap:12px 14px; margin-top:10px; font-size:11px; color:var(--text-dim); }
+.unit-card .stats b{ color:var(--text); display:block; font-size:14px; font-family:'JetBrains Mono',monospace; font-weight:500;}
+.unit-card .stats .stat-wh b{ color:var(--yellow); }
+.unit-card .stats .stat-twh b{ color:#7fe0e0; }
 .unit-card .kpi-mini{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px 8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
 .unit-card .kpi-mini .kpi-mini-item{ font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.4px; }
 .unit-card .kpi-mini .kpi-mini-item b{ display:block; font-size:13px; font-family:'JetBrains Mono',monospace; margin-top:3px; font-weight:600; }
@@ -1115,8 +1117,13 @@ body.role-pjo .view > .banner{ display:none !important; }
 
       <!-- DATABASE UNIT -->
       <section class="view" id="view-database">
-        <div class="panel-head" style="margin-bottom:16px;"><h2>Performance Unit A2B</h2></div>
-        <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy, MA, PA) tiap unit dihitung otomatis dari data Daily Maintenance dan data Monitoring HM — Plan Service hanya untuk monitoring jadwal, tidak perlu input manual.</div>
+        <div class="panel-head" style="margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <h2>Performance Unit A2B</h2>
+          <div class="toolbar" style="align-items:center; gap:8px;">
+            <button type="button" class="btn small" id="unit-sync-perf-btn" title="Ambil W/S/R & Total Jam Kerja dari sheet performance">☁ Sync dari Sheet Performance</button>
+          </div>
+        </div>
+        <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy, MA, PA) tiap unit dihitung otomatis. <b>Working Hours</b>, <b>Total WH</b>, MA &amp; PA disinkron dari sheet <code>performance</code> bila periode filter cocok — klik tombol sync di atas setelah mengubah data/periode di spreadsheet.</div>
 
         <div class="panel period-panel" style="margin-bottom:16px;">
           <div class="panel-head" style="margin-bottom:8px;">
@@ -1136,7 +1143,7 @@ body.role-pjo .view > .banner{ display:none !important; }
               </div>
             </div>
           </div>
-          <div class="hint" style="margin-bottom:0;" id="unit-period-hint">Pilih periode minggu (W1–W4 tiap bulan) untuk melihat pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy) tiap unit pada minggu tersebut. MA &amp; PA ikut dihitung ulang dari data Monitoring HM pada minggu yang sama.</div>
+          <div class="hint" style="margin-bottom:0;" id="unit-period-hint">Pilih periode (Weekly/Monthly) untuk melihat KPI tiap unit. Working Hours &amp; Total WH ikut data sheet performance jika periode cocok.</div>
         </div>
 
         <div class="grid grid-2" id="unit-cards"></div>
@@ -5430,6 +5437,35 @@ function unitIconSVG(category){
     <circle cx="70" cy="72" r="9" fill="#20232a" stroke="#565c66" stroke-width="2"/>
   </svg>`;
 }
+/**
+ * Working Hours (W) & Total Working Hours dari sheet performance (periode cocok)
+ * atau fallback Monitoring HM. Total WH di sheet = kolom "Total Jam Kerja" (biasanya W+S+R).
+ */
+function getUnitWorkingHours(unitCode, startStr, endStr){
+  if(mapaData && mapaData.fromPerformance && mapaData.rows && mapaData.rows.length
+      && performancePeriodMatches(startStr||null, endStr||null)){
+    const row = mapaData.rows.find(r=>String(r.unit||'').trim().toUpperCase()===String(unitCode||'').trim().toUpperCase());
+    if(row){
+      const w = Number(row.w)||0;
+      const s = Number(row.s)||0;
+      const r = Number(row.r)||0;
+      const t = (row.t !== undefined && row.t !== null && row.t !== '') ? Number(row.t) : (w + s + r);
+      return { w, t, source:'performance' };
+    }
+  }
+  const hmwsr = hmWSRForUnit(unitCode, startStr||null, endStr||null);
+  if(hmwsr){
+    return { w: hmwsr.W, t: (hmwsr.W + hmwsr.S + hmwsr.R), source:'hm' };
+  }
+  return { w:null, t:null, source:null };
+}
+
+function fmtHours(v){
+  if(v === null || v === undefined || isNaN(v)) return '—';
+  const n = Number(v);
+  return (Math.abs(n - Math.round(n)) < 0.05) ? String(Math.round(n)) : n.toFixed(1);
+}
+
 function renderUnitCards(){
   populateUnitWeekPeriodSelect();
   const periodSel = document.getElementById('unit-week-period-select');
@@ -5438,15 +5474,21 @@ function renderUnitCards(){
   // dibawa ke modal histori unit supaya angka Total Job/Breakdown yang ditampilkan di kartu
   // SELALU sinkron dengan angka yang ditampilkan saat kartu tsb diklik, sesuai filter mingguan/bulanan yang aktif.
   const weekPeriodLabel = weekPeriod ? (periodSel?.selectedOptions?.[0]?.textContent || '') : '';
+  let rangeStart = null, rangeEnd = null;
+  if(weekPeriod){
+    const parts = weekPeriod.split('_');
+    rangeStart = parts[0] || null;
+    rangeEnd = parts[1] || null;
+  }
   const wrap = document.getElementById('unit-cards');
   wrap.innerHTML = UNITS.map(u=>{
     let jobs = dailyRecords.filter(r=>r.unitCode===u.code);
     if(weekPeriod){
-      const [startStr, endStr] = weekPeriod.split('_');
-      jobs = jobs.filter(r=>r.tanggal && r.tanggal>=startStr && r.tanggal<=endStr);
+      jobs = jobs.filter(r=>r.tanggal && r.tanggal>=rangeStart && r.tanggal<=rangeEnd);
     }
     const bd = jobs.filter(r=>r.category==='Breakdown').length;
     const lastHM = jobs.length ? Math.max(...jobs.map(r=>Number(r.hm)||0)) : '—';
+    const wh = getUnitWorkingHours(u.code, rangeStart, rangeEnd);
     const k = computeUnitKPIsFor(u.code, weekPeriod);
     // Average Achievement — weighted (Σ Score ÷ Σ Bobot × 100), ikut filter Weekly/Monthly
     const unitKpiKeys = ['mtbs','mttr','pmr','sa','ma','pa'];
@@ -5454,6 +5496,12 @@ function renderUnitCards(){
     const sumSc = unitKpiKeys.reduce((s,key)=> s + kpiWeightedScore(key, k[key]||0), 0);
     const avgAch = totalW > 0 ? (sumSc / totalW * 100) : 0;
     const avgCol = avgAch>=90 ? 'var(--green)' : avgAch>=75 ? 'var(--yellow)' : 'var(--red)';
+    const whTitle = wh.source==='performance'
+      ? 'Working Hours dari sheet performance (Waktu Operasi)'
+      : (wh.source==='hm' ? 'Working Hours dari Monitoring HM' : 'Belum ada data Working Hours');
+    const twhTitle = wh.source==='performance'
+      ? 'Total Working Hours dari sheet performance (Total Jam Kerja)'
+      : (wh.source==='hm' ? 'Total Working Hours = W+S+R dari Monitoring HM' : 'Belum ada data');
     return `<div class="unit-card">
       <div class="unit-visual">${(()=>{ const photo = getUnitPhoto(u.category, u.type); return photo ? `<img src="${photo}" alt="${u.type}" class="unit-photo">` : unitIconSVG(u.category); })()}</div>
       <div class="cat-label">${u.category}</div>
@@ -5463,6 +5511,8 @@ function renderUnitCards(){
         <div onclick="openUnitHistory('${u.code}','all','${weekPeriod}','${escUH(weekPeriodLabel)}')" title="Klik untuk lihat histori">Total Job<b>${jobs.length}</b></div>
         <div onclick="openUnitHistory('${u.code}','breakdown','${weekPeriod}','${escUH(weekPeriodLabel)}')" title="Klik untuk lihat histori breakdown">Breakdown<b style="color:${bd>0?'var(--red)':'var(--text)'}">${bd}</b></div>
         <div>HM Terakhir<b>${lastHM}</b></div>
+        <div class="stat-wh" title="${escUH(whTitle)}">Working Hours<b>${fmtHours(wh.w)}</b></div>
+        <div class="stat-twh" title="${escUH(twhTitle)}">Total WH<b>${fmtHours(wh.t)}</b></div>
       </div>
       <div style="margin:10px 0 4px; padding:8px 10px; background:rgba(255,199,44,0.08); border:1px solid rgba(255,199,44,0.25); border-radius:6px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
         <span style="font-size:10px; font-weight:700; letter-spacing:0.5px; color:var(--text-dim); text-transform:uppercase; font-family:'JetBrains Mono',monospace;">Average Achievement</span>
@@ -9278,16 +9328,19 @@ async function fetchPerformanceFromSheets(opts){
       return { ok:false, error: errMsg };
     }
 
-    const rows = data.rows.map(r=>({
-      unit: String(r.unit||'').trim(),
-      w: Number(r.w)||0,
-      s: Number(r.s)||0,
-      r: Number(r.r)||0
-    })).filter(r=>r.unit);
+    const rows = data.rows.map(r=>{
+      const w = Number(r.w)||0;
+      const s = Number(r.s)||0;
+      const rv = Number(r.r)||0;
+      const tRaw = (r.t !== undefined && r.t !== null && r.t !== '') ? Number(r.t) : NaN;
+      const t = !isNaN(tRaw) ? tRaw : (w + s + rv);
+      return { unit: String(r.unit||'').trim(), w, s, r: rv, t };
+    }).filter(r=>r.unit);
 
     const totalW = rows.reduce((a,x)=>a+x.w, 0);
     const totalS = rows.reduce((a,x)=>a+x.s, 0);
     const totalR = rows.reduce((a,x)=>a+x.r, 0);
+    const totalT = rows.reduce((a,x)=>a+x.t, 0);
     const label = data.label ||
       ((data.periodStart && data.periodEnd)
         ? ('performance-sheet (' + data.periodStart + ' s/d ' + data.periodEnd + ')')
@@ -9298,6 +9351,7 @@ async function fetchPerformanceFromSheets(opts){
       totalW,
       totalS,
       totalR,
+      totalT,
       fileName: label,
       updatedAt: data.syncedAt || new Date().toISOString(),
       fromPerformance: true,
@@ -9465,15 +9519,25 @@ document.getElementById('mapa-template-btn').addEventListener('click', function(
   XLSX.writeFile(wb, 'template-ma-pa.xlsx');
 });
 
-document.getElementById('mapa-sync-perf-btn')?.addEventListener('click', async function(){
-  const btn = document.getElementById('mapa-sync-perf-btn');
+async function runPerformanceSyncFromUI(btn){
   if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
   try{
     const result = await fetchPerformanceFromSheets({ manual:true });
-    if(result && result.ok) renderDashboard();
+    if(result && result.ok){
+      renderDashboard();
+      renderUnitCards();
+    }
   }finally{
     if(btn){ btn.disabled = false; btn.textContent = '☁ Sync dari Sheet Performance'; }
   }
+}
+
+document.getElementById('mapa-sync-perf-btn')?.addEventListener('click', function(){
+  runPerformanceSyncFromUI(document.getElementById('mapa-sync-perf-btn'));
+});
+
+document.getElementById('unit-sync-perf-btn')?.addEventListener('click', function(){
+  runPerformanceSyncFromUI(document.getElementById('unit-sync-perf-btn'));
 });
 
 document.getElementById('unit-week-period-select').addEventListener('change', renderUnitCards);
