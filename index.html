@@ -362,6 +362,8 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 .unit-card .stats{ display:flex; flex-wrap:wrap; gap:12px 14px; margin-top:10px; font-size:11px; color:var(--text-dim); }
 .unit-card .stats b{ color:var(--text); display:block; font-size:14px; font-family:'JetBrains Mono',monospace; font-weight:500;}
 .unit-card .stats .stat-wh b{ color:var(--yellow); }
+.unit-card .stats .stat-standby b{ color:#7db3ee; }
+.unit-card .stats .stat-bd b{ color:var(--red); }
 .unit-card .stats .stat-twh b{ color:#7fe0e0; }
 .unit-card .kpi-mini{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px 8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
 .unit-card .kpi-mini .kpi-mini-item{ font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.4px; }
@@ -1123,7 +1125,7 @@ body.role-pjo .view > .banner{ display:none !important; }
             <button type="button" class="btn small" id="unit-sync-perf-btn" title="Ambil W/S/R & Total Jam Kerja dari sheet performance">☁ Sync dari Sheet Performance</button>
           </div>
         </div>
-        <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy, MA, PA) tiap unit dihitung otomatis. <b>Working Hours</b>, <b>Total WH</b>, MA &amp; PA disinkron dari sheet <code>performance</code> bila periode filter cocok — klik tombol sync di atas setelah mengubah data/periode di spreadsheet.</div>
+        <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI tiap unit dihitung otomatis. <b>Waktu Operasi / Standby / Breakdown / Total Jam Kerja</b> &amp; MA/PA <b>sync live</b> dari sheet <code>performance</code> saat filter periode diubah atau panel dibuka (tanpa perlu klik sync). Tombol sync tetap tersedia untuk paksa refresh.</div>
 
         <div class="panel period-panel" style="margin-bottom:16px;">
           <div class="panel-head" style="margin-bottom:8px;">
@@ -4250,7 +4252,14 @@ navItems.forEach(item=>{
     views.forEach(v=>v.classList.remove('active'));
     document.getElementById('view-'+item.dataset.view).classList.add('active');
     document.getElementById('topbar-title').textContent = titleMap[item.dataset.view];
-    if(item.dataset.view==='dashboard') renderDashboard();
+    if(item.dataset.view==='dashboard'){
+      // Live sync performance saat buka Dashboard / KPI Report
+      autoSyncPerformanceAndRefresh('dashboard');
+    }
+    if(item.dataset.view==='database'){
+      // Live sync performance saat buka Master Unit
+      autoSyncPerformanceAndRefresh('units');
+    }
     if(item.dataset.view==='daily'){ refreshDailyRecords().then(renderDailyTable); }
     if(item.dataset.view==='summary'){ refreshDailyRecords().then(()=>{ renderSummary(); renderHistory(); }); }
     if(item.dataset.view==='planningsystem') renderPlanningTable();
@@ -4860,6 +4869,11 @@ loginForm.addEventListener('submit', async (e)=>{
   renderAll();
   updateRoleUI();
   applySavedNavOrder();
+  startPerformanceLiveSync();
+  // Sync performance sekali setelah login (silent)
+  ensurePerformanceSynced({ force:true }).then(res=>{
+    if(res && res.ok){ renderDashboard(); renderUnitCards(); }
+  }).catch(()=>{});
 });
 
 /* Auto-isi "User Name" dari "Nama Lengkap" — memakai spasi (bukan titik) supaya lebih
@@ -5438,26 +5452,28 @@ function unitIconSVG(category){
   </svg>`;
 }
 /**
- * Working Hours (W) & Total Working Hours dari sheet performance (periode cocok)
- * atau fallback Monitoring HM. Total WH di sheet = kolom "Total Jam Kerja" (biasanya W+S+R).
+ * Data operasional per unit dari sheet performance (format sama tabel spreadsheet):
+ *   Waktu Operasi (W) | Standby (S) | Breakdown (R) | Total Jam Kerja (T)
+ * Periode filter harus cocok dengan periodStart–periodEnd sheet. Fallback: Monitoring HM.
  */
 function getUnitWorkingHours(unitCode, startStr, endStr){
   if(mapaData && mapaData.fromPerformance && mapaData.rows && mapaData.rows.length
       && performancePeriodMatches(startStr||null, endStr||null)){
     const row = mapaData.rows.find(r=>String(r.unit||'').trim().toUpperCase()===String(unitCode||'').trim().toUpperCase());
     if(row){
-      const w = Number(row.w)||0;
-      const s = Number(row.s)||0;
-      const r = Number(row.r)||0;
-      const t = (row.t !== undefined && row.t !== null && row.t !== '') ? Number(row.t) : (w + s + r);
-      return { w, t, source:'performance' };
+      const w = Number(row.workingHours != null ? row.workingHours : row.w) || 0;
+      const s = Number(row.s) || 0;
+      const r = Number(row.r) || 0;
+      let t = Number(row.totalWorkingHours != null ? row.totalWorkingHours : row.t);
+      if(isNaN(t) || t <= 0) t = w + s + r;
+      return { w, s, r, t, source:'performance' };
     }
   }
   const hmwsr = hmWSRForUnit(unitCode, startStr||null, endStr||null);
   if(hmwsr){
-    return { w: hmwsr.W, t: (hmwsr.W + hmwsr.S + hmwsr.R), source:'hm' };
+    return { w: hmwsr.W, s: hmwsr.S, r: hmwsr.R, t: (hmwsr.W + hmwsr.S + hmwsr.R), source:'hm' };
   }
-  return { w:null, t:null, source:null };
+  return { w:null, s:null, r:null, t:null, source:null };
 }
 
 function fmtHours(v){
@@ -5486,8 +5502,6 @@ function renderUnitCards(){
     if(weekPeriod){
       jobs = jobs.filter(r=>r.tanggal && r.tanggal>=rangeStart && r.tanggal<=rangeEnd);
     }
-    const bd = jobs.filter(r=>r.category==='Breakdown').length;
-    const lastHM = jobs.length ? Math.max(...jobs.map(r=>Number(r.hm)||0)) : '—';
     const wh = getUnitWorkingHours(u.code, rangeStart, rangeEnd);
     const k = computeUnitKPIsFor(u.code, weekPeriod);
     // Average Achievement — weighted (Σ Score ÷ Σ Bobot × 100), ikut filter Weekly/Monthly
@@ -5496,23 +5510,18 @@ function renderUnitCards(){
     const sumSc = unitKpiKeys.reduce((s,key)=> s + kpiWeightedScore(key, k[key]||0), 0);
     const avgAch = totalW > 0 ? (sumSc / totalW * 100) : 0;
     const avgCol = avgAch>=90 ? 'var(--green)' : avgAch>=75 ? 'var(--yellow)' : 'var(--red)';
-    const whTitle = wh.source==='performance'
-      ? 'Working Hours dari sheet performance (Waktu Operasi)'
-      : (wh.source==='hm' ? 'Working Hours dari Monitoring HM' : 'Belum ada data Working Hours');
-    const twhTitle = wh.source==='performance'
-      ? 'Total Working Hours dari sheet performance (Total Jam Kerja)'
-      : (wh.source==='hm' ? 'Total Working Hours = W+S+R dari Monitoring HM' : 'Belum ada data');
+    const srcLabel = wh.source==='performance' ? 'sheet performance' : (wh.source==='hm' ? 'Monitoring HM' : '—');
     return `<div class="unit-card">
       <div class="unit-visual">${(()=>{ const photo = getUnitPhoto(u.category, u.type); return photo ? `<img src="${photo}" alt="${u.type}" class="unit-photo">` : unitIconSVG(u.category); })()}</div>
       <div class="cat-label">${u.category}</div>
       <div class="type">${u.type}</div>
       <div class="code">${u.code}</div>
       <div class="stats">
-        <div onclick="openUnitHistory('${u.code}','all','${weekPeriod}','${escUH(weekPeriodLabel)}')" title="Klik untuk lihat histori">Total Job<b>${jobs.length}</b></div>
-        <div onclick="openUnitHistory('${u.code}','breakdown','${weekPeriod}','${escUH(weekPeriodLabel)}')" title="Klik untuk lihat histori breakdown">Breakdown<b style="color:${bd>0?'var(--red)':'var(--text)'}">${bd}</b></div>
-        <div>HM Terakhir<b>${lastHM}</b></div>
-        <div class="stat-wh" title="${escUH(whTitle)}">Working Hours<b>${fmtHours(wh.w)}</b></div>
-        <div class="stat-twh" title="${escUH(twhTitle)}">Total WH<b>${fmtHours(wh.t)}</b></div>
+        <div onclick="openUnitHistory('${u.code}','all','${weekPeriod}','${escUH(weekPeriodLabel)}')" title="Klik untuk lihat histori job">Total Job<b>${jobs.length}</b></div>
+        <div class="stat-wh" title="Waktu Operasi dari ${srcLabel}">Waktu Operasi<b>${fmtHours(wh.w)}</b></div>
+        <div class="stat-standby" title="Standby dari ${srcLabel}">Standby<b>${fmtHours(wh.s)}</b></div>
+        <div class="stat-bd" title="Breakdown (jam) dari ${srcLabel} — klik untuk histori record" onclick="openUnitHistory('${u.code}','breakdown','${weekPeriod}','${escUH(weekPeriodLabel)}')">Breakdown<b>${fmtHours(wh.r)}</b></div>
+        <div class="stat-twh" title="Total Jam Kerja dari ${srcLabel}">Total Jam Kerja<b>${fmtHours(wh.t)}</b></div>
       </div>
       <div style="margin:10px 0 4px; padding:8px 10px; background:rgba(255,199,44,0.08); border:1px solid rgba(255,199,44,0.25); border-radius:6px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
         <span style="font-size:10px; font-weight:700; letter-spacing:0.5px; color:var(--text-dim); text-transform:uppercase; font-family:'JetBrains Mono',monospace;">Average Achievement</span>
@@ -8696,7 +8705,8 @@ let kpiInspectionMonthValue = ''; // '' = bulan berjalan — filter chart Pre In
 
 function onKpiMonthlyChartPeriodChange(selectEl){
   kpiMonthlyChartPeriodValue = selectEl.value;
-  renderDashboard();
+  // Auto-sync live dari sheet performance, lalu render KPI Report (tanpa klik tombol)
+  autoSyncPerformanceAndRefresh('dashboard');
 }
 function onKpiInspectionMonthChange(selectEl){
   kpiInspectionMonthValue = selectEl.value;
@@ -9295,9 +9305,16 @@ async function saveMapaData(){
   catch(e){ console.error('save mapa data failed', e); }
 }
 
+/* ---- Auto-sync sheet performance (live, tanpa klik tombol) ----
+   Cache singkat agar filter periode tidak membanjiri Apps Script. */
+const PERF_AUTO_SYNC_TTL_MS = 20000; // 20 detik — fetch ulang jika lebih lama
+let _perfSyncInFlight = null;
+let _perfLastFetchAt = 0;
+let _perfAutoTimer = null;
+
 /**
- * Ambil data W/S/R dari sheet "performance" lewat Apps Script (action=getPerformance).
- * Tidak membuat sheet baru — hanya membaca tab performance yang sudah ada.
+ * Ambil data W/S/R/T dari sheet "performance" lewat Apps Script (action=getPerformance).
+ * Dipakai manual (tombol) maupun otomatis (filter periode / interval live).
  */
 async function fetchPerformanceFromSheets(opts){
   opts = opts || {};
@@ -9309,7 +9326,7 @@ async function fetchPerformanceFromSheets(opts){
     const url = BACKEND_CONFIG.sheetsWebAppUrl +
       (BACKEND_CONFIG.sheetsWebAppUrl.indexOf('?')>=0 ? '&' : '?') +
       'action=getPerformance';
-    const res = await fetch(url, { method:'GET', redirect:'follow' });
+    const res = await fetch(url, { method:'GET', redirect:'follow', cache:'no-store' });
     let data = null;
     try{ data = await res.json(); }catch(_e){ data = null; }
 
@@ -9317,7 +9334,8 @@ async function fetchPerformanceFromSheets(opts){
       const res2 = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getPerformance' })
+        body: JSON.stringify({ action: 'getPerformance' }),
+        cache: 'no-store'
       });
       try{ data = await res2.json(); }catch(_e){ data = null; }
     }
@@ -9329,12 +9347,17 @@ async function fetchPerformanceFromSheets(opts){
     }
 
     const rows = data.rows.map(r=>{
-      const w = Number(r.w)||0;
-      const s = Number(r.s)||0;
-      const rv = Number(r.r)||0;
-      const tRaw = (r.t !== undefined && r.t !== null && r.t !== '') ? Number(r.t) : NaN;
-      const t = !isNaN(tRaw) ? tRaw : (w + s + rv);
-      return { unit: String(r.unit||'').trim(), w, s, r: rv, t };
+      const w = Number(r.workingHours != null ? r.workingHours : r.w) || 0;
+      const s = Number(r.s) || 0;
+      const rv = Number(r.r) || 0;
+      let t = Number(r.totalWorkingHours != null ? r.totalWorkingHours : r.t);
+      if(isNaN(t) || t <= 0) t = w + s + rv;
+      return {
+        unit: String(r.unit||'').trim(),
+        w, s, r: rv, t,
+        workingHours: w,
+        totalWorkingHours: t
+      };
     }).filter(r=>r.unit);
 
     const totalW = rows.reduce((a,x)=>a+x.w, 0);
@@ -9358,6 +9381,7 @@ async function fetchPerformanceFromSheets(opts){
       periodStart: data.periodStart || '',
       periodEnd: data.periodEnd || ''
     };
+    _perfLastFetchAt = Date.now();
     await saveMapaData();
     try{ await appStorage.set('mapa-performance-seeded-v2', JSON.stringify(true)); }catch(_e){}
 
@@ -9368,13 +9392,62 @@ async function fetchPerformanceFromSheets(opts){
         ' · R: ' + totalR.toFixed(1) + ' jam\n' +
         (data.periodStart && data.periodEnd ? ('Periode: ' + data.periodStart + ' s/d ' + data.periodEnd) : ''));
     }
-    return { ok:true, rows: rows.length, totalW, totalS, totalR };
+    return { ok:true, rows: rows.length, totalW, totalS, totalR, totalT, changed:true };
   }catch(e){
     console.error('fetchPerformanceFromSheets gagal', e);
     if(opts.manual) alert('⚠ Sync sheet performance gagal: ' + (e.message||e) +
       '\nPastikan Apps Script sudah di-deploy (Who has access: Anyone) dan action getPerformance aktif.');
     return { ok:false, error:String(e) };
   }
+}
+
+/**
+ * Pastikan data performance terbaru (auto). Silent by default.
+ * - force:true → selalu fetch
+ * - respect TTL agar filter cepat tidak spam request
+ */
+async function ensurePerformanceSynced(opts){
+  opts = opts || {};
+  const force = !!opts.force;
+  const age = Date.now() - _perfLastFetchAt;
+  if(!force && _perfLastFetchAt > 0 && age < PERF_AUTO_SYNC_TTL_MS){
+    return { ok:true, cached:true, age };
+  }
+  if(_perfSyncInFlight) return _perfSyncInFlight;
+  _perfSyncInFlight = (async ()=>{
+    try{
+      return await fetchPerformanceFromSheets({ manual:false });
+    }finally{
+      _perfSyncInFlight = null;
+    }
+  })();
+  return _perfSyncInFlight;
+}
+
+/** Auto-sync lalu render Master Unit + Dashboard (dipakai filter periode). */
+async function autoSyncPerformanceAndRefresh(which){
+  try{
+    await ensurePerformanceSynced({ force:true });
+  }catch(e){ console.warn('auto sync performance', e); }
+  if(which==='units' || which==='all') renderUnitCards();
+  if(which==='dashboard' || which==='all') renderDashboard();
+}
+
+/** Live poll setiap 45 detik saat user login — sheet performance tetap nyambung. */
+function startPerformanceLiveSync(){
+  if(_perfAutoTimer) return;
+  _perfAutoTimer = setInterval(async ()=>{
+    if(!loggedInUser) return;
+    try{
+      const res = await ensurePerformanceSynced({ force:true });
+      if(res && res.ok && res.changed){
+        const dash = document.getElementById('view-dashboard');
+        const units = document.getElementById('view-database');
+        if(dash && dash.classList.contains('active')) renderDashboard();
+        if(units && units.classList.contains('active')) renderUnitCards();
+      }
+    }catch(e){ /* silent */ }
+  }, 45000);
 }
 
 function renderMAPAUploadStatus(){
@@ -9540,8 +9613,13 @@ document.getElementById('unit-sync-perf-btn')?.addEventListener('click', functio
   runPerformanceSyncFromUI(document.getElementById('unit-sync-perf-btn'));
 });
 
-document.getElementById('unit-week-period-select').addEventListener('change', renderUnitCards);
-document.getElementById('unit-period-type-select').addEventListener('change', renderUnitCards);
+document.getElementById('unit-week-period-select').addEventListener('change', function(){
+  // Auto-sync live dari sheet performance saat filter periode Master Unit berubah
+  autoSyncPerformanceAndRefresh('units');
+});
+document.getElementById('unit-period-type-select').addEventListener('change', function(){
+  autoSyncPerformanceAndRefresh('units');
+});
 
 /* ================= NOTIFICATION CENTER (Mekanik & Supervisor) ================= */
 /* Notifikasi web di HP/laptop:
@@ -9918,6 +9996,7 @@ function subscribeDailyRealtime(){
     applySavedNavOrder();
     requestNotifPermission();
     subscribeDailyRealtime();
+    startPerformanceLiveSync();
     // Jaring pengaman: refresh dailyRecords dari database setiap 30 detik.
     // Ini menjaga data tetap sinkron walau channel realtime sempat putus koneksi
     // (mis. laptop sleep semalaman) dan tidak mengirim ulang perubahan yang terlewat.
