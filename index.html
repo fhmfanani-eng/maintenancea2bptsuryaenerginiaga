@@ -3763,55 +3763,70 @@ const PERFORMANCE_SEED = {
   periodEnd: '2026-08-10'
 };
 
-/** Selesaikan MA & PA: prioritaskan seed performance sheet, lalu HM, lalu mapa upload manual. */
+/**
+ * Apakah rentang filter (startStr–endStr) cocok dengan periode sheet performance?
+ * Sheet performance hanya menyimpan SATU periode (D2–G2). Data-nya hanya dipakai
+ * jika filter dashboard/unit overlap dengan periode itu (toleransi: sama bulan, atau
+ * filter di dalam rentang performance, atau performance di dalam filter).
+ * Tanpa filter periode (null/null = Semua Periode) → performance tetap dipakai.
+ */
+function performancePeriodMatches(startStr, endStr){
+  if(!mapaData || !mapaData.fromPerformance) return false;
+  const ps = mapaData.periodStart || '';
+  const pe = mapaData.periodEnd || '';
+  // Tidak ada info periode di data performance → anggap global, boleh dipakai
+  if(!ps && !pe) return true;
+  // Tidak ada filter (Semua Periode) → pakai performance
+  if(!startStr && !endStr) return true;
+  // Filter hanya punya salah satu sisi
+  const s = startStr || ps;
+  const e = endStr || pe;
+  if(!ps || !pe) return true;
+  // Overlap: filter dan performance saling bersinggungan
+  // (start filter <= end performance) AND (end filter >= start performance)
+  return s <= pe && e >= ps;
+}
+
+function maPaFromRows(rows){
+  const W = rows.reduce((s,r)=>s+(Number(r.w)||0),0);
+  const S = rows.reduce((s,r)=>s+(Number(r.s)||0),0);
+  const R = rows.reduce((s,r)=>s+(Number(r.r)||0),0);
+  return {
+    ma: (W+R)>0 ? (W/(W+R)*100) : 0,
+    pa: (W+S+R)>0 ? ((W+S)/(W+S+R)*100) : 0,
+    W, S, R
+  };
+}
+
+/** Selesaikan MA & PA: performance sheet (periode cocok) → HM → upload manual. */
 function resolveMaPa(unitCode, startStr, endStr){
-  // 1) Seed dari sheet performance — selalu dipakai selama masih aktif
-  if(mapaData && mapaData.fromPerformance && mapaData.rows && mapaData.rows.length){
+  // 1) Sheet performance — HANYA jika periode filter cocok dengan periode di sheet
+  if(mapaData && mapaData.fromPerformance && mapaData.rows && mapaData.rows.length
+      && performancePeriodMatches(startStr||null, endStr||null)){
     if(unitCode){
       const rows = mapaData.rows.filter(r=>String(r.unit||'').trim().toUpperCase()===String(unitCode).toUpperCase());
-      if(rows.length){
-        const W = rows.reduce((s,r)=>s+(Number(r.w)||0),0);
-        const S = rows.reduce((s,r)=>s+(Number(r.s)||0),0);
-        const R = rows.reduce((s,r)=>s+(Number(r.r)||0),0);
-        return {
-          ma: (W+R)>0 ? (W/(W+R)*100) : 0,
-          pa: (W+S+R)>0 ? ((W+S)/(W+S+R)*100) : 0
-        };
-      }
-      return { ma:0, pa:0 };
+      if(rows.length) return maPaFromRows(rows);
+      // Unit tidak ada di sheet performance untuk periode ini → jangan paksa 0,
+      // biarkan fallback ke HM agar unit lain tetap bisa dihitung.
+    } else {
+      return maPaFromRows(mapaData.rows);
     }
-    const W = mapaData.totalW||0, S = mapaData.totalS||0, R = mapaData.totalR||0;
-    return {
-      ma: (W+R)>0 ? (W/(W+R)*100) : 0,
-      pa: (W+S+R)>0 ? ((W+S)/(W+S+R)*100) : 0
-    };
   }
   // 2) Monitoring HM (periode-aware)
   const hmwsr = unitCode
     ? hmWSRForUnit(unitCode, startStr||null, endStr||null)
     : hmWSRGlobal(startStr||null, endStr||null);
   if(hmwsr) return maPaFromWSR(hmwsr);
-  // 3) Fallback upload manual mapa
-  if(mapaData && mapaData.rows && mapaData.rows.length){
+  // 3) Fallback upload manual mapa (bukan fromPerformance, atau periode tidak cocok)
+  if(mapaData && mapaData.rows && mapaData.rows.length && !mapaData.fromPerformance){
     if(unitCode){
       const rows = mapaData.rows.filter(r=>String(r.unit||'').trim().toUpperCase()===String(unitCode).toUpperCase());
-      if(rows.length){
-        const W = rows.reduce((s,r)=>s+(Number(r.w)||0),0);
-        const S = rows.reduce((s,r)=>s+(Number(r.s)||0),0);
-        const R = rows.reduce((s,r)=>s+(Number(r.r)||0),0);
-        return {
-          ma: (W+R)>0 ? (W/(W+R)*100) : 0,
-          pa: (W+S+R)>0 ? ((W+S)/(W+S+R)*100) : 0
-        };
-      }
+      if(rows.length) return maPaFromRows(rows);
       return { ma:0, pa:0 };
     }
-    const W = mapaData.totalW||0, S = mapaData.totalS||0, R = mapaData.totalR||0;
-    return {
-      ma: (W+R)>0 ? (W/(W+R)*100) : 0,
-      pa: (W+S+R)>0 ? ((W+S)/(W+S+R)*100) : 0
-    };
+    return maPaFromRows(mapaData.rows);
   }
+  // 4) Performance ada tapi periode tidak cocok & HM kosong → tetap 0 (jangan pakai data periode salah)
   return { ma:0, pa:0 };
 }
 
@@ -9183,16 +9198,34 @@ function renderDashboard(){
 
   const maPaStatusEl = document.getElementById('ma-pa-source-status');
   if(maPaStatusEl){
-    if(mapaData && mapaData.fromPerformance && mapaData.rows && mapaData.rows.length){
-      maPaStatusEl.innerHTML = `⛭ MA &amp; PA disinkron dari sheet <b>performance</b> Google Spreadsheet (<b>${mapaData.fileName}</b>) — W: <b>${(mapaData.totalW||0).toFixed(1)}</b> · S: <b>${(mapaData.totalS||0).toFixed(1)}</b> · R: <b>${(mapaData.totalR||0).toFixed(1)}</b> jam (${mapaData.rows.length} unit).`;
+    // Periode filter dashboard (bulan KPI Report Monthly) untuk status
+    let filterStart = null, filterEnd = null;
+    if(kpiMonthlyChartPeriodValue){
+      const [y,m] = kpiMonthlyChartPeriodValue.split('-').map(Number);
+      if(y && m){
+        filterStart = toDateStr(new Date(y, m-1, 1));
+        filterEnd = toDateStr(new Date(y, m, 0));
+      }
+    }
+    const perfMatch = mapaData && mapaData.fromPerformance && mapaData.rows && mapaData.rows.length
+      && performancePeriodMatches(filterStart, filterEnd);
+
+    if(perfMatch){
+      const ps = mapaData.periodStart || '?';
+      const pe = mapaData.periodEnd || '?';
+      maPaStatusEl.innerHTML = `☁ MA &amp; PA dari sheet <b>performance</b> (<b>${mapaData.fileName|| (ps+' s/d '+pe)}</b>) — W: <b>${(mapaData.totalW||0).toFixed(1)}</b> · S: <b>${(mapaData.totalS||0).toFixed(1)}</b> · R: <b>${(mapaData.totalR||0).toFixed(1)}</b> jam (${mapaData.rows.length} unit). Filter periode cocok → angka sama dengan spreadsheet.`;
+    } else if(mapaData && mapaData.fromPerformance && mapaData.rows && mapaData.rows.length){
+      const ps = mapaData.periodStart || '?';
+      const pe = mapaData.periodEnd || '?';
+      maPaStatusEl.innerHTML = `⚠ Sheet performance tersimpan untuk periode <b>${ps} s/d ${pe}</b>, tetapi filter dashboard berbeda. MA &amp; PA periode ini dihitung dari Monitoring HM (bukan performance). Ubah periode di sheet lalu klik <b>☁ Sync dari Sheet Performance</b>, atau pilih filter yang cocok.`;
     } else {
-      const hmwsrStatus = hmWSRGlobal(null, null);
+      const hmwsrStatus = hmWSRGlobal(filterStart, filterEnd);
       if(hmwsrStatus){
-        maPaStatusEl.innerHTML = `⛭ MA &amp; PA dihitung otomatis dari <b>${hmRecords.length}</b> baris data Monitoring HM (${hmwsrStatus.units.length} unit) — Jam Kerja (W): <b>${hmwsrStatus.W.toFixed(1)}</b> jam · Jam Standby (S): <b>${hmwsrStatus.S.toFixed(1)}</b> jam · Jam Repair (R): <b>${hmwsrStatus.R.toFixed(1)}</b> jam.`;
+        maPaStatusEl.innerHTML = `⛭ MA &amp; PA dihitung dari <b>Monitoring HM</b> (${hmwsrStatus.units.length} unit) — W: <b>${hmwsrStatus.W.toFixed(1)}</b> · S: <b>${hmwsrStatus.S.toFixed(1)}</b> · R: <b>${hmwsrStatus.R.toFixed(1)}</b> jam.`;
       } else if(mapaData && mapaData.rows && mapaData.rows.length){
         maPaStatusEl.innerHTML = `⛭ Belum ada data Monitoring HM — MA &amp; PA memakai fallback file jam operasional manual (<b>${mapaData.fileName}</b>).`;
       } else {
-        maPaStatusEl.innerHTML = `⛭ Belum ada data Monitoring HM maupun file jam operasional manual — MA &amp; PA masih 0%.`;
+        maPaStatusEl.innerHTML = `⛭ Belum ada data Monitoring HM maupun sheet performance — MA &amp; PA masih 0%. Klik <b>☁ Sync dari Sheet Performance</b>.`;
       }
     }
   }
