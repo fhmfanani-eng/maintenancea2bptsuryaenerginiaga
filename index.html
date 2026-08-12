@@ -259,6 +259,27 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover{ opacity:1; }
 }
 .period-input-group select:focus{ border:none; outline:none; }
 .period-input-group .period-input-caret{ color:var(--yellow-dim); font-size:10px; flex-shrink:0; pointer-events:none; }
+.period-range-row{ }
+.period-range-label{
+  font-family:'Oswald',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.6px;
+  color:var(--text-dim); text-transform:uppercase; flex-shrink:0;
+}
+.period-range-sep{
+  font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--yellow-dim);
+  text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0;
+}
+.period-date-group{ min-width:170px; }
+.period-input-group .period-date-input{
+  border:none; background:transparent; color:var(--yellow); font-weight:700;
+  font-family:'JetBrains Mono',monospace; letter-spacing:0.4px; padding:9px 8px;
+  color-scheme:dark; cursor:pointer; width:100%;
+}
+.period-input-group .period-date-input:focus{ border:none; outline:none; }
+.period-input-group .period-date-input::-webkit-calendar-picker-indicator{
+  filter:invert(78%) sepia(56%) saturate(586%) hue-rotate(358deg) brightness(103%) contrast(101%);
+  cursor:pointer; opacity:0.9;
+}
+@media(max-width:640px){ .period-date-group{ min-width:150px; } }
 .field{ margin-bottom:14px; }
 textarea{ resize:vertical; min-height:56px; }
 .btn{
@@ -1125,27 +1146,26 @@ body.role-pjo .view > .banner{ display:none !important; }
             <button type="button" class="btn small" id="unit-sync-perf-btn" title="Ambil W/S/R & Total Jam Kerja dari sheet performance">☁ Sync dari Sheet Performance</button>
           </div>
         </div>
-        <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI tiap unit dihitung otomatis. <b>Waktu Operasi / Standby / Breakdown / Total Jam Kerja</b> &amp; MA/PA <b>sync live</b> dari sheet <code>performance</code> saat filter periode diubah atau panel dibuka (tanpa perlu klik sync). Tombol sync tetap tersedia untuk paksa refresh.</div>
+        <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI tiap unit dihitung otomatis. <b>Waktu Operasi / Standby / Breakdown / Total Jam Kerja</b> &amp; MA/PA <b>sync live</b> dari sheet <code>performance</code> saat filter periode diubah atau panel dibuka (tanpa perlu klik sync). <b>MTBS / MTTR / PMR / SA</b> juga otomatis mengikuti rentang tanggal yang dipilih — dihitung ulang langsung dari record Daily Maintenance (Approved) yang jatuh pada periode tsb. Tombol sync tetap tersedia untuk paksa refresh.</div>
 
         <div class="panel period-panel" style="margin-bottom:16px;">
           <div class="panel-head" style="margin-bottom:8px;">
-            <h2><span class="tag">FILTER</span> PERIODE KPI REKAP <span id="unit-period-mode-label">Weekly</span></h2>
-            <div class="toolbar" style="align-items:center;">
-              <div class="field period-input-group" style="margin-bottom:0; min-width:170px;">
-                <select id="unit-period-type-select">
-                  <option value="week">Weekly</option>
-                  <option value="month">Monthly</option>
-                </select>
-                <span class="period-input-caret">▾</span>
-              </div>
-              <div class="field period-input-group" style="margin-bottom:0; min-width:260px;">
-                <span class="period-input-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
-                <select id="unit-week-period-select"></select>
-                <span class="period-input-caret">▾</span>
-              </div>
-            </div>
+            <h2><span class="tag">FILTER</span> PERIODE KPI REKAP</h2>
           </div>
-          <div class="hint" style="margin-bottom:0;" id="unit-period-hint">Pilih periode (Weekly/Monthly) untuk melihat KPI tiap unit. Working Hours &amp; Total WH ikut data sheet performance jika periode cocok.</div>
+          <div class="toolbar period-range-row" style="align-items:center; gap:10px; flex-wrap:wrap;">
+            <span class="period-range-label">PERIODE</span>
+            <div class="field period-input-group period-date-group" style="margin-bottom:0;">
+              <span class="period-input-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+              <input type="date" id="unit-period-start" class="period-date-input">
+            </div>
+            <span class="period-range-sep">sd</span>
+            <div class="field period-input-group period-date-group" style="margin-bottom:0;">
+              <span class="period-input-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+              <input type="date" id="unit-period-end" class="period-date-input">
+            </div>
+            <button type="button" class="btn secondary small" id="unit-period-reset-btn" title="Hapus filter tanggal dan tampilkan semua periode">✕ Semua Periode</button>
+          </div>
+          <div class="hint" style="margin-bottom:0; margin-top:10px;" id="unit-period-hint">Pilih periode sesuai sheet performance (tanggal · bulan · tahun). Working Hours &amp; MA/PA mengikuti data sheet performance bila rentang cocok.</div>
         </div>
 
         <div class="grid grid-2" id="unit-cards"></div>
@@ -5343,36 +5363,52 @@ function getUnitMonthPeriodOptions(){
   return Array.from(months.entries()).sort((a,b)=>b[1]-a[1]).map(([key])=>key);
 }
 
+/** Format rentang tanggal seperti di sheet performance: "1 Agustus 2026 s/d 10 Agustus 2026" */
+function formatPerformancePeriodLabel(startStr, endStr){
+  if(!startStr || !endStr) return '—';
+  const s = new Date(startStr + 'T00:00:00');
+  const e = new Date(endStr + 'T00:00:00');
+  if(isNaN(s) || isNaN(e)) return startStr + ' s/d ' + endStr;
+  const fmt = (d)=> d.getDate() + ' ' + d.toLocaleDateString('id-ID', { month:'long' }) + ' ' + d.getFullYear();
+  return fmt(s) + ' s/d ' + fmt(e);
+}
+
+/** Key periode dari sheet performance (periodStart_periodEnd). */
+function getPerformancePeriodKey(){
+  if(!mapaData || !mapaData.fromPerformance) return '';
+  const ps = (mapaData.periodStart || '').trim();
+  const pe = (mapaData.periodEnd || '').trim();
+  if(!ps || !pe) return '';
+  return ps + '_' + pe;
+}
+
+/**
+ * Filter periode Performance Unit — dua input tanggal "PERIODE ... sd ..." (gaya sheet performance),
+ * bukan lagi dropdown. Default: rentang tanggal aktif dari sheet performance (kalau ada).
+ * Setelah user mengubah tanggal secara manual (termasuk mengosongkan / "Semua Periode"),
+ * pilihan tsb dipertahankan dan tidak ditimpa lagi oleh default sheet performance.
+ */
 function populateUnitWeekPeriodSelect(){
-  const sel = document.getElementById('unit-week-period-select');
-  if(!sel) return;
-  const typeSel = document.getElementById('unit-period-type-select');
-  const mode = typeSel ? typeSel.value : 'week';
-  const prev = sel.value;
-  if(mode==='month'){
-    const months = getUnitMonthPeriodOptions();
-    const fmtMonth = (s)=> new Date(s+'T00:00:00').toLocaleDateString('id-ID', { month:'long', year:'numeric' });
-    sel.innerHTML = '<option value="">Semua Periode</option>' + months.map(key=>{
-      const [startStr] = key.split('_');
-      return `<option value="${key}">${fmtMonth(startStr)}</option>`;
-    }).join('');
-    sel.value = months.includes(prev) ? prev : '';
-  } else {
-    const groups = getUnitWeekPeriodGroups();
-    const allKeys = [];
-    sel.innerHTML = '<option value="">Semua Periode</option>' + groups.map(g=>{
-      const opts = g.weeks.map(w=>{ allKeys.push(w.key); return `<option value="${w.key}">${w.label}</option>`; }).join('');
-      return `<optgroup label="${g.groupLabel}">${opts}</optgroup>`;
-    }).join('');
-    sel.value = allKeys.includes(prev) ? prev : '';
+  const startEl = document.getElementById('unit-period-start');
+  const endEl = document.getElementById('unit-period-end');
+  if(!startEl || !endEl) return;
+  const perfKey = getPerformancePeriodKey();
+
+  if(typeof window._unitPeriodTouched === 'undefined') window._unitPeriodTouched = false;
+  if(!window._unitPeriodTouched && perfKey){
+    const [ps, pe] = perfKey.split('_');
+    startEl.value = ps;
+    endEl.value = pe;
   }
-  const modeLabel = document.getElementById('unit-period-mode-label');
+
   const hintEl = document.getElementById('unit-period-hint');
-  if(modeLabel) modeLabel.textContent = mode==='month' ? 'Monthly' : 'Weekly';
   if(hintEl){
-    hintEl.innerHTML = mode==='month'
-      ? 'Pilih periode bulan (tanggal 1 s/d akhir bulan) untuk melihat pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy) tiap unit pada bulan tersebut. MA &amp; PA ikut dihitung ulang dari data Monitoring HM pada bulan yang sama.'
-      : 'Pilih periode minggu (W1–W4 tiap bulan) untuk melihat pencapaian KPI (MTBS, MTTR, PMR, Service Accuracy) tiap unit pada minggu tersebut. MA &amp; PA ikut dihitung ulang dari data Monitoring HM pada minggu yang sama.';
+    if(perfKey){
+      const [ps, pe] = perfKey.split('_');
+      hintEl.innerHTML = `Periode mengikuti sheet performance: <b>${formatPerformancePeriodLabel(ps, pe)}</b>. Working Hours &amp; MA/PA sinkron otomatis jika filter cocok, sedangkan MTBS/MTTR/PMR/SA dihitung ulang dari record pada rentang tanggal ini. Ubah tanggal di atas atau klik "✕ Semua Periode" untuk melihat data tanpa batasan tanggal.`;
+    } else {
+      hintEl.innerHTML = 'Belum ada periode dari sheet performance. Klik <b>☁ Sync dari Sheet Performance</b> agar periode (tanggal · bulan · tahun) terisi, atau atur tanggal secara manual di atas.';
+    }
   }
 }
 
@@ -5484,18 +5520,16 @@ function fmtHours(v){
 
 function renderUnitCards(){
   populateUnitWeekPeriodSelect();
-  const periodSel = document.getElementById('unit-week-period-select');
-  const weekPeriod = periodSel?.value || '';
-  // Label periode yang sedang aktif dipilih (mis. "Minggu 1 (1–7 Jan 2026)" atau "Januari 2026") —
-  // dibawa ke modal histori unit supaya angka Total Job/Breakdown yang ditampilkan di kartu
-  // SELALU sinkron dengan angka yang ditampilkan saat kartu tsb diklik, sesuai filter mingguan/bulanan yang aktif.
-  const weekPeriodLabel = weekPeriod ? (periodSel?.selectedOptions?.[0]?.textContent || '') : '';
-  let rangeStart = null, rangeEnd = null;
-  if(weekPeriod){
-    const parts = weekPeriod.split('_');
-    rangeStart = parts[0] || null;
-    rangeEnd = parts[1] || null;
-  }
+  const startEl = document.getElementById('unit-period-start');
+  const endEl = document.getElementById('unit-period-end');
+  const startVal = startEl?.value || '';
+  const endVal = endEl?.value || '';
+  const weekPeriod = (startVal && endVal) ? (startVal + '_' + endVal) : '';
+  // Label periode aktif (mis. "1 Agustus 2026 s/d 10 Agustus 2026") —
+  // dibawa ke modal histori unit supaya angka Total Job/Breakdown sinkron dengan filter periode.
+  const weekPeriodLabel = weekPeriod ? formatPerformancePeriodLabel(startVal, endVal) : '';
+  const rangeStart = weekPeriod ? startVal : null;
+  const rangeEnd = weekPeriod ? endVal : null;
   const wrap = document.getElementById('unit-cards');
   wrap.innerHTML = UNITS.map(u=>{
     let jobs = dailyRecords.filter(r=>r.unitCode===u.code);
@@ -5504,7 +5538,7 @@ function renderUnitCards(){
     }
     const wh = getUnitWorkingHours(u.code, rangeStart, rangeEnd);
     const k = computeUnitKPIsFor(u.code, weekPeriod);
-    // Average Achievement — weighted (Σ Score ÷ Σ Bobot × 100), ikut filter Weekly/Monthly
+    // Average Achievement — weighted (Σ Score ÷ Σ Bobot × 100), ikut filter periode
     const unitKpiKeys = ['mtbs','mttr','pmr','sa','ma','pa'];
     const totalW = unitKpiKeys.reduce((s,key)=> s + (KPI_WEIGHT[key]||0), 0);
     const sumSc = unitKpiKeys.reduce((s,key)=> s + kpiWeightedScore(key, k[key]||0), 0);
@@ -9613,11 +9647,19 @@ document.getElementById('unit-sync-perf-btn')?.addEventListener('click', functio
   runPerformanceSyncFromUI(document.getElementById('unit-sync-perf-btn'));
 });
 
-document.getElementById('unit-week-period-select').addEventListener('change', function(){
+function onUnitPeriodDateChange(){
+  window._unitPeriodTouched = true;
   // Auto-sync live dari sheet performance saat filter periode Master Unit berubah
   autoSyncPerformanceAndRefresh('units');
-});
-document.getElementById('unit-period-type-select').addEventListener('change', function(){
+}
+document.getElementById('unit-period-start')?.addEventListener('change', onUnitPeriodDateChange);
+document.getElementById('unit-period-end')?.addEventListener('change', onUnitPeriodDateChange);
+document.getElementById('unit-period-reset-btn')?.addEventListener('click', function(){
+  window._unitPeriodTouched = true;
+  const s = document.getElementById('unit-period-start');
+  const e = document.getElementById('unit-period-end');
+  if(s) s.value = '';
+  if(e) e.value = '';
   autoSyncPerformanceAndRefresh('units');
 });
 
