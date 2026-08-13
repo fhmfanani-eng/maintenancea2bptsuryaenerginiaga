@@ -149,6 +149,7 @@ body{
 .nav-item.nav-drop-before{ box-shadow:inset 0 3px 0 0 var(--yellow); }
 .nav-item.nav-drop-after{ box-shadow:inset 0 -3px 0 0 var(--yellow); }
 .nav.nav-reordering .nav-item{ cursor:default; }
+
 .sidebar-foot{
   padding:14px 20px; border-top:1px solid rgba(255,255,255,0.06);
   font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono',monospace; letter-spacing:1.2px;
@@ -1039,7 +1040,7 @@ body.role-pjo .view > .banner{ display:none !important; }
       <div class="mark">UNIT CARE HEAVY EQUIPMENT</div>
       <div class="sub">MECHANIC MAINTENANCE A2B PANEL</div>
     </div>
-    <nav class="nav">
+    <nav class="nav" id="main-nav">
       <div class="nav-item active" data-view="dashboard"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span><span class="label">KPI REPORT</span></div>
       <div class="nav-item" data-view="database"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></span><span class="label">Master Unit</span></div>
       <div class="nav-item" data-view="accounts"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle><path d="M16 3.13a4 4 0 0 1 0 7.75"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path></svg></span><span class="label">Database Akun</span></div>
@@ -1050,7 +1051,6 @@ body.role-pjo .view > .banner{ display:none !important; }
       <div class="nav-item" data-view="planningsystem"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span><span class="label">Plan Shcedule Maintenance</span><span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
       <div class="nav-item" data-view="summary"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><span class="label">Mechanic Activity Report</span></div>
       <div class="nav-item" data-view="hm"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span><span class="label">Monitoring HM</span></div>
-      <div class="nav-item" data-view="bdreport"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M10.29 3.86l-8.18 14.18A2 2 0 0 0 3.82 21h16.36a2 2 0 0 0 1.71-2.96L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span><span class="label">Laporan Breakdown Unit</span></div>
     </nav>
     <div class="sidebar-foot" id="sidebar-status"><span class="status-dot"></span>SYSTEM ONLINE</div>
   </aside>
@@ -1098,16 +1098,8 @@ body.role-pjo .view > .banner{ display:none !important; }
       <section class="view active" id="view-dashboard">
         <div class="banner">⛭ Data tersimpan otomatis dan dibagikan ke seluruh pengguna panel ini (shared workshop database).</div>
 
-        <div class="section-title">Grafik KPI</div>
-        <div class="grid grid-2" id="kpi-chart-dashboard" style="margin-bottom:20px; align-items:start;"></div>
-
-        <!-- kpi-grid gauge cards dihapus — diganti tabel detail di chart monthly/quarterly -->
-        <div class="grid grid-3" id="kpi-grid" style="display:none;"></div>
-        <div class="hint" id="ma-pa-source-status" style="margin-top:10px;"></div>
-        <div class="hint" style="margin-top:14px; margin-bottom:6px;">KPI (MTBS, MTTR, PMR, dan Service Accuracy/SA) dihitung hanya dari record <b>Daily Maintenance</b> yang sudah berstatus <b>Approved</b> oleh Supervisor — SA memakai flag Plan/Unplan tiap record Daily Maintenance kategori Periodical. Data <b>Plan Service hanya dipakai untuk monitoring jadwal</b>, tidak lagi jadi sumber perhitungan KPI. Khusus MA &amp; PA <b>disinkron langsung dari sheet performance</b> Google Spreadsheet (prioritas tertinggi). Jika sheet performance kosong/gagal, dipakai data Monitoring HM + Daily Maintenance (Breakdown Approved), lalu fallback ke upload manual di bawah.</div>
-
         <div class="section-title">Data Sumber MA &amp; PA</div>
-        <div class="panel">
+        <div class="panel" style="margin-bottom:20px;">
           <div class="panel-head">
             <h2><span class="tag">SYNC</span> Sheet Performance + Fallback Manual</h2>
             <div class="toolbar">
@@ -1116,18 +1108,18 @@ body.role-pjo .view > .banner{ display:none !important; }
               <button type="button" class="btn danger" id="mapa-clear-btn" style="display:none;">Hapus Data</button>
             </div>
           </div>
-          <div class="hint" style="margin-bottom:12px;">
-            <b>Prioritas 1 — Sheet performance</b> (Google Spreadsheet, tab <code>performance</code>): data W / S / R per unit diambil lewat Apps Script (<code>?action=getPerformance</code>). Tidak perlu buat sheet baru.
-            <br><b>Prioritas 2 — Monitoring HM</b> (otomatis dari data HM + Breakdown Approved).
-            <br><b>Prioritas 3 — Upload manual</b> (CSV/XLSX di bawah) hanya untuk unit/periode yang belum punya data di atas.
-            <br>Rumus: MA = <span style="font-family:'JetBrains Mono',monospace;">W / (W+R) × 100%</span> · PA = <span style="font-family:'JetBrains Mono',monospace;">(W+S) / (W+S+R) × 100%</span>.
-          </div>
           <div class="field" style="max-width:420px; margin-bottom:6px;">
             <label>Pilih File (fallback manual)</label>
             <input type="file" id="mapa-file-input" accept=".csv,.xlsx,.xls">
           </div>
           <div id="mapa-upload-status" class="hint"></div>
         </div>
+
+        <div class="section-title">Grafik KPI</div>
+        <div class="grid grid-2" id="kpi-chart-dashboard" style="margin-bottom:20px; align-items:start;"></div>
+
+        <!-- kpi-grid gauge cards dihapus — diganti tabel detail di chart monthly/quarterly -->
+        <div class="grid grid-3" id="kpi-grid" style="display:none;"></div>
 
         <!-- Ringkasan Operasional dihapus -->
         <div id="stat-units" style="display:none;">0</div>
@@ -1165,7 +1157,6 @@ body.role-pjo .view > .banner{ display:none !important; }
             </div>
             <button type="button" class="btn secondary small" id="unit-period-reset-btn" title="Hapus filter tanggal dan tampilkan semua periode">✕ Semua Periode</button>
           </div>
-          <div class="hint" style="margin-bottom:0; margin-top:10px;" id="unit-period-hint">Pilih periode sesuai sheet performance (tanggal · bulan · tahun). Working Hours &amp; MA/PA mengikuti data sheet performance bila rentang cocok.</div>
         </div>
 
         <div class="grid grid-2" id="unit-cards"></div>
@@ -1491,13 +1482,15 @@ body.role-pjo .view > .banner{ display:none !important; }
             <div class="grid grid-4">
               <div class="field"><label>Breakdown Category (Komponen/Spartpart)</label>
                 <select id="d-bdcategory" required>
-                  <option value="Powertrain">Powertrain</option>
-                  <option value="Hydraulic & Structural">Hydraulic &amp; Structural</option>
-                  <optgroup label="Support & Consumable">
-                    <option value="Support & Consumable">Support &amp; Consumable (Umum)</option>
-                    <option value="Engine">Engine</option>
-                    <option value="Undercarriage">Undercarriage</option>
-                  </optgroup>
+                  <option value="Engine">Engine</option>
+                  <option value="Powertrain">Power train</option>
+                  <option value="Hydraulic">Hydraulic</option>
+                  <option value="Differential/Exel">Differential/Exel</option>
+                  <option value="Electrical">Electrical</option>
+                  <option value="Cabin">Cabin</option>
+                  <option value="Undercarriage">Undercarriage</option>
+                  <option value="Attachment (Bucket, Blade)">Attachment (Bucket, Blade)</option>
+                  <option value="Support & Consumable">Support &amp; Consumable (Umum)</option>
                 </select>
               </div>
               <div class="field"><label>Man Power</label>
@@ -4259,7 +4252,7 @@ async function saveBreakdownReports(){
 
 /* ================= NAV ================= */
 const views = document.querySelectorAll('.view');
-const navItems = document.querySelectorAll('.nav-item');
+const navItems = document.querySelectorAll('#main-nav .nav-item');
 const titleMap = {
   dashboard:'KPI REPORT', database:'Performance Unit A2B', accounts:'Database Akun', preinspection:'Pre Inspection', p2h:'P2H (Pemeriksaan Harian)', daily:'Daily Maintenance',
   plan:'Plan Service', planningsystem:'Plan Shcedule Maintenance', summary:'Mechanic Activity Report',
@@ -4297,7 +4290,7 @@ navItems.forEach(item=>{
    keinginan mereka. Urutan disimpan per-akun (localStorage) di browser/device yang
    bersangkutan, jadi tidak mengubah urutan default untuk user lain. */
 (function initNavReorder(){
-  const navEl = document.querySelector('.nav');
+  const navEl = document.getElementById('main-nav');
   if(!navEl) return;
   let draggedItem = null;
 
@@ -4379,6 +4372,7 @@ navItems.forEach(item=>{
     });
   });
 })();
+
 function updateTopbarDateTime(){
   const now = new Date();
   const clockEl = document.getElementById('topbar-clock');
@@ -5019,16 +5013,16 @@ function updateRoleUI(){
     if(btn) btn.style.display = (isSupervisor && canEditPanel('daily')) ? '' : 'none';
   });
 
-  const activeItem = document.querySelector('.nav-item.active');
+  const activeItem = document.querySelector('#main-nav .nav-item.active');
   if(activeItem && activeItem.classList.contains('role-hidden')){
     const fallbackOrder = isOperator ? ['p2h','bdreport','dashboard'] : ['dashboard','daily','p2h','bdreport'];
     let clicked = false;
     for(const v of fallbackOrder){
-      const fb = document.querySelector(`.nav-item[data-view="${v}"]`);
+      const fb = document.querySelector(`#main-nav .nav-item[data-view="${v}"]`);
       if(fb && !fb.classList.contains('role-hidden')){ fb.click(); clicked = true; break; }
     }
     if(!clicked){
-      const any = document.querySelector('.nav-item:not(.role-hidden)');
+      const any = document.querySelector('#main-nav .nav-item:not(.role-hidden)');
       if(any) any.click();
     }
   }
@@ -9806,7 +9800,7 @@ function fireBrowserNotifications(notifs){
 }
 
 window.goToNotifView = function(view){
-  const item = document.querySelector(`.nav-item[data-view="${view}"]`);
+  const item = document.querySelector(`#main-nav .nav-item[data-view="${view}"]`);
   if(item && !item.classList.contains('role-hidden')) item.click();
   const panel = document.getElementById('notif-panel');
   if(panel) panel.classList.remove('show');
