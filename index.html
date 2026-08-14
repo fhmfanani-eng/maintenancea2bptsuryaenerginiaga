@@ -651,7 +651,15 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 }
 .dash-hero-sub{ font-size:11px; color:var(--text-dim); letter-spacing:0.6px; text-transform:uppercase; margin-bottom:16px; }
 .dash-hero-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
-/* Tiap panel chart ditumpuk full-width sendiri-sendiri */
+/* 2x2 landscape: Trend KPI, Comparison, MTBS, MTTR */
+.dash-quad-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;
+  align-items:stretch;
+}
+@media(max-width:900px){
+  .dash-quad-grid{ grid-template-columns:1fr; }
+}
+/* Contribution + Summary full width di bawah */
 .dash-mid-grid{
   display:grid; grid-template-columns:1fr; gap:14px; margin-bottom:14px;
 }
@@ -674,10 +682,11 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 .dash-legend{ display:flex; flex-wrap:wrap; gap:8px 12px; margin-top:8px; font-size:10px; color:var(--text-dim); }
 .dash-legend i{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle; }
 .dash-contrib-wrap{
-  display:flex; align-items:center; gap:18px; flex-wrap:nowrap; justify-content:center;
+  display:flex; align-items:center; gap:28px; flex-wrap:wrap; justify-content:center;
+  padding:10px 0 6px;
 }
 .dash-contrib-legend{
-  display:flex; flex-direction:column; gap:4px; font-size:12px; min-width:72px;
+  display:flex; flex-direction:column; gap:6px; font-size:13px; min-width:90px;
   flex-shrink:0;
 }
 .dash-contrib-legend div{ display:flex; align-items:center; gap:8px; color:var(--text-dim); }
@@ -9421,8 +9430,8 @@ function renderKPIChartDashboard(k, globalStats){
       const b=Math.min(255,Math.max(0,Math.round(parseInt(c.slice(4,6),16)*f)));
       return `rgb(${r},${g},${b})`;
     }
-    const W=200, H=175, cx=100, cy=78;
-    const rx=78, ry=42, depth=14;
+    const W=360, H=300, cx=180, cy=135;
+    const rx=140, ry=76, depth=24;
     const rxIn=rx*0.48, ryIn=ry*0.48;
     function pt(angle, rox, roy, cy0){
       const a = angle - Math.PI/2;
@@ -9465,14 +9474,14 @@ function renderKPIChartDashboard(k, globalStats){
     // Angka % ditempel di permukaan chart (mid-angle tiap segmen)
     const labels=slices.map(s=>{
       const p=pt(s.mid,(rx+rxIn)/2,(ry+ryIn)/2,cy);
-      return `<text x="${p.x.toFixed(1)}" y="${(p.y+3).toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff" font-family="JetBrains Mono, monospace" style="text-shadow:0 1px 3px rgba(0,0,0,.8)">${s.pct.toFixed(0)}%</text>`;
+      return `<text x="${p.x.toFixed(1)}" y="${(p.y+4).toFixed(1)}" text-anchor="middle" font-size="15" font-weight="700" fill="#fff" font-family="JetBrains Mono, monospace" style="text-shadow:0 1px 3px rgba(0,0,0,.8)">${s.pct.toFixed(0)}%</text>`;
     }).join('');
     const shadow=`<ellipse cx="${cx}" cy="${cy+depth+10}" rx="${rx*0.9}" ry="${ry*0.5}" fill="rgba(0,0,0,0.4)" filter="url(#${uid}blur)"/>`;
-    return `<svg viewBox="0 0 ${W} ${H}" style="width:190px;height:165px;overflow:visible">
-      <defs><filter id="${uid}blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter></defs>
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:340px;height:285px;max-width:100%;overflow:visible">
+      <defs><filter id="${uid}blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter></defs>
       ${shadow}${sideHtml}${topHtml}${labels}
-      <text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="10" font-weight="700" fill="#EDEEF0" font-family="Oswald,sans-serif">TOTAL</text>
-      <text x="${cx}" y="${cy+11}" text-anchor="middle" font-size="8.5" fill="#9AA0A8" font-family="JetBrains Mono,monospace">KONTRIBUSI</text>
+      <text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="16" font-weight="700" fill="#EDEEF0" font-family="Oswald,sans-serif">TOTAL</text>
+      <text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="12" fill="#9AA0A8" font-family="JetBrains Mono,monospace">KONTRIBUSI</text>
     </svg>`;
   }
   const contribLegend = monthlyKpiDefs.map(d=>{
@@ -9660,7 +9669,7 @@ function renderKPIChartDashboard(k, globalStats){
       </div>
     </div>
     <div class="kpi-dash-grid">${gaugeCardsHtml}</div>
-    <div class="dash-mid-grid">
+    <div class="dash-quad-grid">
       <div class="dash-panel">
         <div class="dash-panel-title">TREND KPI MAINTENANCE <span>(All Months)</span></div>
         ${multiTrendSVG()}
@@ -9670,21 +9679,21 @@ function renderKPIChartDashboard(k, globalStats){
         ${comparisonBarsSVG()}
       </div>
       <div class="dash-panel">
-        <div class="dash-panel-title">Contribution to Reliability</div>
-        <div class="dash-contrib-wrap">
-          ${contribDonutSVG()}
-          <div class="dash-contrib-legend">${contribLegend}</div>
-        </div>
-      </div>
-    </div>
-    <div class="dash-bot-grid">
-      <div class="dash-panel">
         <div class="dash-panel-title">MTBS <span>All Months Trend (Hours)</span></div>
         ${mtbsTrendSVG()}
       </div>
       <div class="dash-panel">
         <div class="dash-panel-title">MTTR <span>All Months Trend (Hours)</span></div>
         ${mttrTrendSVG()}
+      </div>
+    </div>
+    <div class="dash-mid-grid">
+      <div class="dash-panel">
+        <div class="dash-panel-title">Contribution to Reliability</div>
+        <div class="dash-contrib-wrap">
+          ${contribDonutSVG()}
+          <div class="dash-contrib-legend">${contribLegend}</div>
+        </div>
       </div>
       <div class="dash-panel" style="position:relative">
         <div class="dash-panel-title">KPI MAINTENANCE SUMMARY <span>Keterangan Pencapaian</span></div>
