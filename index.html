@@ -2144,11 +2144,15 @@ const UNITS = [
    MTBS: >80 jam = 100% | 64–80 jam = 80% | <64 jam = 60%
    MTTR: <36 hrs = 100% of weight | 36–45 hrs = 80% of weight | >45 hrs = 60% of weight (lower better)
    PMR:  >90% = 100% | 85–90% = 80% | <85% = 60%
-   SA:   >90% = 100% | 80–90% = 80% | <80% = 60%
+   SA:   >90% = 100% | 85–90% = 80% | <85% = 60%
    MA/PA: ≥90% = 100% | 70–89% = 80% | <70% = 60%
    Perhitungan nilai: MTBS/MTTR/PMR/SA dari Daily Maintenance (Approved);
    MA/PA dari Monitoring HM (fallback file jam operasional manual). */
 const KPI_TARGET = { mtbs:80, mttr:36, pmr:90, sa:90, ma:90, pa:90 };
+/* Bobot resmi sesuai tabel KPI (screenshot):
+   Site Unit Budget Spending 20% (tidak dihitung di dashboard ini),
+   MA 15%, PA 15%, MTBS 10%, MTTR 10%, PMR 10%, SA 10% → total 90%.
+   Dashboard menampilkan 6 KPI operasional; bobot absolut dipakai di donut & skor berbobot. */
 const KPI_WEIGHT = { mtbs:10, mttr:10, pmr:10, sa:10, ma:15, pa:15 };
 /* Keterangan resmi tiap KPI — ditampilkan saat baris KPI di tabel Report Monthly diklik.
    Nilai per unit dihitung ulang otomatis sesuai periode filter (sync live sheet performance + Daily Maintenance Approved). */
@@ -2156,7 +2160,7 @@ const KPI_INFO = {
   mtbs: {
     full: 'Mean Time Between Stoppages (MTBS)',
     formula: 'Total Working Hours (HM) ÷ Number of Breakdowns',
-    desc: 'Average operating hours between one breakdown event and the next. Higher is better (target >80 hours). Calculated from Approved Daily Maintenance records in the selected period.',
+    desc: 'Mean time between stoppage against target. Achievement % of weight: >80 hrs = 100%, 64–80 hrs = 80%, <64 hrs = 60%. Higher is better (target 80 hours). Calculated from Approved Daily Maintenance records in the selected period.',
     unit: ' hrs', higherBetter: true
   },
   mttr: {
@@ -2168,25 +2172,25 @@ const KPI_INFO = {
   pmr: {
     full: 'Planned Maintenance Ratio (PMR)',
     formula: '(Non-Breakdown jobs ÷ Total Approved jobs) × 100%',
-    desc: 'Share of preventive/periodical work among all approved maintenance jobs. Higher is better (target >90%). Reflects how dominant planned work is versus breakdown work.',
+    desc: 'Planned Maintenance Hours / Total Maintenance Hours. Achievement % of weight: >90% = 100%, 85–90% = 80%, <85% = 60%. Higher is better (target >90%). Reflects how dominant planned work is versus breakdown work.',
     unit: '%', higherBetter: true
   },
   sa: {
     full: 'Service Accuracy (SA)',
     formula: '(Periodical jobs flagged Plan ÷ Total Approved Periodical) × 100%',
-    desc: 'Accuracy of planned (Plan) service execution in the Periodical category. Higher is better (target >90%). Computed only from records in the filter period — no fallback to other periods.',
+    desc: 'Planned Maintenance Schedule Compliance. Achievement % of weight: >90% = 100%, 85–90% = 80%, <85% = 60%. Higher is better (target >90%). Computed only from records in the filter period — no fallback to other periods.',
     unit: '%', higherBetter: true
   },
   ma: {
     full: 'Mechanical Availability (MA)',
     formula: '(Working Hours ÷ (Working Hours + Repair Hours)) × 100%',
-    desc: 'Mechanical availability of the unit: share of time ready to operate versus working + repair time. Target ≥90%. Primary source: performance sheet (live sync) for the filter date range; fallback to HM Monitoring / manual data.',
+    desc: 'Mechanical Availability against target. Achievement % of weight: ≥90% = 100%, 70–89% = 80%, <70% = 60%. Target ≥90%. Primary source: performance sheet (live sync) for the filter date range; fallback to HM Monitoring / manual data.',
     unit: '%', higherBetter: true
   },
   pa: {
     full: 'Physical Availability (PA)',
     formula: '((Working Hours + Standby) ÷ (Working Hours + Standby + Repair)) × 100%',
-    desc: 'Physical availability of the unit including standby time. Target ≥90%. Primary source: performance sheet (live sync) for the filter date range; fallback to HM Monitoring / manual data.',
+    desc: 'Physical Availability against target. Achievement % of weight: ≥90% = 100%, 70–89% = 80%, <70% = 60%. Target ≥90%. Primary source: performance sheet (live sync) for the filter date range; fallback to HM Monitoring / manual data.',
     unit: '%', higherBetter: true
   }
 };
@@ -2223,8 +2227,12 @@ function kpiTierScore(key, value){
     return v>0 ? 60 : 0;
   }
   if(key==='sa'){
+    // Serviced Accuracy — sesuai tabel resmi:
+    // > 90%  → 100% of weight
+    // 85–90% →  80% of weight
+    // < 85%  →  60% of weight
     if(v > 90) return 100;
-    if(v >= 80) return 80;
+    if(v >= 85) return 80;
     return v>0 ? 60 : 0;
   }
   return 0;
@@ -9263,19 +9271,27 @@ function renderKPIChartDashboard(k, globalStats){
     const unitTxt = isPct ? '' : 'JAM';
     const sparkVals = trendMonths.map(m=> m[d.key]||0);
     let deltaHtml = '';
+    // Bandingkan vs bulan sebelumnya relatif ke periode yang dipilih (bukan selalu bulan terbaru).
     if(trendMonths.length>=2){
-      const cur = trendMonths[trendMonths.length-1][d.key]||0;
-      const prev = trendMonths[trendMonths.length-2][d.key]||0;
-      const higherBetter = (d.key!=='mttr');
-      const diff = cur - prev;
-      const up = diff > 0.05, down = diff < -0.05;
-      const good = higherBetter ? up : down;
-      const bad = higherBetter ? down : up;
-      const arrow = up ? '▲' : (down ? '▼' : '●');
-      const col = good ? '#22C55E' : (bad ? '#E5484D' : 'var(--text-dim)');
-      const prevLabel = trendMonths[trendMonths.length-2].short || 'prev';
-      const diffTxt = isPct ? Math.abs(diff).toFixed(1)+'%' : Math.abs(diff).toFixed(1)+' JAM';
-      deltaHtml = `<div class="kpi-dash-delta" style="color:${col}">${arrow} ${diffTxt} vs ${prevLabel}</div>`;
+      let curIdx = trendMonths.length - 1;
+      if(activeMonthlyChartPeriod){
+        const found = trendMonths.findIndex(m => m.key === activeMonthlyChartPeriod);
+        if(found >= 0) curIdx = found;
+      }
+      if(curIdx >= 1){
+        const cur = trendMonths[curIdx][d.key]||0;
+        const prev = trendMonths[curIdx-1][d.key]||0;
+        const higherBetter = (d.key!=='mttr');
+        const diff = cur - prev;
+        const up = diff > 0.05, down = diff < -0.05;
+        const good = higherBetter ? up : down;
+        const bad = higherBetter ? down : up;
+        const arrow = up ? '▲' : (down ? '▼' : '●');
+        const col = good ? '#22C55E' : (bad ? '#E5484D' : 'var(--text-dim)');
+        const prevLabel = trendMonths[curIdx-1].short || 'prev';
+        const diffTxt = isPct ? Math.abs(diff).toFixed(1)+'%' : Math.abs(diff).toFixed(1)+' JAM';
+        deltaHtml = `<div class="kpi-dash-delta" style="color:${col}">${arrow} ${diffTxt} vs ${prevLabel}</div>`;
+      }
     }
     return `<div class="kpi-dash-card${isActive?' active':''}" style="--kpi-color:${d.color}; --kpi-glow:${d.color}22;" onclick="onKpiMonthlyRowClick('${d.key}')" title="Click for description & per-unit achievement">
       <div class="kpi-dash-name">${d.label}</div>
@@ -9416,11 +9432,14 @@ function renderKPIChartDashboard(k, globalStats){
   }
 
   // --- Contribution donut (KPI_WEIGHT) ---
+  // Label % = bobot resmi absolut dari tabel KPI (MA/PA 15%, lainnya 10%).
+  // Ukuran slice tetap proporsional terhadap total bobot 6 KPI (70), bukan dinormalisasi ke 100.
   function contribDonutSVG(){
     const totalW = monthlyKpiDefs.reduce((s,d)=>s+(KPI_WEIGHT[d.key]||0),0)||1;
     const segs = monthlyKpiDefs.map(d=>({
       label:d.label, color:d.color,
-      pct:((KPI_WEIGHT[d.key]||0)/totalW)*100
+      weight: KPI_WEIGHT[d.key]||0,
+      pct: KPI_WEIGHT[d.key]||0   // tampilkan bobot resmi (15 / 10), bukan proporsi 21/14
     })).filter(s=>s.pct>0);
     function shade(hex, f){
       const c = String(hex||'#888').replace('#','');
@@ -9445,7 +9464,8 @@ function renderKPIChartDashboard(k, globalStats){
     }
     let ang=0;
     const slices = segs.map(s=>{
-      const span=(s.pct/100)*Math.PI*2;
+      // sudut berdasarkan proporsi weight terhadap total 6 KPI (bukan label pct absolut)
+      const span=((s.weight||s.pct)/totalW)*Math.PI*2;
       const a0=ang, a1=ang+span; ang=a1;
       return {...s, a0, a1, mid:(a0+a1)/2};
     });
@@ -9591,7 +9611,13 @@ function renderKPIChartDashboard(k, globalStats){
     const st = kpiStatusIdLabel(pct);
     const isActive = kpiMonthlyDetailKey===d.key;
     const valTxt = d.unit==='%' ? d.value.toFixed(1)+'%' : (Math.round(d.value)+' jam');
-    const trendUp = (trendMonths[trendMonths.length-1]?.pct[d.key]||0) >= (trendMonths[0]?.pct[d.key]||0);
+    let _curT = trendMonths.length - 1;
+    if(activeMonthlyChartPeriod){
+      const _f = trendMonths.findIndex(m => m.key === activeMonthlyChartPeriod);
+      if(_f >= 0) _curT = _f;
+    }
+    const _prevT = Math.max(0, _curT - 1);
+    const trendUp = (trendMonths[_curT]?.pct[d.key]||0) >= (trendMonths[_prevT]?.pct[d.key]||0);
     const achieveTxt = pct>=100 ? 'Achieved' : (pct>=80 ? 'On Track' : 'Below');
     return `<tr class="${isActive?'active':''}" onclick="onKpiMonthlyRowClick('${d.key}')">
       <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.color};margin-right:6px;"></span><b>${d.label}</b></td>
