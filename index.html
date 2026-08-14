@@ -4154,7 +4154,34 @@ function resolveMaPa(unitCode, startStr, endStr){
 }
 
 /* ---- Mapping Daily Maintenance: JS (camelCase) <-> Supabase table (snake_case) ---- */
+/* ---- Normalisasi Komponen / Sparepart untuk Google Sheet tab "data" ----
+   Sheet menggunakan 3 kolom checkbox: Powertrain, Hydraulic & Structural,
+   Support & Consumable. Sebelumnya hanya bd_category yang dikirim sebagai 1 teks,
+   sehingga Apps Script yang membaca kolom checkbox tidak selalu dapat menentukan
+   kolom mana yang harus dicentang — terutama "Support & Consumable". */
+function componentSyncFlags(value){
+  const v = String(value || '').trim().toLowerCase();
+  const flags = {
+    powertrain: false,
+    hydraulic_structural: false,
+    support_consumable: false
+  };
+
+  if(v === 'support & consumable' || /support.*consumable|consumable/.test(v)){
+    flags.support_consumable = true;
+  } else if(v === 'powertrain' || /powertrain|power train/.test(v)){
+    flags.powertrain = true;
+  } else if(/hydraulic|structural|undercarriage|attachment|cabin|electrical/.test(v)){
+    flags.hydraulic_structural = true;
+  } else if(/engine|differential|exel/.test(v)){
+    // Engine/Differential tetap masuk kelompok Powertrain pada sheet ringkas.
+    flags.powertrain = true;
+  }
+  return flags;
+}
+
 function dailyRecToRow(r){
+  const componentFlags = componentSyncFlags(r.bdCategory);
   return {
     id: r.id,
     code_bd: r.codeBD || null,
@@ -4165,6 +4192,15 @@ function dailyRecToRow(r){
     hm: r.hm ? Number(r.hm) : null,
     category: r.category || null,
     bd_category: r.bdCategory || null,
+    // Alias lengkap untuk kompatibilitas Apps Script/header Google Sheet.
+    component_category: r.bdCategory || null,
+    component_sparepart_category: r.bdCategory || null,
+    powertrain: componentFlags.powertrain,
+    hydraulic_structural: componentFlags.hydraulic_structural,
+    support_consumable: componentFlags.support_consumable,
+    component_powertrain: componentFlags.powertrain,
+    component_hydraulic_structural: componentFlags.hydraulic_structural,
+    component_support_consumable: componentFlags.support_consumable,
     plan_unplan: r.planUnplan || null,
     job_desc: r.jobDesc || null,
     repair_action: r.repairAction || null,
@@ -6554,6 +6590,21 @@ async function syncDailyToSheets(opts){
         spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
         records: dailyRecords.map(r=>{
           const row = dailyRecToRow(r);
+          // Pastikan checkbox Komponen/Sparepart selalu dikirim sebagai boolean.
+          // Ini penting untuk kolom Powertrain / Hydraulic & Structural / Support & Consumable.
+          const componentFlags = componentSyncFlags(r.bdCategory);
+          row.powertrain = componentFlags.powertrain;
+          row.hydraulic_structural = componentFlags.hydraulic_structural;
+          row.support_consumable = componentFlags.support_consumable;
+          row.component_powertrain = componentFlags.powertrain;
+          row.component_hydraulic_structural = componentFlags.hydraulic_structural;
+          row.component_support_consumable = componentFlags.support_consumable;
+          row.component_category = r.bdCategory || null;
+          row.component_sparepart_category = r.bdCategory || null;
+          // Alias man power agar Apps Script dapat memetakan kolom U "Man Power"
+          // walaupun header sheet menggunakan nama yang berbeda.
+          row.man_power = r.mechanic || null;
+          row.manpower = r.mechanic || null;
           // Samakan dengan data validation Google Sheet kolom Category:
           // Breakdown | Daily Maintenance | Priodic Maintenance
           const c = String(row.category||'').trim();
@@ -6574,7 +6625,7 @@ async function syncDailyToSheets(opts){
     try{ data = await res.json(); }catch(_e){ data = null; }
     if(opts.manual){
       if(data && data.ok){
-        alert('✓ Berhasil sync '+ (data.written||dailyRecords.length) +' record ke sheet "data".\nBuka spreadsheet dan refresh tab data.');
+        alert('✓ Berhasil sync '+ (data.written||dailyRecords.length) +' record ke sheet "data".\nKomponen/Sparepart (termasuk Support & Consumable) dikirim sebagai checkbox boolean.\nBuka spreadsheet dan refresh tab data.');
       } else if(data && data.error){
         alert('⚠ Sync gagal: '+ data.error);
       } else {
