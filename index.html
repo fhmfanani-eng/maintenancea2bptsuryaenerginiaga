@@ -1382,6 +1382,7 @@ body.role-pjo .view > .banner{ display:none !important; }
           <h2>Performance Unit A2B</h2>
           <div class="toolbar" style="align-items:center; gap:8px;">
             <button type="button" class="btn small" id="unit-sync-perf-btn" title="Ambil W/S/R & Total Jam Kerja dari sheet performance">☁ Sync dari Sheet Performance</button>
+            <button type="button" class="btn small" id="performance-sync-maintenance-btn" onclick="syncKpiMaintenanceButton()" title="Sync KPI Performance ke Sheet Maintenance pada SEN KPI PERFORMANCE">☁ Sync KPI → Maintenance</button>
           </div>
         </div>
         <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI tiap unit dihitung otomatis. <b>Waktu Operasi / Standby / Breakdown / Total Jam Kerja</b> &amp; MA/PA <b>sync live</b> dari sheet <code>performance</code> saat filter periode diubah atau panel dibuka (tanpa perlu klik sync). <b>MTBS / MTTR / PMR / SA</b> juga otomatis mengikuti rentang tanggal yang dipilih — dihitung ulang langsung dari record Daily Maintenance (Approved) yang jatuh pada periode tsb. Tombol sync tetap tersedia untuk paksa refresh.</div>
@@ -3876,6 +3877,12 @@ const BACKEND_CONFIG = {
   // Apps Script deploy v21 (11 Agu 2026) — getPerformance + sync sheet data
   sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
   sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbx31DQTu96c5pO_46P0mJHE2bBten4d5ynCThs-G_V03QFnq4v1Mknjujj7Ohd6up4/exec',
+
+  // ---- Sinkron KPI Dashboard -> Sheet "Maintenance" pada SEN KPI PERFORMANCE ----
+  // Deploy APPSSCRIPT-KPI-MAINTENANCE.js sebagai Web App lalu tempel URL /exec di sini.
+  // Dibiarkan kosong agar tidak salah mengirim ke Apps Script Daily/Performance.
+  kpiMaintenanceSpreadsheetId: '12_2rA0UEYF0Ai-ynoAIMTRPIgTD3dybs7gl2hyZFBrw',
+  kpiMaintenanceWebAppUrl: '',
 };
 
 const localFallbackStorage = {
@@ -9293,6 +9300,101 @@ function onKpiTrendQuarterChange(selectEl){
   // supaya periode filter Quarter (termasuk quarter baru yang otomatis muncul seiring waktu
   // berjalan) selalu terisi dengan data terkini — sama seperti filter bulanan KPI Report Monthly.
   autoSyncPerformanceAndRefresh('dashboard');
+}
+
+/**
+ * Sync KPI dari web ke sheet "Maintenance" pada SEN KPI PERFORMANCE.
+ * Payload mengikuti APPSSCRIPT-KPI-MAINTENANCE.js:
+ * period + W1..W4 {acv, score} + avg.score.
+ * W1 = tanggal 1-7, W2 = 8-14, W3 = 15-21, W4 = 22-akhir bulan.
+ */
+async function syncKpiMaintenanceToSheet(opts){
+  opts = opts || {};
+  let url = String(BACKEND_CONFIG.kpiMaintenanceWebAppUrl || '').trim();
+  if(!url){
+    url = String(window.prompt('Masukkan URL Web App Apps Script KPI Maintenance (/exec):','') || '').trim();
+    if(url) BACKEND_CONFIG.kpiMaintenanceWebAppUrl = url;
+  }
+  if(!url){
+    if(opts.manual) alert('⚠ URL Apps Script KPI Maintenance belum diisi. Deploy APPSSCRIPT-KPI-MAINTENANCE.js sebagai Web App, lalu masukkan URL /exec.');
+    return {ok:false,error:'no_kpi_url'};
+  }
+
+  const period = String(kpiMonthlyChartPeriodValue || '').trim() || toDateStr(new Date()).slice(0,7);
+  const parts = period.split('-').map(Number);
+  const year = parts[0], month = parts[1];
+  if(!year || !month){
+    if(opts.manual) alert('⚠ Periode KPI tidak valid: '+period);
+    return {ok:false,error:'invalid_period'};
+  }
+
+  // Pastikan data performance terbaru sudah masuk sebelum menghitung MA/PA.
+  try{ await ensurePerformanceSynced({force:true}); }catch(e){ console.warn('KPI sheet sync performance refresh',e); }
+
+  const ranges = [
+    {key:'W1', start:new Date(year,month-1,1),  end:new Date(year,month-1,7)},
+    {key:'W2', start:new Date(year,month-1,8),  end:new Date(year,month-1,14)},
+    {key:'W3', start:new Date(year,month-1,15), end:new Date(year,month-1,21)},
+    {key:'W4', start:new Date(year,month-1,22), end:new Date(year,month,0)},
+  ];
+  const keys = ['ma','pa','mtbs','mttr','pmr','sa'];
+  const weeks = ranges.map(range=>{
+    const startStr = toDateStr(range.start);
+    const endStr = toDateStr(range.end);
+    const base = computeKPIsForRange(startStr,endStr);
+    const ap = resolveMaPa(null,startStr,endStr) || {};
+    const k = {...base, ma:Number(ap.ma)||0, pa:Number(ap.pa)||0};
+    const acv = {}, score = {};
+    keys.forEach(key=>{
+      acv[key] = Number(k[key])||0;
+      score[key] = Number(kpiAchievePct(key,k[key]))||0;
+    });
+    return {key:range.key, acv, score};
+  });
+
+  const avgScore = {};
+  keys.forEach(key=>{
+    const vals = weeks.map(w=>Number(w.score[key])||0);
+    avgScore[key] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+  });
+
+  const payload = {
+    action:'syncKpiMaintenance',
+    spreadsheetId: BACKEND_CONFIG.kpiMaintenanceSpreadsheetId || undefined,
+    sheet:'Maintenance',
+    period,
+    weeks,
+    avg:{score:avgScore}
+  };
+
+  try{
+    const res = await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(payload),
+      redirect:'follow',
+      cache:'no-store'
+    });
+    let data = null;
+    try{ data = await res.json(); }catch(_e){ data = null; }
+    if(!data || data.ok!==true){
+      throw new Error((data&&data.error) || ('HTTP '+res.status));
+    }
+    if(opts.manual){
+      const p = period.split('-');
+      const label = new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+      alert(`✓ KPI ${label} berhasil disinkronkan ke Sheet Maintenance.\n\nCell ditulis: ${data.written||0}\nKPI: ${(data.kpiRowsFound||[]).join(', ').toUpperCase()}`);
+    }
+    return data;
+  }catch(err){
+    console.error('syncKpiMaintenanceToSheet failed',err);
+    if(opts.manual) alert('❌ Sync KPI ke Sheet Maintenance gagal.\n\n'+(err.message||err));
+    return {ok:false,error:String(err.message||err)};
+  }
+}
+
+function syncKpiMaintenanceButton(){
+  return syncKpiMaintenanceToSheet({manual:true});
 }
 
 function renderKPIChartDashboard(k, globalStats){
