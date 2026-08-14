@@ -1074,9 +1074,25 @@ body.role-pjo .view > .banner{ display:none !important; }
     cursor:pointer; font-size:11.5px; font-weight:700; letter-spacing:1px;
     font-family:'JetBrains Mono',monospace;
   }
-  .topbar{ padding:10px 14px; height:auto; min-height:56px; flex-wrap:wrap; gap:10px; }
-  .topbar h1{ font-size:15px; }
-  .topbar .role-bar{ flex-wrap:wrap; }
+  /* Topbar dirapikan sejajar horisontal 1 baris (tidak menumpuk ke bawah) di HP, dengan scroll
+     horizontal halus sebagai jaring pengaman di layar yang sangat sempit. */
+  .topbar{
+    padding:8px 10px; height:auto; min-height:52px;
+    flex-wrap:nowrap; gap:8px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .topbar::-webkit-scrollbar{ display:none; }
+  .topbar > div{ flex-wrap:nowrap; flex-shrink:0; }
+  .topbar h1{ font-size:13.5px; white-space:nowrap; }
+  .topbar .menu-toggle{ padding:0 10px; height:32px; font-size:10.5px; }
+  .topbar-datetime{ padding:5px 9px; gap:6px; }
+  .topbar-datetime .dt-clock{ font-size:12.5px; }
+  .topbar-datetime .dt-date{ display:inline-block; font-size:9.5px; }
+  .topbar .role-bar{ flex-wrap:nowrap; padding:5px 8px; gap:6px; }
+  .topbar .role-bar .role-field label{ display:none; }
+  .topbar .role-bar #user-info{ font-size:11px !important; white-space:nowrap; }
+  .topbar .role-bar .btn.small{ padding:5px 8px; font-size:10px; white-space:nowrap; }
+  .notif-wrap{ flex-shrink:0; }
   .content{ padding:16px 14px 40px; }
   .grid-4, .grid-5, .grid-3, .grid-2{ grid-template-columns:1fr; }
   table{ min-width:700px; }
@@ -8809,6 +8825,73 @@ function kpiQuarterDonutSVG(segments, centerValue, centerLabel){
   </svg>`;
 }
 
+/* Donut 3D generik "4D-style" (dipakai untuk panel "Rekap KPI Triwulan / Quarter") — segmen proporsional
+   terhadap value tiap segmen (mis. % pencapaian tiap KPI), center menampilkan value & label ringkas.
+   Gaya visual sama dengan grafik "Contribution to Reliability" (pie/donut isometrik dengan sisi tebal). */
+function donut3DGenericSVG(segments, centerValueTxt, centerLabelTxt){
+  function shade(hex, f){
+    const c = String(hex||'#888').replace('#','');
+    if(c.length!==6) return hex;
+    const r=Math.min(255,Math.max(0,Math.round(parseInt(c.slice(0,2),16)*f)));
+    const g=Math.min(255,Math.max(0,Math.round(parseInt(c.slice(2,4),16)*f)));
+    const b=Math.min(255,Math.max(0,Math.round(parseInt(c.slice(4,6),16)*f)));
+    return `rgb(${r},${g},${b})`;
+  }
+  const totalV = segments.reduce((s,x)=>s+Math.max(0.0001,x.value),0)||1;
+  const W=360, H=300, cx=180, cy=135;
+  const rx=140, ry=76, depth=27;
+  const rxIn=rx*0.48, ryIn=ry*0.48;
+  function pt(angle, rox, roy, cy0){
+    const a = angle - Math.PI/2;
+    return { x: cx + rox*Math.cos(a), y: cy0 + roy*Math.sin(a) };
+  }
+  function slicePath(a0, a1, cy0){
+    const large = ((a1-a0) % (Math.PI*2)) > Math.PI ? 1 : 0;
+    const p0o = pt(a0, rx, ry, cy0), p1o = pt(a1, rx, ry, cy0);
+    const p1i = pt(a1, rxIn, ryIn, cy0), p0i = pt(a0, rxIn, ryIn, cy0);
+    return `M ${p0o.x.toFixed(2)} ${p0o.y.toFixed(2)} A ${rx} ${ry} 0 ${large} 1 ${p1o.x.toFixed(2)} ${p1o.y.toFixed(2)} L ${p1i.x.toFixed(2)} ${p1i.y.toFixed(2)} A ${rxIn} ${ryIn} 0 ${large} 0 ${p0i.x.toFixed(2)} ${p0i.y.toFixed(2)} Z`;
+  }
+  let ang=0;
+  const slices = segments.map(s=>{
+    const span=(Math.max(0.0001,s.value)/totalV)*Math.PI*2;
+    const a0=ang, a1=ang+span; ang=a1;
+    return {...s, a0, a1, mid:(a0+a1)/2};
+  });
+  const sideParts=[];
+  slices.forEach(s=>{
+    const steps=Math.max(4, Math.ceil((s.a1-s.a0)/(Math.PI/20)));
+    for(let k=0;k<steps;k++){
+      const t0=s.a0+(s.a1-s.a0)*(k/steps), t1=s.a0+(s.a1-s.a0)*((k+1)/steps);
+      const top0=pt(t0,rx,ry,cy), top1=pt(t1,rx,ry,cy);
+      if(top0.y < cy-4 && top1.y < cy-4) continue;
+      const bot0={x:top0.x,y:top0.y+depth}, bot1={x:top1.x,y:top1.y+depth};
+      const face=Math.max(top0.y,top1.y);
+      const faceF=0.32+0.38*Math.min(1,Math.max(0,(face-(cy-ry))/(2*ry)));
+      sideParts.push({y:face, path:`M ${top0.x.toFixed(2)} ${top0.y.toFixed(2)} L ${top1.x.toFixed(2)} ${top1.y.toFixed(2)} L ${bot1.x.toFixed(2)} ${bot1.y.toFixed(2)} L ${bot0.x.toFixed(2)} ${bot0.y.toFixed(2)} Z`, color:shade(s.color, faceF)});
+    }
+  });
+  sideParts.sort((a,b)=>a.y-b.y);
+  const uid='q4d'+(typeof kpiChartInstanceSeq!=='undefined' ? (kpiChartInstanceSeq++) : Math.floor(Math.random()*1e6));
+  const sideHtml=sideParts.map(p=>`<path d="${p.path}" fill="${p.color}" stroke="${p.color}" stroke-width="0.3"/>`).join('');
+  const topHtml=slices.map((s,i)=>{
+    return `<path d="${slicePath(s.a0,s.a1,cy)}" fill="url(#${uid}t${i})" stroke="rgba(0,0,0,0.3)" stroke-width="0.7"/>
+      <defs><linearGradient id="${uid}t${i}" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="${shade(s.color,1.28)}"/><stop offset="50%" stop-color="${s.color}"/><stop offset="100%" stop-color="${shade(s.color,0.7)}"/>
+      </linearGradient></defs>`;
+  }).join('');
+  const labels=slices.map(s=>{
+    const p=pt(s.mid,(rx+rxIn)/2,(ry+ryIn)/2,cy);
+    return `<text x="${p.x.toFixed(1)}" y="${(p.y+4).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="JetBrains Mono, monospace" style="text-shadow:0 1px 3px rgba(0,0,0,.8)">${s.label}</text>`;
+  }).join('');
+  const shadow=`<ellipse cx="${cx}" cy="${cy+depth+10}" rx="${rx*0.9}" ry="${ry*0.5}" fill="rgba(0,0,0,0.4)" filter="url(#${uid}blur)"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:340px;height:285px;max-width:100%;overflow:visible">
+    <defs><filter id="${uid}blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter></defs>
+    ${shadow}${sideHtml}${topHtml}${labels}
+    <text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="17" font-weight="700" fill="#EDEEF0" font-family="Oswald,sans-serif">${centerValueTxt}</text>
+    <text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="11" fill="#9AA0A8" font-family="JetBrains Mono,monospace">${centerLabelTxt}</text>
+  </svg>`;
+}
+
 function kpiMiniTrendSVG(points, color){
   // points: [{label, value}] value 0-100. Skala vertikal (Y) tetap 0% - 100%.
   color = color || '#FFC72C';
@@ -9155,7 +9238,10 @@ function quarterOptionLabel(val){
 
 function onKpiTrendQuarterChange(selectEl){
   kpiTrendQuarterValue = selectEl.value;
-  renderDashboard();
+  // Auto-sync live dari sheet performance & record Daily Maintenance saat quarter diganti,
+  // supaya periode filter Quarter (termasuk quarter baru yang otomatis muncul seiring waktu
+  // berjalan) selalu terisi dengan data terkini — sama seperti filter bulanan KPI Report Monthly.
+  autoSyncPerformanceAndRefresh('dashboard');
 }
 
 function renderKPIChartDashboard(k, globalStats){
@@ -9183,6 +9269,31 @@ function renderKPIChartDashboard(k, globalStats){
     { key:'pmr',  label:'PMR',  full:'PLANNED MAINTENANCE RATIO', unit:'%', target:KPI_TARGET.pmr, value:kMonthly.pmr||0, color:'#F97316', targetHint:'90%', icon:'shield' },
     { key:'sa',   label:'SA',   full:'SERVICE ACCURACY',        unit:'%',   target:KPI_TARGET.sa,   value:kMonthly.sa||0,   color:'#22D3EE', targetHint:'90%', icon:'clipboard' },
   ];
+
+  // --- Rekap Quarter (donut 4D + KPI summary quarter, ikut filter periode triwulan, live sync dari
+  //     sheet performance (MA/PA) & record Daily Maintenance Approved (MTBS/MTTR/PMR/SA) — dihitung
+  //     ulang otomatis setiap renderDashboard() dipanggil, tanpa cache. ---
+  const quarterOptions = getQuarterOptions();
+  const activeQuarterVal = (kpiTrendQuarterValue && quarterOptions.includes(kpiTrendQuarterValue)) ? kpiTrendQuarterValue : (quarterOptions[0]||'');
+  const kQuarter = computeKPIsForQuarter(activeQuarterVal);
+  const quarterSelectHtml = `<select class="trend-quarter-select" onchange="onKpiTrendQuarterChange(this)">
+    ${quarterOptions.map(q=>`<option value="${q}" ${q===activeQuarterVal?'selected':''}>${quarterOptionLabel(q)}</option>`).join('')}
+  </select>`;
+  const quarterKpiDefs = monthlyKpiDefs.map(d=>({ ...d, value: kQuarter[d.key]||0 }));
+  const quarterPctList = quarterKpiDefs.map(d=>kpiAchievePct(d.key, d.value));
+  const quarterAvgPct = quarterPctList.length ? (quarterPctList.reduce((a,b)=>a+b,0)/quarterPctList.length) : 0;
+  // Breakdown per bulan dalam Quarter terpilih (mis. Juli / Agustus / September) — dipakai sebagai
+  // kolom terpisah per bulan di tabel KPI Summary Quarter (bukan lagi 1 kolom "Bulan" berisi rentang).
+  let quarterMonthCols = []; // [{key:'2026-07', label:'Juli', kpis:{ma,pa,mtbs,mttr,pmr,sa}}, ...]
+  if(activeQuarterVal){
+    const { start } = getQuarterRange(activeQuarterVal);
+    for(let i=0;i<3;i++){
+      const d = new Date(start.getFullYear(), start.getMonth()+i, 1);
+      const key = d.getFullYear()+'-'+pad2(d.getMonth()+1);
+      const label = d.toLocaleDateString('id-ID',{month:'long'});
+      quarterMonthCols.push({ key, label, kpis: computeKPIsFor(key) });
+    }
+  }
 
   function kpiStatusIdLabel(pct){
     if(pct>=100) return { cls:'ok', text:'ACHIEVED' };
@@ -9621,12 +9732,41 @@ function renderKPIChartDashboard(k, globalStats){
     const achieveTxt = pct>=100 ? 'Achieved' : (pct>=80 ? 'On Track' : 'Below');
     return `<tr class="${isActive?'active':''}" onclick="onKpiMonthlyRowClick('${d.key}')">
       <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.color};margin-right:6px;"></span><b>${d.label}</b></td>
-      <td style="font-family:JetBrains Mono,monospace">${valTxt}</td>
       <td style="color:var(--text-dim)">${d.targetHint}</td>
+      <td style="font-family:JetBrains Mono,monospace">${valTxt}</td>
       <td><span class="kpi-dash-status ${st.cls}">${pct.toFixed(0)}% · ${st.text}</span>
         <div style="font-size:9.5px;color:var(--text-faint);margin-top:3px">${achieveTxt}</div></td>
       <td style="color:${trendUp?'#4CAF6D':'#E5484D'};font-weight:700">${trendUp?'↗ Naik':'↘ Turun'}</td>
     </tr>`;
+  }).join('');
+
+  // KPI Summary Quarter — ikut filter periode triwulan aktif; kolom per-bulan (mis. Juli/Agustus/September)
+  // ditampilkan sebelum kolom Value, masing-masing berisi nilai KPI bulan tsb (bukan lagi 1 kolom rentang "Bulan").
+  const quarterSumRows = quarterKpiDefs.map(d=>{
+    const pct = kpiAchievePct(d.key, d.value);
+    const st = kpiStatusIdLabel(pct);
+    const valTxt = d.unit==='%' ? d.value.toFixed(1)+'%' : (Math.round(d.value)+' jam');
+    const monthCells = quarterMonthCols.map(mc=>{
+      const mv = (mc.kpis && mc.kpis[d.key]!=null) ? mc.kpis[d.key] : 0;
+      const mTxt = d.unit==='%' ? mv.toFixed(1)+'%' : (Math.round(mv)+' jam');
+      return `<td style="font-family:JetBrains Mono,monospace;color:var(--text-dim);white-space:nowrap">${mTxt}</td>`;
+    }).join('');
+    return `<tr>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.color};margin-right:6px;"></span><b>${d.label}</b></td>
+      <td style="color:var(--text-dim)">${d.targetHint}</td>
+      ${monthCells}
+      <td style="font-family:JetBrains Mono,monospace">${valTxt}</td>
+      <td><span class="kpi-dash-status ${st.cls}">${pct.toFixed(0)}% · ${st.text}</span></td>
+    </tr>`;
+  }).join('');
+  const quarterMonthHeaderCells = quarterMonthCols.map(mc=>`<th style="white-space:nowrap">${mc.label}</th>`).join('');
+  const quarterDonutSegments = quarterKpiDefs.map(d=>({ label:d.label, color:d.color, value: Math.max(0.001, kpiAchievePct(d.key, d.value)) }));
+  const quarterDonutLegend = quarterKpiDefs.map(d=>{
+    const pct = kpiAchievePct(d.key, d.value);
+    return `<div class="contrib-leg-row">
+      <span class="contrib-leg-dot" style="background:${d.color};box-shadow:0 0 8px ${d.color}88"></span>
+      <span class="contrib-leg-label"><b style="color:${d.color}">${d.label}</b> ${pct.toFixed(0)}%</span>
+    </div>`;
   }).join('');
 
   // Overlay detail per unit (tetap)
@@ -9690,6 +9830,7 @@ function renderKPIChartDashboard(k, globalStats){
         <div class="dash-hero-sub">Heavy Equipment Maintenance Performance KPI</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;display:inline-flex;align-items:center;gap:4px"><span class="status-dot" style="margin-right:0"></span>Live Sync</span>
         <span style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Period</span>
         ${monthlyChartSelectHtml}
       </div>
@@ -9722,11 +9863,36 @@ function renderKPIChartDashboard(k, globalStats){
         </div>
       </div>
       <div class="dash-panel" style="position:relative">
-        <div class="dash-panel-title">KPI MAINTENANCE SUMMARY <span>Keterangan Pencapaian</span></div>
+        <div class="dash-panel-title">KPI MAINTENANCE SUMMARY</div>
         <div style="overflow-x:auto">
           <table class="dash-sum-table">
-            <thead><tr><th>KPI</th><th>Value</th><th>Target</th><th>Status</th><th>Trend</th></tr></thead>
+            <thead><tr><th>KPI</th><th>Target</th><th>Value</th><th>Status</th><th>Trend</th></tr></thead>
             <tbody>${sumRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="dash-mid-grid">
+      <div class="dash-panel">
+        <div class="chart-panel-title-row">
+          <div class="dash-panel-title" style="margin-bottom:0">REKAP QUARTER</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;display:inline-flex;align-items:center;gap:4px"><span class="status-dot" style="margin-right:0"></span>Live Sync</span>
+            <span style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Period</span>
+            ${quarterSelectHtml}
+          </div>
+        </div>
+        <div class="dash-contrib-wrap">
+          ${donut3DGenericSVG(quarterDonutSegments, quarterAvgPct.toFixed(0)+'%', 'AVG ' + quarterOptionLabel(activeQuarterVal).toUpperCase())}
+          <div class="dash-contrib-legend">${quarterDonutLegend}</div>
+        </div>
+      </div>
+      <div class="dash-panel">
+        <div class="dash-panel-title">KPI SUMMARY QUARTER</div>
+        <div style="overflow-x:auto">
+          <table class="dash-sum-table">
+            <thead><tr><th>KPI</th><th>Target</th>${quarterMonthHeaderCells}<th>Value</th><th>Status</th></tr></thead>
+            <tbody>${quarterSumRows}</tbody>
           </table>
         </div>
       </div>
@@ -9874,6 +10040,23 @@ function computeKPIsFor(periodValue){
   const base = computeKPIsForRange(startStr, endStr);
 
   // MA & PA: prioritaskan seed sheet performance, lalu HM bulan terfilter, lalu mapa upload.
+  const { ma, pa } = resolveMaPa(null, startStr, endStr);
+  return { ...base, ma, pa };
+}
+
+/* ---- Agregasi KPI untuk satu Triwulan/Quarter (dipakai panel "Rekap KPI Triwulan / Quarter") ---- */
+function getQuarterRange(qVal){
+  const [y,qs] = String(qVal||'').split('-Q');
+  const year = Number(y), q = Number(qs);
+  const startMonth = (q-1)*3; // 0-indexed
+  const start = new Date(year, startMonth, 1);
+  const end = new Date(year, startMonth+3, 0);
+  return { start, end, startStr: toDateStr(start), endStr: toDateStr(end) };
+}
+function computeKPIsForQuarter(qVal){
+  if(!qVal) return computeKPIs();
+  const { startStr, endStr } = getQuarterRange(qVal);
+  const base = computeKPIsForRange(startStr, endStr);
   const { ma, pa } = resolveMaPa(null, startStr, endStr);
   return { ...base, ma, pa };
 }
