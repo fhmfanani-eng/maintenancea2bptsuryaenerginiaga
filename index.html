@@ -565,17 +565,21 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 @media(max-width:1200px){ .kpi-dash-grid{ grid-template-columns:repeat(3,1fr); } }
 @media(max-width:700px){ .kpi-dash-grid{ grid-template-columns:repeat(2,1fr); } }
 .kpi-dash-card{
-  background:linear-gradient(165deg, #1a2030 0%, #12161f 55%, #0e1218 100%);
-  border:1px solid rgba(255,255,255,0.08); border-radius:14px;
-  padding:14px 12px 12px; text-align:center; cursor:pointer;
+  background:linear-gradient(160deg, #121a28 0%, #0c121c 55%, #0a0e16 100%);
+  border:1px solid color-mix(in srgb, var(--kpi-color, #4A90D9) 35%, rgba(255,255,255,0.06));
+  border-radius:12px;
+  padding:14px 14px 12px; text-align:left; cursor:pointer;
   transition:border-color .18s, transform .15s, box-shadow .18s;
   position:relative; overflow:hidden;
-  box-shadow:0 4px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  box-shadow:0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04),
+             0 0 24px color-mix(in srgb, var(--kpi-color, #4A90D9) 12%, transparent);
 }
 .kpi-dash-card::before{
-  content:''; position:absolute; inset:0; border-radius:14px; pointer-events:none;
-  background:radial-gradient(ellipse at 50% 0%, var(--kpi-glow, rgba(74,144,217,0.12)), transparent 65%);
-  opacity:0.9;
+  content:''; position:absolute; inset:0; border-radius:12px; pointer-events:none;
+  background:
+    radial-gradient(ellipse at 0% 0%, var(--kpi-glow, rgba(74,144,217,0.18)), transparent 55%),
+    linear-gradient(90deg, color-mix(in srgb, var(--kpi-color, #4A90D9) 18%, transparent), transparent 28%);
+  opacity:1;
 }
 .kpi-dash-card:hover{
   transform:translateY(-2px);
@@ -586,47 +590,55 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
   border-color:rgba(255,199,44,0.45);
   box-shadow:0 0 0 1px rgba(255,199,44,0.25), 0 8px 28px rgba(0,0,0,0.4);
 }
+.kpi-dash-card .kpi-dash-head{
+  display:flex; align-items:center; gap:10px; margin-bottom:10px; position:relative; z-index:1; text-align:left;
+}
+.kpi-dash-card .kpi-dash-ico{
+  width:40px; height:40px; flex-shrink:0; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--kpi-color, #4A90D9) 16%, transparent);
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--kpi-color, #4A90D9) 28%, transparent),
+             0 0 18px color-mix(in srgb, var(--kpi-color, #4A90D9) 22%, transparent);
+}
+.kpi-dash-card .kpi-dash-ico svg{ width:22px; height:22px; }
+.kpi-dash-card .kpi-dash-head-text{ min-width:0; flex:1; }
 .kpi-dash-card .kpi-dash-name{
-  font-family:'Oswald',sans-serif; font-size:15px; font-weight:700; letter-spacing:0.6px;
-  color:var(--kpi-color, #4A90D9); margin-bottom:2px; position:relative; z-index:1;
+  font-family:'Oswald',sans-serif; font-size:16px; font-weight:700; letter-spacing:0.6px;
+  color:var(--kpi-color, #4A90D9); margin-bottom:1px; position:relative; z-index:1; line-height:1.1;
 }
 .kpi-dash-card .kpi-dash-sub{
-  font-size:8.5px; color:var(--text-faint); letter-spacing:0.4px; text-transform:uppercase;
-  margin-bottom:10px; position:relative; z-index:1; line-height:1.25;
+  font-size:8px; color:var(--text-faint); letter-spacing:0.35px; text-transform:uppercase;
+  position:relative; z-index:1; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .kpi-dash-card .kpi-dash-body{
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
-  margin:4px 0 8px; position:relative; z-index:1;
-}
-.kpi-dash-card .kpi-dash-ring-wrap{
-  position:relative; width:88px; height:88px; flex-shrink:0; z-index:1;
-}
-.kpi-dash-card .kpi-dash-ring-wrap svg{ width:100%; height:100%; display:block; }
-.kpi-dash-card .kpi-dash-center{
-  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  pointer-events:none;
-}
-.kpi-dash-card .kpi-dash-center-icon{
-  background:radial-gradient(circle, rgba(0,0,0,0.4) 35%, transparent 70%);
+  display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:2px;
+  margin:2px 0 10px; position:relative; z-index:1;
 }
 .kpi-dash-card .kpi-dash-val-col{
-  display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; text-align:center;
+  display:flex; flex-direction:row; align-items:baseline; justify-content:flex-start; gap:6px; min-width:0; text-align:left;
 }
+.kpi-dash-card .kpi-dash-foot{
+  display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;
+  position:relative; z-index:1; margin-top:2px;
+}
+.kpi-dash-card .kpi-dash-ring-wrap{ display:none; }
+.kpi-dash-card .kpi-dash-center{ display:none; }
+.kpi-dash-card .kpi-dash-center-icon{ display:none; }
 .kpi-dash-card .kpi-dash-val{
-  font-family:'Oswald',sans-serif; font-size:24px; font-weight:700; color:#EDEEF0; line-height:1;
-  text-shadow:0 0 16px currentColor;
+  font-family:'Oswald',sans-serif; font-size:28px; font-weight:700; color:#EDEEF0; line-height:1;
+  text-shadow:0 0 18px currentColor; letter-spacing:0.3px; position:relative; z-index:1;
 }
 .kpi-dash-card .kpi-dash-unit{
-  font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-dim); margin-top:2px; font-weight:600;
-  letter-spacing:0.5px; text-align:center;
+  font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); font-weight:600;
+  letter-spacing:0.6px; text-transform:uppercase; position:relative; z-index:1;
 }
 .kpi-dash-card .kpi-dash-target{
-  font-size:9.5px; color:var(--text-dim); margin-bottom:4px; position:relative; z-index:1;
-  letter-spacing:0.3px;
+  font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--text-dim);
+  position:relative; z-index:1; letter-spacing:0.3px; margin:0;
 }
 .kpi-dash-card .kpi-dash-delta{
-  font-family:'JetBrains Mono',monospace; font-size:9.5px; font-weight:600;
-  margin:4px 0 2px; position:relative; z-index:1;
+  font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700;
+  margin:0; position:relative; z-index:1; white-space:nowrap;
 }
 .dash-contrib-legend .contrib-leg-row{
   display:flex; align-items:center; gap:8px; padding:4px 0;
@@ -1382,7 +1394,6 @@ body.role-pjo .view > .banner{ display:none !important; }
           <h2>Performance Unit A2B</h2>
           <div class="toolbar" style="align-items:center; gap:8px;">
             <button type="button" class="btn small" id="unit-sync-perf-btn" title="Ambil W/S/R & Total Jam Kerja dari sheet performance">☁ Sync dari Sheet Performance</button>
-            <button type="button" class="btn small" id="performance-sync-maintenance-btn" onclick="syncKpiMaintenanceButton()" title="Sync KPI Performance ke Sheet Maintenance pada SEN KPI PERFORMANCE">☁ Sync KPI → Maintenance</button>
           </div>
         </div>
         <div class="hint" style="margin-top:-10px; margin-bottom:16px;">Pencapaian KPI tiap unit dihitung otomatis. <b>Waktu Operasi / Standby / Breakdown / Total Jam Kerja</b> &amp; MA/PA <b>sync live</b> dari sheet <code>performance</code> saat filter periode diubah atau panel dibuka (tanpa perlu klik sync). <b>MTBS / MTTR / PMR / SA</b> juga otomatis mengikuti rentang tanggal yang dipilih — dihitung ulang langsung dari record Daily Maintenance (Approved) yang jatuh pada periode tsb. Tombol sync tetap tersedia untuk paksa refresh.</div>
@@ -3877,12 +3888,6 @@ const BACKEND_CONFIG = {
   // Apps Script deploy v21 (11 Agu 2026) — getPerformance + sync sheet data
   sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
   sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbx31DQTu96c5pO_46P0mJHE2bBten4d5ynCThs-G_V03QFnq4v1Mknjujj7Ohd6up4/exec',
-
-  // ---- Sinkron KPI Dashboard -> Sheet "Maintenance" pada SEN KPI PERFORMANCE ----
-  // Deploy APPSSCRIPT-KPI-MAINTENANCE.js sebagai Web App lalu tempel URL /exec di sini.
-  // Dibiarkan kosong agar tidak salah mengirim ke Apps Script Daily/Performance.
-  kpiMaintenanceSpreadsheetId: '12_2rA0UEYF0Ai-ynoAIMTRPIgTD3dybs7gl2hyZFBrw',
-  kpiMaintenanceWebAppUrl: '',
 };
 
 const localFallbackStorage = {
@@ -4161,34 +4166,7 @@ function resolveMaPa(unitCode, startStr, endStr){
 }
 
 /* ---- Mapping Daily Maintenance: JS (camelCase) <-> Supabase table (snake_case) ---- */
-/* ---- Normalisasi Komponen / Sparepart untuk Google Sheet tab "data" ----
-   Sheet menggunakan 3 kolom checkbox: Powertrain, Hydraulic & Structural,
-   Support & Consumable. Sebelumnya hanya bd_category yang dikirim sebagai 1 teks,
-   sehingga Apps Script yang membaca kolom checkbox tidak selalu dapat menentukan
-   kolom mana yang harus dicentang — terutama "Support & Consumable". */
-function componentSyncFlags(value){
-  const v = String(value || '').trim().toLowerCase();
-  const flags = {
-    powertrain: false,
-    hydraulic_structural: false,
-    support_consumable: false
-  };
-
-  if(v === 'support & consumable' || /support.*consumable|consumable/.test(v)){
-    flags.support_consumable = true;
-  } else if(v === 'powertrain' || /powertrain|power train/.test(v)){
-    flags.powertrain = true;
-  } else if(/hydraulic|structural|undercarriage|attachment|cabin|electrical/.test(v)){
-    flags.hydraulic_structural = true;
-  } else if(/engine|differential|exel/.test(v)){
-    // Engine/Differential tetap masuk kelompok Powertrain pada sheet ringkas.
-    flags.powertrain = true;
-  }
-  return flags;
-}
-
 function dailyRecToRow(r){
-  const componentFlags = componentSyncFlags(r.bdCategory);
   return {
     id: r.id,
     code_bd: r.codeBD || null,
@@ -4199,15 +4177,6 @@ function dailyRecToRow(r){
     hm: r.hm ? Number(r.hm) : null,
     category: r.category || null,
     bd_category: r.bdCategory || null,
-    // Alias lengkap untuk kompatibilitas Apps Script/header Google Sheet.
-    component_category: r.bdCategory || null,
-    component_sparepart_category: r.bdCategory || null,
-    powertrain: componentFlags.powertrain,
-    hydraulic_structural: componentFlags.hydraulic_structural,
-    support_consumable: componentFlags.support_consumable,
-    component_powertrain: componentFlags.powertrain,
-    component_hydraulic_structural: componentFlags.hydraulic_structural,
-    component_support_consumable: componentFlags.support_consumable,
     plan_unplan: r.planUnplan || null,
     job_desc: r.jobDesc || null,
     repair_action: r.repairAction || null,
@@ -6597,21 +6566,6 @@ async function syncDailyToSheets(opts){
         spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
         records: dailyRecords.map(r=>{
           const row = dailyRecToRow(r);
-          // Pastikan checkbox Komponen/Sparepart selalu dikirim sebagai boolean.
-          // Ini penting untuk kolom Powertrain / Hydraulic & Structural / Support & Consumable.
-          const componentFlags = componentSyncFlags(r.bdCategory);
-          row.powertrain = componentFlags.powertrain;
-          row.hydraulic_structural = componentFlags.hydraulic_structural;
-          row.support_consumable = componentFlags.support_consumable;
-          row.component_powertrain = componentFlags.powertrain;
-          row.component_hydraulic_structural = componentFlags.hydraulic_structural;
-          row.component_support_consumable = componentFlags.support_consumable;
-          row.component_category = r.bdCategory || null;
-          row.component_sparepart_category = r.bdCategory || null;
-          // Alias man power agar Apps Script dapat memetakan kolom U "Man Power"
-          // walaupun header sheet menggunakan nama yang berbeda.
-          row.man_power = r.mechanic || null;
-          row.manpower = r.mechanic || null;
           // Samakan dengan data validation Google Sheet kolom Category:
           // Breakdown | Daily Maintenance | Priodic Maintenance
           const c = String(row.category||'').trim();
@@ -6632,7 +6586,7 @@ async function syncDailyToSheets(opts){
     try{ data = await res.json(); }catch(_e){ data = null; }
     if(opts.manual){
       if(data && data.ok){
-        alert('✓ Berhasil sync '+ (data.written||dailyRecords.length) +' record ke sheet "data".\nKomponen/Sparepart (termasuk Support & Consumable) dikirim sebagai checkbox boolean.\nBuka spreadsheet dan refresh tab data.');
+        alert('✓ Berhasil sync '+ (data.written||dailyRecords.length) +' record ke sheet "data".\nBuka spreadsheet dan refresh tab data.');
       } else if(data && data.error){
         alert('⚠ Sync gagal: '+ data.error);
       } else {
@@ -9302,101 +9256,6 @@ function onKpiTrendQuarterChange(selectEl){
   autoSyncPerformanceAndRefresh('dashboard');
 }
 
-/**
- * Sync KPI dari web ke sheet "Maintenance" pada SEN KPI PERFORMANCE.
- * Payload mengikuti APPSSCRIPT-KPI-MAINTENANCE.js:
- * period + W1..W4 {acv, score} + avg.score.
- * W1 = tanggal 1-7, W2 = 8-14, W3 = 15-21, W4 = 22-akhir bulan.
- */
-async function syncKpiMaintenanceToSheet(opts){
-  opts = opts || {};
-  let url = String(BACKEND_CONFIG.kpiMaintenanceWebAppUrl || '').trim();
-  if(!url){
-    url = String(window.prompt('Masukkan URL Web App Apps Script KPI Maintenance (/exec):','') || '').trim();
-    if(url) BACKEND_CONFIG.kpiMaintenanceWebAppUrl = url;
-  }
-  if(!url){
-    if(opts.manual) alert('⚠ URL Apps Script KPI Maintenance belum diisi. Deploy APPSSCRIPT-KPI-MAINTENANCE.js sebagai Web App, lalu masukkan URL /exec.');
-    return {ok:false,error:'no_kpi_url'};
-  }
-
-  const period = String(kpiMonthlyChartPeriodValue || '').trim() || toDateStr(new Date()).slice(0,7);
-  const parts = period.split('-').map(Number);
-  const year = parts[0], month = parts[1];
-  if(!year || !month){
-    if(opts.manual) alert('⚠ Periode KPI tidak valid: '+period);
-    return {ok:false,error:'invalid_period'};
-  }
-
-  // Pastikan data performance terbaru sudah masuk sebelum menghitung MA/PA.
-  try{ await ensurePerformanceSynced({force:true}); }catch(e){ console.warn('KPI sheet sync performance refresh',e); }
-
-  const ranges = [
-    {key:'W1', start:new Date(year,month-1,1),  end:new Date(year,month-1,7)},
-    {key:'W2', start:new Date(year,month-1,8),  end:new Date(year,month-1,14)},
-    {key:'W3', start:new Date(year,month-1,15), end:new Date(year,month-1,21)},
-    {key:'W4', start:new Date(year,month-1,22), end:new Date(year,month,0)},
-  ];
-  const keys = ['ma','pa','mtbs','mttr','pmr','sa'];
-  const weeks = ranges.map(range=>{
-    const startStr = toDateStr(range.start);
-    const endStr = toDateStr(range.end);
-    const base = computeKPIsForRange(startStr,endStr);
-    const ap = resolveMaPa(null,startStr,endStr) || {};
-    const k = {...base, ma:Number(ap.ma)||0, pa:Number(ap.pa)||0};
-    const acv = {}, score = {};
-    keys.forEach(key=>{
-      acv[key] = Number(k[key])||0;
-      score[key] = Number(kpiAchievePct(key,k[key]))||0;
-    });
-    return {key:range.key, acv, score};
-  });
-
-  const avgScore = {};
-  keys.forEach(key=>{
-    const vals = weeks.map(w=>Number(w.score[key])||0);
-    avgScore[key] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
-  });
-
-  const payload = {
-    action:'syncKpiMaintenance',
-    spreadsheetId: BACKEND_CONFIG.kpiMaintenanceSpreadsheetId || undefined,
-    sheet:'Maintenance',
-    period,
-    weeks,
-    avg:{score:avgScore}
-  };
-
-  try{
-    const res = await fetch(url,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify(payload),
-      redirect:'follow',
-      cache:'no-store'
-    });
-    let data = null;
-    try{ data = await res.json(); }catch(_e){ data = null; }
-    if(!data || data.ok!==true){
-      throw new Error((data&&data.error) || ('HTTP '+res.status));
-    }
-    if(opts.manual){
-      const p = period.split('-');
-      const label = new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
-      alert(`✓ KPI ${label} berhasil disinkronkan ke Sheet Maintenance.\n\nCell ditulis: ${data.written||0}\nKPI: ${(data.kpiRowsFound||[]).join(', ').toUpperCase()}`);
-    }
-    return data;
-  }catch(err){
-    console.error('syncKpiMaintenanceToSheet failed',err);
-    if(opts.manual) alert('❌ Sync KPI ke Sheet Maintenance gagal.\n\n'+(err.message||err));
-    return {ok:false,error:String(err.message||err)};
-  }
-}
-
-function syncKpiMaintenanceButton(){
-  return syncKpiMaintenanceToSheet({manual:true});
-}
-
 function renderKPIChartDashboard(k, globalStats){
   const wrap = document.getElementById('kpi-chart-dashboard');
   if(!wrap) return;
@@ -9416,11 +9275,12 @@ function renderKPIChartDashboard(k, globalStats){
   // Urutan kartu: MA, PA, MTBS, MTTR, PMR, SA (sesuai referensi)
   const monthlyKpiDefs = [
     { key:'ma',   label:'MA',   full:'MECHANICAL AVAILABILITY', unit:'%',   target:KPI_TARGET.ma,   value:kMonthly.ma||0,   color:'#22C55E', targetHint:'90%', icon:'gear' },
-    { key:'pa',   label:'PA',   full:'PHYSICAL AVAILABILITY',   unit:'%',   target:KPI_TARGET.pa,   value:kMonthly.pa||0,   color:'#3B82F6', targetHint:'90%', icon:'calendar' },
-    { key:'mtbs', label:'MTBS', full:'MEAN TIME BETWEEN STOPPAGES', unit:' hrs', target:KPI_TARGET.mtbs, value:kMonthly.mtbs||0, color:'#F5C518', targetHint:'80 jam', icon:'clock' },
-    { key:'mttr', label:'MTTR', full:'MEAN TIME TO REPAIR',     unit:' hrs', target:KPI_TARGET.mttr, value:kMonthly.mttr||0, color:'#A855F7', targetHint:'90%', icon:'wrench' },
-    { key:'pmr',  label:'PMR',  full:'PLANNED MAINTENANCE RATIO', unit:'%', target:KPI_TARGET.pmr, value:kMonthly.pmr||0, color:'#F97316', targetHint:'90%', icon:'shield' },
-    { key:'sa',   label:'SA',   full:'SERVICE ACCURACY',        unit:'%',   target:KPI_TARGET.sa,   value:kMonthly.sa||0,   color:'#22D3EE', targetHint:'90%', icon:'clipboard' },
+    { key:'pa',   label:'PA',   full:'PHYSICAL AVAILABILITY',   unit:'%',   target:KPI_TARGET.pa,   value:kMonthly.pa||0,   color:'#3B82F6', targetHint:'90%', icon:'shield' },
+    { key:'mtbs', label:'MTBS', full:'MEAN TIME BETWEEN STOPPAGES', unit:' hrs', target:KPI_TARGET.mtbs, value:kMonthly.mtbs||0, color:'#A78BFA', targetHint:'80 jam', icon:'hourglass' },
+    /* MTTR: tampilkan % capaian; target budget 90% (<36 jam = 100% of weight) */
+    { key:'mttr', label:'MTTR', full:'MEAN TIME TO REPAIR',     unit:'%',   target:90, value:kpiAchievePct('mttr', kMonthly.mttr||0), color:'#F97316', targetHint:'<36 jam = 100%', icon:'wrench', rawHours:kMonthly.mttr||0 },
+    { key:'pmr',  label:'PMR',  full:'PLANNED MAINTENANCE RATIO', unit:'%', target:KPI_TARGET.pmr, value:kMonthly.pmr||0, color:'#A3E635', targetHint:'90%', icon:'clipboard' },
+    { key:'sa',   label:'SA',   full:'SERVICE ACCURACY',        unit:'%',   target:KPI_TARGET.sa,   value:kMonthly.sa||0,   color:'#38BDF8', targetHint:'90%', icon:'headset' },
   ];
 
   // --- Rekap Quarter (donut 4D + KPI summary quarter, ikut filter periode triwulan, live sync dari
@@ -9432,8 +9292,12 @@ function renderKPIChartDashboard(k, globalStats){
   const quarterSelectHtml = `<select class="trend-quarter-select" onchange="onKpiTrendQuarterChange(this)">
     ${quarterOptions.map(q=>`<option value="${q}" ${q===activeQuarterVal?'selected':''}>${quarterOptionLabel(q)}</option>`).join('')}
   </select>`;
-  const quarterKpiDefs = monthlyKpiDefs.map(d=>({ ...d, value: kQuarter[d.key]||0 }));
-  const quarterPctList = quarterKpiDefs.map(d=>kpiAchievePct(d.key, d.value));
+  const quarterKpiDefs = monthlyKpiDefs.map(d=>{
+    const raw = kQuarter[d.key]||0;
+    if(d.key==='mttr' && d.unit==='%') return { ...d, value: kpiAchievePct('mttr', raw), rawHours: raw };
+    return { ...d, value: raw };
+  });
+  const quarterPctList = quarterKpiDefs.map(d=> (d.key==='mttr' && d.unit==='%') ? (Number(d.value)||0) : kpiAchievePct(d.key, d.value));
   const quarterAvgPct = quarterPctList.length ? (quarterPctList.reduce((a,b)=>a+b,0)/quarterPctList.length) : 0;
   // Breakdown per bulan dalam Quarter terpilih (mis. Juli / Agustus / September) — dipakai sebagai
   // kolom terpisah per bulan di tabel KPI Summary Quarter (bukan lagi 1 kolom "Bulan" berisi rentang).
@@ -9455,16 +9319,20 @@ function renderKPIChartDashboard(k, globalStats){
   }
   function kpiIconSVG(name, color){
     const c = color || '#EDEEF0';
+    /* Ikon KPI diselaraskan dengan referensi dashboard: gear / shield / hourglass / wrench / clipboard / headset */
     const icons = {
-      gear: `<path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>`,
+      gear: `<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>`,
+      shield: `<path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z"/>`,
+      hourglass: `<path d="M6 2h12M6 22h12M8 2v3.5c0 1.5 1 2.5 2.2 3.3L12 10l1.8-1.2C15 7.9 16 6.9 16 5.5V2M8 22v-3.5c0-1.5 1-2.5 2.2-3.3L12 14l1.8 1.2c1.2.8 2.2 1.8 2.2 3.3V22"/>`,
+      wrench: `<path d="M14.7 6.3a4 4 0 0 0-5.6 5.6l-5.5 5.5a1.5 1.5 0 0 0 2.1 2.1l5.5-5.5a4 4 0 0 0 5.6-5.6l-2.5 2.5-2.1-2.1 2.5-2.5z"/>`,
+      clipboard: `<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/>`,
+      headset: `<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h1v-5H4zM20 14h-1v5h1a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2z"/><path d="M14 19h-1a2 2 0 0 0-2 2v0a1 1 0 0 0 1 1h2"/>`,
+      /* fallback lama */
       calendar: `<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>`,
-      clock: `<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>`,
-      wrench: `<path d="M14.7 6.3a4.5 4.5 0 0 0-6.01 6.01l-5.34 5.34a1.5 1.5 0 0 0 2.12 2.12l5.34-5.34a4.5 4.5 0 0 0 6.01-6.01l-2.47 2.47-2.12-2.12 2.47-2.47z"/>`,
-      shield: `<path d="M12 3l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z"/><path d="M9 12l2 2 4-4"/>`,
-      clipboard: `<rect x="8" y="3" width="8" height="4" rx="1"/><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h4"/>`
+      clock: `<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>`
     };
     const body = icons[name] || icons.gear;
-    return `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 8px ${c}88)">${body}</svg>`;
+    return `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="${c}" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 10px ${c}99)">${body}</svg>`;
   }
 
   // --- All months trend: auto from Daily Maintenance + performance sheet periods ---
@@ -9527,15 +9395,15 @@ function renderKPIChartDashboard(k, globalStats){
 
   // Kartu gauge bulat + ikon di tengah + nilai di samping (gaya referensi)
   const gaugeCardsHtml = monthlyKpiDefs.map(d=>{
-    const pct = kpiAchievePct(d.key, d.value);
+    const pct = (d.key==='mttr' && d.unit==='%') ? (Number(d.value)||0) : kpiAchievePct(d.key, d.value);
     const st = kpiStatusIdLabel(pct);
     const isActive = kpiMonthlyDetailKey===d.key;
     const isPct = d.unit==='%';
-    const valTxt = isPct ? d.value.toFixed(1)+'%' : Math.round(d.value).toString();
-    const unitTxt = isPct ? '' : 'JAM';
-    const sparkVals = trendMonths.map(m=> m[d.key]||0);
+    const isMttrPct = d.key==='mttr' && d.unit==='%';
+    const valTxt = isPct ? (Number(d.value)||0).toFixed(isMttrPct?0:1)+'%' : (d.value>=100 ? Math.round(d.value).toString() : d.value.toFixed(1));
+    const unitTxt = isPct ? '' : 'HOURS';
+    const sparkVals = trendMonths.map(m=> isMttrPct ? kpiAchievePct('mttr', m.mttr||0) : (m[d.key]||0));
     let deltaHtml = '';
-    // Bandingkan vs bulan sebelumnya relatif ke periode yang dipilih (bukan selalu bulan terbaru).
     if(trendMonths.length>=2){
       let curIdx = trendMonths.length - 1;
       if(activeMonthlyChartPeriod){
@@ -9543,9 +9411,11 @@ function renderKPIChartDashboard(k, globalStats){
         if(found >= 0) curIdx = found;
       }
       if(curIdx >= 1){
-        const cur = trendMonths[curIdx][d.key]||0;
-        const prev = trendMonths[curIdx-1][d.key]||0;
-        const higherBetter = (d.key!=='mttr');
+        const curRaw = trendMonths[curIdx][d.key]==null ? 0 : trendMonths[curIdx][d.key];
+        const prevRaw = trendMonths[curIdx-1][d.key]==null ? 0 : trendMonths[curIdx-1][d.key];
+        const cur = isMttrPct ? kpiAchievePct('mttr', curRaw) : curRaw;
+        const prev = isMttrPct ? kpiAchievePct('mttr', prevRaw) : prevRaw;
+        const higherBetter = true;
         const diff = cur - prev;
         const up = diff > 0.05, down = diff < -0.05;
         const good = higherBetter ? up : down;
@@ -9553,27 +9423,28 @@ function renderKPIChartDashboard(k, globalStats){
         const arrow = up ? '▲' : (down ? '▼' : '●');
         const col = good ? '#22C55E' : (bad ? '#E5484D' : 'var(--text-dim)');
         const prevLabel = trendMonths[curIdx-1].short || 'prev';
-        const diffTxt = isPct ? Math.abs(diff).toFixed(1)+'%' : Math.abs(diff).toFixed(1)+' JAM';
+        const diffTxt = (isPct || isMttrPct) ? Math.abs(diff).toFixed(isMttrPct?0:1)+'%' : Math.abs(diff).toFixed(1)+' JAM';
         deltaHtml = `<div class="kpi-dash-delta" style="color:${col}">${arrow} ${diffTxt} vs ${prevLabel}</div>`;
       }
     }
-    return `<div class="kpi-dash-card${isActive?' active':''}" style="--kpi-color:${d.color}; --kpi-glow:${d.color}22;" onclick="onKpiMonthlyRowClick('${d.key}')" title="Click for description & per-unit achievement">
-      <div class="kpi-dash-name">${d.label}</div>
-      <div class="kpi-dash-sub">${d.full}</div>
-      <div class="kpi-dash-body">
-        <div class="kpi-dash-ring-wrap">
-          ${kpiPremiumRingSVG(pct, d.color)}
-          <div class="kpi-dash-center kpi-dash-center-icon">${kpiIconSVG(d.icon, d.color)}</div>
+    return `<div class="kpi-dash-card${isActive?' active':''}" style="--kpi-color:${d.color}; --kpi-glow:${d.color}33;" onclick="onKpiMonthlyRowClick('${d.key}')" title="Click for description & per-unit achievement">
+      <div class="kpi-dash-head">
+        <div class="kpi-dash-ico">${kpiIconSVG(d.icon, d.color)}</div>
+        <div class="kpi-dash-head-text">
+          <div class="kpi-dash-name">${d.label}</div>
+          <div class="kpi-dash-sub">${d.full}</div>
         </div>
+      </div>
+      <div class="kpi-dash-body">
         <div class="kpi-dash-val-col">
           <div class="kpi-dash-val" style="color:${d.color}">${valTxt}</div>
           ${unitTxt?`<div class="kpi-dash-unit">${unitTxt}</div>`:''}
         </div>
       </div>
-      <div class="kpi-dash-target">TARGET ${d.targetHint}</div>
-      <span class="kpi-dash-status ${st.cls}">${st.text}</span>
-      ${deltaHtml}
-      <div class="kpi-dash-spark">${sparklineSVG(sparkVals, d.color)}</div>
+      <div class="kpi-dash-foot">
+        <div class="kpi-dash-target">TARGET ${d.targetHint}</div>
+        ${deltaHtml || `<span class="kpi-dash-status ${st.cls}">${st.text}</span>`}
+      </div>
     </div>`;
   }).join('');
 
@@ -9871,10 +9742,10 @@ function renderKPIChartDashboard(k, globalStats){
 
   // Ringkasan table
   const sumRows = monthlyKpiDefs.map(d=>{
-    const pct = kpiAchievePct(d.key, d.value);
+    const pct = (d.key==='mttr' && d.unit==='%') ? (Number(d.value)||0) : kpiAchievePct(d.key, d.value);
     const st = kpiStatusIdLabel(pct);
     const isActive = kpiMonthlyDetailKey===d.key;
-    const valTxt = d.unit==='%' ? d.value.toFixed(1)+'%' : (Math.round(d.value)+' jam');
+    const valTxt = d.unit==='%' ? ((d.key==='mttr' ? Math.round(d.value) : d.value.toFixed(1))+'%') : (Math.round(d.value)+' jam');
     let _curT = trendMonths.length - 1;
     if(activeMonthlyChartPeriod){
       const _f = trendMonths.findIndex(m => m.key === activeMonthlyChartPeriod);
