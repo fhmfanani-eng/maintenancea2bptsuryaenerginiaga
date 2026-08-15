@@ -3887,8 +3887,15 @@ const BACKEND_CONFIG = {
   // Spreadsheet: https://docs.google.com/spreadsheets/d/1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4
   // Apps Script deploy v21 (11 Agu 2026) — getPerformance + sync sheet data
   sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
-  sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbx31DQTu96c5pO_46P0mJHE2bBten4d5ynCThs-G_V03QFnq4v1Mknjujj7Ohd6up4/exec',
+  sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbxFJXUqEKdC5x11nKrDr0znEhbu8yVI1l8C8vNSQRunBfjvYtCTN4Wd9xCOeJIMI-c/exec',
 };
+
+// Endpoint Google Apps Script dibuat tetap di dalam panel.
+// Sync Performance/KPI tidak meminta user memasukkan URL lagi.
+const FIXED_SHEETS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx31DQTu96c5pO_46P0MHE2bBten4d5ynCThs-G_V03QFnq4v1Mknjujj7Ohd6up4/exec';
+function getSheetsWebAppUrl(){
+  return String(BACKEND_CONFIG.sheetsWebAppUrl || FIXED_SHEETS_WEB_APP_URL).trim();
+}
 
 const localFallbackStorage = {
   async get(key){
@@ -5197,6 +5204,7 @@ loginForm.addEventListener('submit', async (e)=>{
   updateRoleUI();
   applySavedNavOrder();
   startPerformanceLiveSync();
+  startMaintenanceKPILiveSync();
   // Sync performance sekali setelah login (silent)
   ensurePerformanceSynced({ force:true }).then(res=>{
     if(res && res.ok){ renderDashboard(); renderUnitCards(); }
@@ -6548,8 +6556,7 @@ async function syncCodeBDChronological(){
    konsisten dengan skema tabel Supabase — bukan nama field internal JS (camelCase). */
 async function syncDailyToSheets(opts){
   opts = opts || {};
-  if(!BACKEND_CONFIG.sheetsWebAppUrl){
-    if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG. Deploy Apps Script dulu, lalu tempel URL /exec.');
+  if(!getSheetsWebAppUrl()){
     return { ok:false, error:'no_url' };
   }
   if(!dailyRecords.length){
@@ -6557,7 +6564,7 @@ async function syncDailyToSheets(opts){
     return { ok:true, written:0 };
   }
   try{
-    const res = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+    const res = await fetch(getSheetsWebAppUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
@@ -10186,20 +10193,19 @@ let _perfAutoTimer = null;
  */
 async function fetchPerformanceFromSheets(opts){
   opts = opts || {};
-  if(!BACKEND_CONFIG.sheetsWebAppUrl){
-    if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG. Deploy Apps Script dulu, lalu tempel URL /exec.');
+  if(!getSheetsWebAppUrl()){
     return { ok:false, error:'no_url' };
   }
   try{
-    const url = BACKEND_CONFIG.sheetsWebAppUrl +
-      (BACKEND_CONFIG.sheetsWebAppUrl.indexOf('?')>=0 ? '&' : '?') +
+    const url = getSheetsWebAppUrl() +
+      (getSheetsWebAppUrl().indexOf('?')>=0 ? '&' : '?') +
       'action=getPerformance';
     const res = await fetch(url, { method:'GET', redirect:'follow', cache:'no-store' });
     let data = null;
     try{ data = await res.json(); }catch(_e){ data = null; }
 
     if(!data || data.ok!==true){
-      const res2 = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+      const res2 = await fetch(getSheetsWebAppUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'getPerformance' }),
@@ -10452,6 +10458,188 @@ document.getElementById('mapa-template-btn').addEventListener('click', function(
   XLSX.utils.book_append_sheet(wb, ws, 'Template MA-PA');
   XLSX.writeFile(wb, 'template-ma-pa.xlsx');
 });
+
+/* =====================================================================================
+ *  SYNC KPI MAINTENANCE — WEB PANEL (KARTU UNIT) -> SHEET "Maintenance" (via Code.gs)
+ * =====================================================================================
+ *  SUMBER DATA: computeUnitKPIsFor(unitCode, periodKey) — persis fungsi yang dipakai
+ *  panel Performance di kartu unit (Database Unit). Nilai site-wide yang dikirim ke
+ *  sheet Maintenance = rata-rata nilai KPI dari SEMUA kartu unit pada periode itu,
+ *  jadi selalu identik dengan angka yang tampil di kartu unit di web panel.
+ *
+ *  Pembagian minggu mengikuti pola di sheet "Maintenance":
+ *    W1 = tanggal 1–10, W2 = 11–17, W3 = 18–24, W4 = 25–akhir bulan.
+ *  Ubah WEEK_DAY_RANGES di bawah kalau pembagian di sheet-mu berbeda.
+ *
+ *  Data dikirim lewat BACKEND_CONFIG.sheetsWebAppUrl (sudah diisi sekali di atas) ke
+ *  Code.gs (action=syncMaintenanceKPI), yang menulis ke tab "Maintenance" — dicari
+ *  lewat ss.getSheetByName('Maintenance'), tidak pernah ke tab lain / tab aktif.
+ * ===================================================================================== */
+
+const MAINTENANCE_PERIODS_TTL_MS = 60 * 1000;
+let _maintenancePeriodsCache = null;
+let _maintenancePeriodsFetchedAt = 0;
+
+/**
+ * Ambil struktur periode langsung dari header tab Maintenance.
+ * Tidak lagi memakai pembagian tanggal hardcode 1-10 / 11-17 / dst.
+ * Apps Script membaca teks W1/W2/W3/W4/TOTAL beserta rentang tanggalnya
+ * dari format kolom Maintenance, sehingga bila format sheet berubah,
+ * mapping KPI ikut berubah otomatis.
+ */
+async function fetchMaintenancePeriods(opts){
+  opts = opts || {};
+  if(!getSheetsWebAppUrl()){
+    return { ok:false, error:'no_url', periods:[] };
+  }
+  const force = !!opts.force;
+  if(!force && _maintenancePeriodsCache && (Date.now()-_maintenancePeriodsFetchedAt) < MAINTENANCE_PERIODS_TTL_MS){
+    return { ok:true, periods:_maintenancePeriodsCache, cached:true };
+  }
+  try{
+    const url = getSheetsWebAppUrl() +
+      (getSheetsWebAppUrl().indexOf('?')>=0 ? '&' : '?') +
+      'action=getMaintenancePeriods';
+    const res = await fetch(url, { method:'GET', redirect:'follow', cache:'no-store' });
+    let data = null;
+    try{ data = await res.json(); }catch(_e){ data = null; }
+    if(!data || data.ok!==true || !Array.isArray(data.periods)){
+      return { ok:false, error:(data&&data.error)||'Struktur periode Maintenance tidak terbaca.', periods:[] };
+    }
+    _maintenancePeriodsCache = data.periods;
+    _maintenancePeriodsFetchedAt = Date.now();
+    return data;
+  }catch(e){
+    console.error('fetchMaintenancePeriods gagal', e);
+    return { ok:false, error:String(e), periods:[] };
+  }
+}
+
+/** Hitung KPI web panel untuk satu rentang tanggal. Sumber & rumus sama dengan Performance. */
+function computeMaintenanceKPIBlock(startStr, endStr){
+  const perUnit = UNITS.map(u => ({
+    code: u.code,
+    kpi: computeUnitKPIsFor(u.code, `${startStr}_${endStr}`)
+  }));
+  const keys = ['ma','pa','mtbs','mttr','pmr','sa'];
+  const site = {};
+  keys.forEach(key=>{
+    const vals = perUnit.map(p=>Number(p.kpi[key])||0);
+    site[key] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+  });
+  return {
+    kpis: keys.map(key=>({
+      key,
+      acu: site[key],
+      score: kpiWeightedScore(key, site[key])
+    })),
+    perUnit
+  };
+}
+
+/** Kirim satu blok KPI ke Apps Script. */
+async function pushMaintenanceKPIToSheet(month, week, kpis){
+  if(!getSheetsWebAppUrl()){
+    console.warn('sheetsWebAppUrl belum diisi — sync Maintenance KPI dilewati.');
+    return { ok:false, error:'no_url' };
+  }
+  try{
+    const res = await fetch(getSheetsWebAppUrl(), {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({ action:'syncMaintenanceKPI', month, week, kpis }),
+      cache:'no-store'
+    });
+    let data=null;
+    try{ data=await res.json(); }catch(_e){ data=null; }
+    if(!data || data.ok!==true) console.warn('Sync Maintenance KPI gagal:', data&&data.error);
+    return data || {ok:false,error:'no_response'};
+  }catch(e){
+    console.error('pushMaintenanceKPIToSheet gagal',e);
+    return {ok:false,error:String(e)};
+  }
+}
+
+/**
+ * Sync semua periode yang benar-benar tersedia di kolom Maintenance.
+ * Future period tidak ditulis agar tidak mengisi kolom bulan/minggu yang belum berjalan.
+ * Current period tetap ikut disync agar KPI selalu up-to-date.
+ */
+async function syncMaintenancePeriodsToSheet(opts){
+  opts = opts || {};
+  const structure = await fetchMaintenancePeriods({force:!!opts.forcePeriods});
+  if(!structure.ok) return {ok:false,error:structure.error,results:[]};
+
+  const today = new Date();
+  today.setHours(23,59,59,999);
+  const results=[];
+  const periods = structure.periods.slice().sort((a,b)=>String(a.start).localeCompare(String(b.start)));
+
+  for(const period of periods){
+    const start = new Date(String(period.start)+'T00:00:00');
+    if(isNaN(start.getTime()) || start > today) continue;
+
+    const block = computeMaintenanceKPIBlock(period.start, period.end);
+    const result = await pushMaintenanceKPIToSheet(period.month, period.week, block.kpis);
+    results.push({
+      month:period.month,
+      week:period.week,
+      label:period.label||'',
+      range:[period.start,period.end],
+      perUnit:block.perUnit,
+      result
+    });
+  }
+  return {ok:results.every(r=>r.result&&r.result.ok===true), periods:periods, results};
+}
+
+/** Tombol manual — sinkron mengikuti struktur kolom Maintenance, bukan tanggal hardcode. */
+async function syncCurrentMonthMaintenanceKPI(btn){
+  if(btn){ btn.disabled=true; btn.textContent='☁ Menyinkronkan KPI...'; }
+  try{
+    const out=await syncMaintenancePeriodsToSheet({forcePeriods:true});
+    const failed=(out.results||[]).filter(r=>!r.result||r.result.ok!==true);
+    if(failed.length){
+      alert('⚠ Sebagian periode gagal disync ke sheet Maintenance:\n'+failed.map(f=>`${f.month} ${f.week}: ${f.result&&f.result.error}`).join('\n'));
+    }else{
+      alert(`✓ KPI Maintenance berhasil disync mengikuti ${out.results.length} periode yang tersedia di format sheet.`);
+    }
+  }catch(e){
+    alert('⚠ Sync KPI Maintenance gagal: '+(e.message||e));
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='☁ Sync KPI ke Sheet Maintenance'; }
+  }
+}
+
+const MAINTENANCE_KPI_SYNC_TTL_MS = 5 * 60 * 1000;
+let _maintKpiSyncTimer = null;
+let _maintKpiSyncInFlight = null;
+
+/** Sync otomatis di background. */
+async function syncMaintenanceKPINow(){
+  if(!BACKEND_CONFIG.sheetsWebAppUrl) return {ok:false,error:'no_url'};
+  if(_maintKpiSyncInFlight) return _maintKpiSyncInFlight;
+  _maintKpiSyncInFlight=(async()=>{
+    try{
+      return await syncMaintenancePeriodsToSheet({forcePeriods:true});
+    }catch(e){
+      console.error('syncMaintenanceKPINow gagal',e);
+      return {ok:false,error:String(e)};
+    }finally{
+      _maintKpiSyncInFlight=null;
+    }
+  })();
+  return _maintKpiSyncInFlight;
+}
+
+function startMaintenanceKPILiveSync(){
+  if(_maintKpiSyncTimer) return;
+  syncMaintenanceKPINow();
+  _maintKpiSyncTimer=setInterval(()=>{
+    if(!loggedInUser) return;
+    syncMaintenanceKPINow();
+  },MAINTENANCE_KPI_SYNC_TTL_MS);
+}
 
 async function runPerformanceSyncFromUI(btn){
   if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
@@ -10866,6 +11054,7 @@ function subscribeDailyRealtime(){
     requestNotifPermission();
     subscribeDailyRealtime();
     startPerformanceLiveSync();
+    startMaintenanceKPILiveSync();
     // Jaring pengaman: refresh dailyRecords dari database setiap 30 detik.
     // Ini menjaga data tetap sinkron walau channel realtime sempat putus koneksi
     // (mis. laptop sleep semalaman) dan tidak mengirim ulang perubahan yang terlewat.
