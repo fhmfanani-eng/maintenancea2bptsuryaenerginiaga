@@ -1840,10 +1840,11 @@ body.role-pjo .view > .banner{ display:none !important; }
             </div>
           </div>
           <div class="hint" style="margin-top:-8px; margin-bottom:12px;" id="plan-sync-hint">
-            Plan Service <b>terisi otomatis</b> per type unit:
-            <b>WA500-6R / PC210-10MO</b> → 500, 1000, 2000… ·
-            <b>D85ESS-2A</b> → 250, 500, 750, 1000…
-            · HM Total = HM terakhir + W performance. Urut hari terdekat.
+            Schedule Plan Service <b>otomatis</b> per type unit
+            (WA500/PC210 → 500/1000/2000… · D85ESS → 250/500/750/1000…).
+            <b>HM Total</b> = baseline HM (Daily / Monitoring HM, tanggal ≤ awal periode sheet performance)
+            + <b>W</b> periode tersebut. Jika bacaan HM sudah di dalam periode, W tidak ditambah lagi
+            (hindari double-count). Sync live tiap ~45 detik dari sheet performance — <b>tanpa upload HM manual</b>.
           </div>
           <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
             <label style="font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin:0;">Filter Bulan</label>
@@ -1872,7 +1873,7 @@ body.role-pjo .view > .banner{ display:none !important; }
                 <th>Unit Code</th>
                 <th>Type Unit</th>
                 <th>Type Service <span style="color:var(--text-faint); font-weight:400;">(interval)</span></th>
-                <th>HM Total <span style="color:var(--text-faint); font-weight:400;">(HM terakhir + W)</span></th>
+                <th>HM Total <span style="color:var(--text-faint); font-weight:400;">(baseline ≤ periode + W)</span></th>
                 <th>Sisa HM</th>
                 <th>Waktu Operasi W</th>
                 <th>Est. Sisa Hari</th>
@@ -1895,6 +1896,13 @@ body.role-pjo .view > .banner{ display:none !important; }
           <div class="hint" style="margin-top:-8px; margin-bottom:12px;">
             Data unit yang <b>Status Eksekusi = Close</b> di Schedule Plan Service masuk ke sini <b>otomatis</b>
             (hanya setelah service benar-benar dieksekusi). Tombol <b>↩ Open</b> mengembalikan ke jadwal plan.
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+            <label style="font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin:0;">Filter Unit Code</label>
+            <select id="plan-record-filter-unit" style="min-width:160px; background:var(--panel-2); border:1px solid var(--line); color:var(--yellow); font-weight:600; padding:8px 10px; border-radius:var(--radius);">
+              <option value="">Semua Unit</option>
+            </select>
+            <button type="button" class="btn small secondary" id="plan-record-clear-filter" title="Reset filter unit">Reset</button>
           </div>
           <div class="scroll-top-track" id="plan-record-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="plan-record-scroll-top-inner"></div></div>
           <div class="table-wrap" id="plan-record-table-wrap">
@@ -4606,8 +4614,9 @@ navItems.forEach(item=>{
     if(item.dataset.view==='plan'){
       renderPlanTable();
       (async ()=>{
+        // Refresh Daily Maintenance (HM input) + sheet performance (W) sebelum hitung HM Total
+        try{ await refreshDailyRecords(); }catch(_e){}
         try{ await ensurePerformanceSynced({ force:true }); }catch(_e){}
-        // Jika kosong → generate otomatis; jika ada → update HM Total dari sync terbaru
         try{
           if(!planRecords.length) await rebuildPlanServiceAuto({ silent:true });
           else await syncPlanFromHM({ silent:true });
@@ -7161,7 +7170,8 @@ function enrichPlanRow(r){
     ? Math.round((hmPlanNum - hmAktualNum) * 10) / 10
     : null;
   const daysLeft = estimateDaysToHmPlan(r.unitCode, r.hmPlan, hmAktualNum);
-  return { r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft };
+  const hmSource = (liveCalc && liveCalc.hmSource) ? liveCalc.hmSource : (r.hmSource || 'daily');
+  return { r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft, hmSource };
 }
 
 /** Plan Service: hanya yang BELUM Close — Type Service (bukan HM Rencana). */
@@ -7204,13 +7214,14 @@ function renderPlanTable(){
     return;
   }
 
-  tbody.innerHTML = rows.map(({ r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft })=>{
+  tbody.innerHTML = rows.map(({ r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft, hmSource })=>{
     const isOverdue = r.status==='Planned' && r.planDate && r.planDate < today;
     const statusLabel = isOverdue ? 'Overdue' : (r.status||'Planned');
     const statusClass = isOverdue ? 'overdue' : 'planned';
     const exec = r.execStatus || 'Open';
     const baseLabel = hmBase!==null && hmBase!==undefined ? Number(hmBase).toFixed(1) : '—';
-    const sourceNote = `<div style="color:var(--text-faint); font-size:10px; margin-top:2px;">HM ${baseLabel} + W ${Number(hmW||0).toFixed(1)}</div>`;
+    const srcTag = hmSource==='monitoring' ? 'Mon.HM' : 'Daily';
+    const sourceNote = `<div style="color:var(--text-faint); font-size:10px; margin-top:2px;">${srcTag} ${baseLabel} + W ${Number(hmW||0).toFixed(1)}${hmBase!==null && hmBase!==undefined && r.hmBaseDate ? ' · baseline '+formatDateDMY(r.hmBaseDate) : ''}</div>`;
     const perf = perfMap[String(r.unitCode||'').trim().toUpperCase()];
     const wLabel = perf ? Number(perf.w).toFixed(1) : (hmW ? Number(hmW).toFixed(1) : '—');
     const typeServiceCell = `<b>${escUH(r.serviceType)||'—'}</b>
@@ -7264,14 +7275,42 @@ function renderPlanTable(){
   renderRecordServiceTable();
 }
 
+/** Isi opsi dropdown filter Unit Code di Record Service (dari master UNITS + unit yang pernah Close). */
+function populatePlanRecordUnitFilter(){
+  const sel = document.getElementById('plan-record-filter-unit');
+  if(!sel) return;
+  const prev = sel.value || '';
+  const codes = new Set();
+  (UNITS||[]).forEach(u=>{ if(u && u.code) codes.add(String(u.code).trim()); });
+  (planRecords||[]).filter(isPlanClosed).forEach(r=>{
+    if(r && r.unitCode) codes.add(String(r.unitCode).trim());
+  });
+  const sorted = Array.from(codes).filter(Boolean).sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = '<option value="">Semua Unit</option>' +
+    sorted.map(c=>`<option value="${escUH(c)}">${escUH(c)}</option>`).join('');
+  if(prev && sorted.some(c=>c===prev)) sel.value = prev;
+  else sel.value = '';
+}
+
 /** Record Service Unit: otomatis dari Plan Service yang sudah Close. */
 function renderRecordServiceTable(){
   const tbody = document.getElementById('plan-record-tbody');
   if(!tbody) return;
 
-  const closed = planRecords.filter(isPlanClosed);
+  populatePlanRecordUnitFilter();
+
+  const unitFilter = (document.getElementById('plan-record-filter-unit')||{}).value || '';
+  const closed = planRecords.filter(r=>{
+    if(!isPlanClosed(r)) return false;
+    if(unitFilter && String(r.unitCode||'').trim() !== unitFilter) return false;
+    return true;
+  });
+
   if(!closed.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Belum ada record service. Unit yang di-Close di Plan Service akan muncul di sini otomatis.</td></tr>`;
+    const emptyMsg = unitFilter
+      ? `Tidak ada record service untuk unit <b>${escUH(unitFilter)}</b>.`
+      : 'Belum ada record service. Unit yang di-Close di Plan Service akan muncul di sini otomatis.';
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">${emptyMsg}</td></tr>`;
     try{ attachTopScroll('plan-record'); }catch(_e){}
     return;
   }
@@ -7301,6 +7340,16 @@ function renderRecordServiceTable(){
   try{ attachTopScroll('plan-record'); }catch(_e){}
 }
 
+// Filter Unit Code di Record Service Unit
+document.getElementById('plan-record-filter-unit')?.addEventListener('change', ()=>{
+  renderRecordServiceTable();
+});
+document.getElementById('plan-record-clear-filter')?.addEventListener('click', ()=>{
+  const sel = document.getElementById('plan-record-filter-unit');
+  if(sel) sel.value = '';
+  renderRecordServiceTable();
+});
+
 /** Kembalikan record Close ke Schedule Plan Service (status Open). */
 window.reopenPlanService = async function(id){
   const r = planRecords.find(x=>x.id===id);
@@ -7318,18 +7367,55 @@ document.getElementById('plan-filter-month')?.addEventListener('change', ()=>{
   renderPlanTable();
 });
 
-/* ---- Ambil HM aktual terakhir tiap unit dari data Monitoring HM (hmRecords) ---- */
-function getLatestHMPerUnit(){
+/* ---- HM terakhir per unit dari Monitoring HM (hmRecords) — fallback ---- */
+function getLatestHMPerUnitFromMonitoring(asOfDate){
   const map = {};
-  hmRecords.forEach(r=>{
+  (hmRecords||[]).forEach(r=>{
     const unitCode = String(r.unitCode||'').trim();
     if(!unitCode || !r.tanggal) return;
+    if(asOfDate && r.tanggal > asOfDate) return;
     const hmAkhir = Number(r.hmAkhir)||0;
+    if(!hmAkhir) return;
     const cur = map[unitCode];
     if(!cur || r.tanggal>cur.tanggal || (r.tanggal===cur.tanggal && hmAkhir>cur.hm)){
-      map[unitCode] = { hm: hmAkhir, tanggal: r.tanggal };
+      map[unitCode] = { hm: hmAkhir, tanggal: r.tanggal, source: 'monitoring' };
     }
   });
+  return map;
+}
+
+/**
+ * HM terakhir per unit dari input Daily Maintenance (kolom HM).
+ * Dipilih record dengan tanggal paling baru; jika sama tanggal, HM terbesar.
+ * Prioritas utama untuk HM Total di Plan Service.
+ * asOfDate (opsional, YYYY-MM-DD): batasi hanya record ≤ tanggal tersebut
+ * (dipakai agar baseline sesuai awal periode sheet performance).
+ */
+function getLatestHMPerUnitFromDaily(asOfDate){
+  const map = {};
+  (dailyRecords||[]).forEach(r=>{
+    const unitCode = String(r.unitCode||'').trim();
+    if(!unitCode || !r.tanggal) return;
+    if(asOfDate && r.tanggal > asOfDate) return;
+    const hm = Number(r.hm);
+    if(!hm || isNaN(hm) || hm<=0) return;
+    const cur = map[unitCode];
+    if(!cur || r.tanggal>cur.tanggal || (r.tanggal===cur.tanggal && hm>cur.hm)){
+      map[unitCode] = { hm: hm, tanggal: r.tanggal, source: 'daily' };
+    }
+  });
+  return map;
+}
+
+/**
+ * Gabungan: Daily Maintenance dulu, fallback Monitoring HM.
+ * asOfDate (opsional): batasi baseline HM agar cocok dengan periode performance.
+ */
+function getLatestHMPerUnit(asOfDate){
+  const fromDaily = getLatestHMPerUnitFromDaily(asOfDate);
+  const fromMon = getLatestHMPerUnitFromMonitoring(asOfDate);
+  const map = Object.assign({}, fromMon, fromDaily);
+  Object.keys(fromDaily).forEach(k=>{ map[k] = fromDaily[k]; });
   return map;
 }
 
@@ -7371,24 +7457,71 @@ function getServiceIntervalsForType(typeUnit){
 }
 
 /**
- * HM Total unit = HM terakhir (Monitoring HM) + Waktu Operasi W (sheet performance).
+ * HM Total unit — sesuai periode sheet performance:
+ *
+ * 1. Ada periodStart di performance → ambil baseline HM paling akhir
+ *    dengan tanggal ≤ periodStart (Daily dulu, fallback Monitoring HM),
+ *    lalu HM Total = baseline + W (waktu operasi periode tersebut).
+ *    Ini mencegah double-count bila data HM di dalam periode sudah
+ *    mencatat kenaikan jam yang sama dengan kolom W.
+ *
+ * 2. Tidak ada info periode → fallback lama: HM terakhir (tanpa batas
+ *    tanggal) + W.
+ *
+ * 3. Tidak ada baseline sama sekali, tapi ada W → HM Total = W
+ *    (unit baru / belum ada bacaan HM).
+ *
+ * Sync otomatis saat panel Plan dibuka / tombol Sync / live poll.
  */
 function calcHmTotalForUnit(unitCode){
   const code = String(unitCode||'').trim();
   if(!code) return null;
-  const latestHM = getLatestHMPerUnit();
-  const info = latestHM[code] || latestHM[code.toUpperCase()];
+
   const perfMap = getPerformanceWByUnit();
-  const perf = perfMap[code.toUpperCase()];
-  const hmBase = info ? Number(info.hm)||0 : null;
+  const perf = perfMap[code.toUpperCase()] || perfMap[code];
   const w = perf ? Number(perf.w)||0 : 0;
+
+  let asOf = '';
+  if(mapaData && mapaData.periodStart){
+    asOf = mapaData.periodStart;
+  }
+
+  let latestHM = getLatestHMPerUnit(asOf || undefined);
+  let info = latestHM[code] || latestHM[code.toUpperCase()];
+
+  let usedPeriodBaseline = !!(info && asOf);
+  if(!info){
+    latestHM = getLatestHMPerUnit();
+    info = latestHM[code] || latestHM[code.toUpperCase()];
+    usedPeriodBaseline = false;
+  }
+
+  const hmBase = info ? Number(info.hm)||0 : null;
   if(hmBase===null && !perf) return null;
+
   const base = hmBase!==null ? hmBase : 0;
+  let addW = w;
+  let hmTotal;
+
+  if(info && !usedPeriodBaseline && asOf && info.tanggal){
+    if(info.tanggal >= asOf){
+      addW = 0;
+      hmTotal = Math.round(base * 10) / 10;
+    } else {
+      hmTotal = Math.round((base + addW) * 10) / 10;
+    }
+  } else {
+    hmTotal = Math.round((base + addW) * 10) / 10;
+  }
+
   return {
     hmBase: hmBase,
     hmBaseDate: info ? info.tanggal : '',
-    w: w,
-    hmTotal: Math.round((base + w) * 10) / 10,
+    hmSource: info ? (info.source||'daily') : '',
+    w: addW,
+    wRaw: w,
+    hmTotal: hmTotal,
+    periodAware: !!asOf,
     periodLabel: (mapaData && mapaData.periodStart && mapaData.periodEnd)
       ? (mapaData.periodStart + ' s/d ' + mapaData.periodEnd)
       : (mapaData && mapaData.fileName) || ''
@@ -7477,7 +7610,7 @@ async function rebuildPlanServiceAuto(opts){
         hmAktual: hmTotal,
         hmAktualDate: calc.hmBaseDate || today,
         hmAktualManual: false,
-        notes: `Auto [${typeUnit||'—'}]: HM ${calc.hmBase!==null?calc.hmBase:'—'} + W ${calc.w} = ${hmTotal} → ${iv.label} @ ${hmPlan}`
+        notes: `Auto [${typeUnit||'—'}]: baseline HM ${calc.hmBase!==null?calc.hmBase:'—'} (${calc.hmBaseDate||'—'}) + W ${calc.w} = ${hmTotal} → ${iv.label} @ ${hmPlan}${calc.periodAware?' [periode '+ (calc.periodLabel||'') +']':''}`
       });
       created++;
     });
@@ -7494,7 +7627,8 @@ async function rebuildPlanServiceAuto(opts){
   renderPlanTable();
   if(!silent){
     alert('✓ Plan Service dihapus & digenerate ulang otomatis.\n' +
-      'Rumus: HM Total = HM terakhir (Monitoring HM) + W (Performance)\n' +
+      'Rumus: HM Total = baseline HM (≤ awal periode performance) + W periode\n' +
+      '(jika HM terakhir sudah di dalam periode, W tidak ditambah lagi — hindari double-count)\n' +
       created + ' jadwal service dibuat untuk ' + unitCodes.size + ' unit.');
   }
   return { ok:true, created, units: unitCodes.size };
@@ -7527,9 +7661,10 @@ async function syncPlanAll(){
       await savePlan();
       renderPlanTable();
       alert('✓ Sync Schedule Plan Service selesai.\n' +
-        'HM Total = HM terakhir + W performance\n' +
+        'HM Total = baseline HM (sesuai periode performance) + W\n' +
         updated + ' baris open diperbarui.\n' +
-        'Status Close hanya diubah manual setelah service dieksekusi.');
+        'Status Close hanya diubah manual setelah service dieksekusi.\n' +
+        'Selanjutnya auto-sync tiap ~45 detik dari sheet performance (tanpa upload HM manual).');
     }
   }catch(e){
     alert('⚠ Sync gagal: ' + (e.message||e));
@@ -10688,18 +10823,44 @@ async function autoSyncPerformanceAndRefresh(which){
   if(which==='dashboard' || which==='all') renderDashboard();
 }
 
-/** Live poll setiap 45 detik saat user login — sheet performance tetap nyambung. */
+/** Live poll setiap 45 detik saat user login — sheet performance tetap nyambung.
+ *  Saat W berubah, HM Total di Plan Service ikut di-refresh otomatis (tanpa upload HM manual). */
 function startPerformanceLiveSync(){
   if(_perfAutoTimer) return;
   _perfAutoTimer = setInterval(async ()=>{
     if(!loggedInUser) return;
     try{
+      const prevStamp = (mapaData && mapaData.updatedAt) || '';
       const res = await ensurePerformanceSynced({ force:true });
-      if(res && res.ok && res.changed){
-        const dash = document.getElementById('view-dashboard');
-        const units = document.getElementById('view-database');
-        if(dash && dash.classList.contains('active')) renderDashboard();
-        if(units && units.classList.contains('active')) renderUnitCards();
+      if(res && res.ok){
+        const newStamp = (mapaData && mapaData.updatedAt) || '';
+        const changed = !!(res.changed || (newStamp && newStamp !== prevStamp));
+        if(changed){
+          const dash = document.getElementById('view-dashboard');
+          const units = document.getElementById('view-database');
+          const planView = document.getElementById('view-plan');
+          if(dash && dash.classList.contains('active')) renderDashboard();
+          if(units && units.classList.contains('active')) renderUnitCards();
+          if(planRecords && planRecords.length){
+            let updated = 0;
+            planRecords.forEach(r=>{
+              if(isPlanClosed(r)) return;
+              const calc = calcHmTotalForUnit(r.unitCode);
+              if(!calc) return;
+              r.hmBase = calc.hmBase;
+              r.hmBaseDate = calc.hmBaseDate;
+              r.hmW = calc.w;
+              r.hmAktual = calc.hmTotal;
+              r.hmAktualDate = calc.hmBaseDate || new Date().toISOString().slice(0,10);
+              r.hmAktualManual = false;
+              updated++;
+            });
+            if(updated){
+              try{ await savePlan(); }catch(_e){}
+              if(planView && planView.classList.contains('active')) renderPlanTable();
+            }
+          }
+        }
       }
     }catch(e){ /* silent */ }
   }, 45000);
