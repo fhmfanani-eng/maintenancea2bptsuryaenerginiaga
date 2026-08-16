@@ -1829,58 +1829,89 @@ body.role-pjo .view > .banner{ display:none !important; }
         </div>
       </section>
 
-      <!-- PLAN SERVICE -->
+      <!-- PLAN SERVICE (auto-sync: Monitoring HM + sheet performance — tanpa form input manual) -->
       <section class="view" id="view-plan">
         <div class="panel">
-          <div class="panel-head"><h2><span class="tag">INPUT</span> Plan Service</h2></div>
-          <form id="form-plan">
-            <div class="grid grid-3">
-              <div class="field"><label>Unit Code</label><select id="p-unitcode" required></select></div>
-              <div class="field"><label>Tanggal Rencana</label><input type="date" id="p-date" required></div>
-              <div class="field"><label>HM Rencana</label><input type="number" id="p-hm" min="0" required></div>
-            </div>
-            <div class="grid grid-3">
-              <div class="field"><label>Jenis Service</label>
-                <select id="p-type" required>
-                  <option>PS 250 Hrs</option>
-                  <option>PS 500 Hrs</option>
-                  <option>PS 1000 Hrs</option>
-                  <option>PS 2000 Hrs</option>
-                  <option>PS 4000 Hrs</option>
-                  <option>PS 5000 Hrs</option>
-                  <option>Overhaul Component</option>
-                  <option>Inspection Rutin</option>
-                </select>
-              </div>
-              <div class="field"><label>PIC Mechanic</label><input type="text" id="p-mechanic" required></div>
-              <div class="field"><label>Status</label>
-                <select id="p-status" required>
-                  <option value="Planned">Planned</option>
-                  <option value="Done">Done</option>
-                </select>
-              </div>
-            </div>
-            <div class="field"><label>Catatan</label><textarea id="p-notes" placeholder="Catatan tambahan (opsional)"></textarea></div>
-            <div class="toolbar">
-              <button type="submit" class="btn">＋ Simpan Rencana</button>
-              <button type="reset" class="btn secondary">Reset Form</button>
-            </div>
-          </form>
-        </div>
-        <div class="panel">
           <div class="panel-head">
-            <h2>Jadwal Plan Service <span class="tag">JUL–DES 2026</span></h2>
+            <h2>Schedule Plan Service <span class="tag">AUTO SYNC</span></h2>
             <div class="toolbar">
-              <button type="button" class="btn small secondary" id="btn-sync-plan-hm">⟲ Sinkron dari Monitoring HM</button>
-              <button class="btn small secondary" id="btn-import-plan">⤓ Import dari Excel</button>
+              <button type="button" class="btn small" id="btn-sync-plan-all" title="Sync performance + HM, lalu generate jadwal otomatis">☁ Sync & Generate Otomatis</button>
+              <button type="button" class="btn small secondary" id="btn-rebuild-plan" title="Hapus semua plan lama dan buat ulang dari HM terakhir + W">🗑 Hapus & Generate Ulang</button>
             </div>
           </div>
-          <div class="hint" style="margin-top:-8px; margin-bottom:12px;" id="plan-sync-hint">Klik <b>Sinkron dari Monitoring HM</b> untuk mengambil HM aktual terakhir tiap unit dari data Monitoring HM, mengisi/memperbarui kolom <b>HM Aktual</b> di bawah, dan otomatis menandai rencana <b>Done / Close</b> kalau HM aktual sudah mencapai atau melewati HM Rencana. Kolom HM Aktual tetap bisa diedit manual bila perlu.</div>
+          <div class="hint" style="margin-top:-8px; margin-bottom:12px;" id="plan-sync-hint">
+            Plan Service <b>terisi otomatis</b> per type unit:
+            <b>WA500-6R / PC210-10MO</b> → 500, 1000, 2000… ·
+            <b>D85ESS-2A</b> → 250, 500, 750, 1000…
+            · HM Total = HM terakhir + W performance. Urut hari terdekat.
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+            <label style="font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin:0;">Filter Bulan</label>
+            <select id="plan-filter-month" style="min-width:160px; background:var(--panel-2); border:1px solid var(--line); color:var(--yellow); font-weight:600; padding:8px 10px; border-radius:var(--radius);">
+              <option value="">Semua Bulan</option>
+              <option value="01">Januari</option>
+              <option value="02">Februari</option>
+              <option value="03">Maret</option>
+              <option value="04">April</option>
+              <option value="05">Mei</option>
+              <option value="06">Juni</option>
+              <option value="07">Juli</option>
+              <option value="08">Agustus</option>
+              <option value="09">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">Desember</option>
+            </select>
+          </div>
           <div class="scroll-top-track" id="plan-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="plan-scroll-top-inner"></div></div>
           <div class="table-wrap" id="plan-table-wrap">
             <table id="plan-table">
-              <thead><tr><th>Tgl Rencana</th><th>Unit Code</th><th>Type</th><th>HM Rencana</th><th>HM Aktual <span style="color:var(--text-faint); font-weight:400;">(Monitoring HM)</span></th><th>Jenis Service</th><th>PIC</th><th>Status</th><th>Status Eksekusi</th><th>Tgl Eksekusi</th><th>Catatan</th><th></th></tr></thead>
+              <thead><tr>
+                <th>Bulan</th>
+                <th>Tgl Rencana</th>
+                <th>Unit Code</th>
+                <th>Type Unit</th>
+                <th>Type Service <span style="color:var(--text-faint); font-weight:400;">(interval)</span></th>
+                <th>HM Total <span style="color:var(--text-faint); font-weight:400;">(HM terakhir + W)</span></th>
+                <th>Sisa HM</th>
+                <th>Waktu Operasi W</th>
+                <th>Est. Sisa Hari</th>
+                <th>PIC</th>
+                <th>Status</th>
+                <th>Status Eksekusi</th>
+                <th>Tgl Eksekusi</th>
+                <th></th>
+              </tr></thead>
               <tbody id="plan-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- RECORD SERVICE UNIT — otomatis dari Plan Service yang Close -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Record Service Unit <span class="tag">CLOSE</span></h2>
+          </div>
+          <div class="hint" style="margin-top:-8px; margin-bottom:12px;">
+            Data unit yang <b>Status Eksekusi = Close</b> di Schedule Plan Service masuk ke sini <b>otomatis</b>
+            (hanya setelah service benar-benar dieksekusi). Tombol <b>↩ Open</b> mengembalikan ke jadwal plan.
+          </div>
+          <div class="scroll-top-track" id="plan-record-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="plan-record-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="plan-record-table-wrap">
+            <table id="plan-record-table">
+              <thead><tr>
+                <th>Bulan</th>
+                <th>Tgl Rencana</th>
+                <th>Tgl Eksekusi</th>
+                <th>Unit Code</th>
+                <th>Type Unit</th>
+                <th>Type Service</th>
+                <th>HM Target</th>
+                <th>HM Total (saat close)</th>
+                <th>PIC</th>
+                <th>Status</th>
+              </tr></thead>
+              <tbody id="plan-record-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -4430,29 +4461,10 @@ async function loadData(){
     const flag = await appStorage.get('plan-seeded-flag');
     seeded = flag ? JSON.parse(flag.value) === true : false;
   }catch(e){ seeded = false; }
-  if(!seeded && planRecords.length===0){
-    planRecords = PLAN_SEED.slice();
-    await savePlan();
-    try{ await appStorage.set('plan-seeded-flag', JSON.stringify(true)); }catch(e){}
-  }
-
-  // one-time import of riwayat Plan Service dari Report_Maintenance_A2B.xlsx (Jan-Jul 2026),
-  // guarded oleh flag TERSENDIRI (bukan digabung ke 'plan-seeded-flag' di atas, dan bukan
-  // "tabel masih kosong") — supaya tetap masuk walau planRecords sudah ada isinya duluan.
-  let planHistorySeeded = false;
-  try{
-    const phFlag = await appStorage.get('plan-history-seeded-flag');
-    planHistorySeeded = phFlag ? JSON.parse(phFlag.value) === true : false;
-  }catch(e){ planHistorySeeded = false; }
-  if(!planHistorySeeded){
-    const existingKeys = new Set(planRecords.map(r=>r.unitCode+'|'+r.planDate+'|'+r.hmPlan));
-    const toAdd = PLAN_SERVICE_HISTORY_SEED.filter(r=>!existingKeys.has(r.unitCode+'|'+r.planDate+'|'+r.hmPlan));
-    if(toAdd.length){
-      planRecords = toAdd.concat(planRecords);
-      await savePlan();
-    }
-    try{ await appStorage.set('plan-history-seeded-flag', JSON.stringify(true)); }catch(e){}
-  }
+  // Plan Service sekarang FULL AUTO dari HM terakhir + W performance.
+  // Seed Excel lama (PLAN_SEED / history) TIDAK lagi di-load otomatis.
+  try{ await appStorage.set('plan-seeded-flag', JSON.stringify(true)); }catch(e){}
+  try{ await appStorage.set('plan-history-seeded-flag', JSON.stringify(true)); }catch(e){}
 }
 async function importDailyServiceSeed(){
   const existingKeys = new Set(dailyRecords.map(r=>r.unitCode+'|'+r.tanggal+'|'+r.hm));
@@ -4591,7 +4603,19 @@ navItems.forEach(item=>{
     if(item.dataset.view==='planningsystem') renderPlanningTable();
     if(item.dataset.view==='preinspection'){ renderPreInspectionChecklist(); renderPreInspectionTable(); }
     if(item.dataset.view==='p2h'){ renderP2HChecklist(); renderP2HTable(); }
-    if(item.dataset.view==='plan'){ renderPlanTable(); }
+    if(item.dataset.view==='plan'){
+      renderPlanTable();
+      (async ()=>{
+        try{ await ensurePerformanceSynced({ force:true }); }catch(_e){}
+        // Jika kosong → generate otomatis; jika ada → update HM Total dari sync terbaru
+        try{
+          if(!planRecords.length) await rebuildPlanServiceAuto({ silent:true });
+          else await syncPlanFromHM({ silent:true });
+        }catch(_e){}
+        renderPlanTable();
+      })();
+    }
+
     if(item.dataset.view==='hm') renderHMTable();
     if(item.dataset.view==='accounts'){ loadRegisteredUsers().then(renderAccountsTable); }
     if(item.dataset.view==='preinspection'){ renderPreInspectionPlans(); renderPreInspectionMechanicNotify(); }
@@ -5387,6 +5411,23 @@ function updateRoleUI(){
 
 /* ================= HELPERS ================= */
 function uid(){ return 'r'+Date.now()+Math.random().toString(16).slice(2,7); }
+
+/** Format tanggal tampilan: date-month-year (DD-MM-YYYY).
+ *  Storage tetap YYYY-MM-DD. Input: "YYYY-MM-DD", ISO string, atau Date. */
+function formatDateDMY(v){
+  if(v===null || v===undefined || v==='') return '—';
+  if(Object.prototype.toString.call(v)==='[object Date]' && !isNaN(v)){
+    const d = v.getDate(), m = v.getMonth()+1, y = v.getFullYear();
+    return String(d).padStart(2,'0')+'-'+String(m).padStart(2,'0')+'-'+y;
+  }
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return String(m[3]).padStart(2,'0')+'-'+String(m[2]).padStart(2,'0')+'-'+m[1];
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if(m) return String(m[1]).padStart(2,'0')+'-'+String(m[2]).padStart(2,'0')+'-'+m[3];
+  return s;
+}
+
 function fillUnitSelect(sel){
   sel.innerHTML = UNITS.map(u=>`<option value="${u.code}">${u.code} — ${u.type}</option>`).join('');
 }
@@ -5937,7 +5978,7 @@ function renderUnitHistoryList(){
     const isBd = r.category==='Breakdown';
     const desc = r.jobDesc || r.repairAction || r.keterangan || '';
     return `<div class="uh-row ${isBd?'breakdown':''}">
-      <div class="uh-date">${escUH(r.tanggal||'—')}</div>
+      <div class="uh-date">${formatDateDMY(r.tanggal)}</div>
       <div class="uh-mid">
         <div class="uh-cat ${isBd?'bd':''}">${escUH(categoryLabel(r.category))}</div>
         ${desc ? `<div class="uh-desc" title="${escUH(desc)}">${escUH(desc)}</div>` : ''}
@@ -6656,7 +6697,7 @@ function renderDailyTable(){
     return `
     <tr onclick="openDailyDetail('${r.id}', event)">
       <td>${r.codeBD||'—'}</td>
-      <td>${r.tanggal||'—'}</td>
+      <td>${formatDateDMY(r.tanggal)}</td>
       <td>${r.shift||'—'}</td>
       <td>${r.unitCode}</td>
       <td>${r.typeUnit}</td>
@@ -6908,7 +6949,7 @@ function renderHMTable(){
     const sortedHM = hmRecords.slice().sort((a,b)=> (b.tanggal||'').localeCompare(a.tanggal||''));
     tbody.innerHTML = sortedHM.map(r=>`
       <tr>
-        <td>${r.tanggal||'—'}</td>
+        <td>${formatDateDMY(r.tanggal)}</td>
         <td>${r.user||'—'}</td>
         <td>${r.category||'—'}</td>
         <td>${r.nama||'—'}</td>
@@ -7056,70 +7097,158 @@ document.getElementById('hm-template-btn').addEventListener('click', function(){
   XLSX.writeFile(wb, 'template-hm.xlsx');
 });
 
-/* ================= PLAN SERVICE ================= */
-const pUnitSelect = document.getElementById('p-unitcode');
-fillUnitSelect(pUnitSelect);
+/* ================= PLAN SERVICE (AUTO-SYNC — tanpa form input manual) ================= */
 
-document.getElementById('form-plan').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const selectedUnit = UNITS.find(x=>x.code===document.getElementById('p-unitcode').value);
-  const rec = {
-    id: uid(),
-    unitCode: document.getElementById('p-unitcode').value,
-    typeUnit: selectedUnit ? selectedUnit.type : '',
-    planDate: document.getElementById('p-date').value,
-    hmPlan: document.getElementById('p-hm').value,
-    serviceType: document.getElementById('p-type').value,
-    mechanic: document.getElementById('p-mechanic').value,
-    status: document.getElementById('p-status').value,
-    notes: document.getElementById('p-notes').value,
-    execStatus: 'Open',
-    execDate: '',
-  };
-  planRecords.unshift(rec);
-  await savePlan();
-  document.getElementById('form-plan').reset();
-  renderAll();
-});
+/** Waktu Operasi (W) per unit dari sheet performance (mapaData). */
+function getPerformanceWByUnit(){
+  const map = {};
+  if(!mapaData || !mapaData.rows) return map;
+  mapaData.rows.forEach(r=>{
+    const u = String(r.unit||'').trim().toUpperCase();
+    if(!u) return;
+    map[u] = {
+      w: Number(r.w)||0,
+      s: Number(r.s)||0,
+      r: Number(r.r)||0,
+      t: Number(r.t)||0
+    };
+  });
+  return map;
+}
 
+/** Estimasi sisa hari ke HM Rencana berdasarkan laju W periode performance. */
+function estimateDaysToHmPlan(unitCode, hmPlan, hmAktual){
+  const perf = getPerformanceWByUnit()[String(unitCode||'').trim().toUpperCase()];
+  if(!perf || !perf.w) return null;
+  const remain = (Number(hmPlan)||0) - (Number(hmAktual)||0);
+  if(remain <= 0) return 0;
+  let days = 30;
+  if(mapaData && mapaData.periodStart && mapaData.periodEnd){
+    const a = new Date(mapaData.periodStart+'T00:00:00');
+    const b = new Date(mapaData.periodEnd+'T00:00:00');
+    const d = Math.round((b - a) / 86400000) + 1;
+    if(d > 0) days = d;
+  }
+  const wPerDay = perf.w / days;
+  if(wPerDay <= 0) return null;
+  return Math.ceil(remain / wPerDay);
+}
+
+const BULAN_NAMA = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+function planMonthKey(planDate){
+  if(!planDate || String(planDate).length < 7) return '';
+  return String(planDate).slice(5,7); // MM
+}
+function planMonthLabel(planDate){
+  const m = Number(planMonthKey(planDate));
+  return (m>=1 && m<=12) ? BULAN_NAMA[m] : '—';
+}
+
+function isPlanClosed(r){
+  return r && (r.execStatus==='Close' || r.status==='Done');
+}
+
+/** Enrich plan row dengan HM total, sisa HM, hari. */
+function enrichPlanRow(r){
+  const liveCalc = calcHmTotalForUnit(r.unitCode);
+  const hmBase = (r.hmBase!==undefined && r.hmBase!==null && r.hmBase!=='') ? Number(r.hmBase) : (liveCalc ? liveCalc.hmBase : null);
+  const hmW = (r.hmW!==undefined && r.hmW!==null) ? Number(r.hmW) : (liveCalc ? liveCalc.w : 0);
+  const hasHmAktual = r.hmAktual!==undefined && r.hmAktual!=='' && r.hmAktual!==null;
+  const hmAktualNum = hasHmAktual ? Number(r.hmAktual) : (liveCalc ? liveCalc.hmTotal : null);
+  const hmPlanNum = Number(r.hmPlan)||0;
+  const sisaHm = (hmAktualNum!==null && hmPlanNum)
+    ? Math.round((hmPlanNum - hmAktualNum) * 10) / 10
+    : null;
+  const daysLeft = estimateDaysToHmPlan(r.unitCode, r.hmPlan, hmAktualNum);
+  return { r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft };
+}
+
+/** Plan Service: hanya yang BELUM Close — Type Service (bukan HM Rencana). */
 function renderPlanTable(){
   const tbody = document.getElementById('plan-tbody');
-  if(!planRecords.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="12">Belum ada rencana service.</td></tr>`;
+  if(!tbody) return;
+
+  const openPlans = planRecords.filter(r=>!isPlanClosed(r));
+  if(!openPlans.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Belum ada jadwal open. Klik <b>Sync &amp; Generate Otomatis</b> atau semua sudah Close (lihat Record Service Unit).</td></tr>`;
     attachTopScroll('plan');
+    renderRecordServiceTable();
     return;
   }
+
   const isSupervisor = currentRole()==='Supervisor';
   const today = new Date().toISOString().slice(0,10);
-  tbody.innerHTML = planRecords.map(r=>{
+  const perfMap = getPerformanceWByUnit();
+  const monthFilter = (document.getElementById('plan-filter-month')||{}).value || '';
+
+  const rows = openPlans.map(enrichPlanRow).filter(x=>{
+    if(!monthFilter) return true;
+    return planMonthKey(x.r.planDate) === monthFilter;
+  });
+
+  // Urut Est. Sisa Hari paling dekat
+  rows.sort((a,b)=>{
+    const da = (a.daysLeft===null || a.daysLeft===undefined) ? 999999 : Number(a.daysLeft);
+    const db = (b.daysLeft===null || b.daysLeft===undefined) ? 999999 : Number(b.daysLeft);
+    if(da !== db) return da - db;
+    const sa = (a.sisaHm===null) ? 999999 : a.sisaHm;
+    const sb = (b.sisaHm===null) ? 999999 : b.sisaHm;
+    return sa - sb;
+  });
+
+  if(!rows.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Tidak ada jadwal open untuk filter bulan ini.</td></tr>`;
+    attachTopScroll('plan');
+    renderRecordServiceTable();
+    return;
+  }
+
+  tbody.innerHTML = rows.map(({ r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft })=>{
     const isOverdue = r.status==='Planned' && r.planDate && r.planDate < today;
-    const statusLabel = isOverdue ? 'Overdue' : r.status;
-    const statusClass = isOverdue ? 'overdue' : (r.status==='Done'?'done':'planned');
+    const statusLabel = isOverdue ? 'Overdue' : (r.status||'Planned');
+    const statusClass = isOverdue ? 'overdue' : 'planned';
     const exec = r.execStatus || 'Open';
-    const hmPlanNum = Number(r.hmPlan)||0;
-    const hasHmAktual = r.hmAktual!==undefined && r.hmAktual!=='' && r.hmAktual!==null;
-    const hmAktualNum = hasHmAktual ? Number(r.hmAktual) : null;
-    let gapNote = '';
-    if(hasHmAktual && hmPlanNum){
-      const gap = hmAktualNum - hmPlanNum;
-      gapNote = gap>=0
-        ? `<div style="color:var(--green); font-size:10px; margin-top:3px;">✓ Tercapai (+${gap.toFixed(0)} HM)</div>`
-        : `<div style="color:var(--text-dim); font-size:10px; margin-top:3px;">Sisa ${Math.abs(gap).toFixed(0)} HM</div>`;
+    const baseLabel = hmBase!==null && hmBase!==undefined ? Number(hmBase).toFixed(1) : '—';
+    const sourceNote = `<div style="color:var(--text-faint); font-size:10px; margin-top:2px;">HM ${baseLabel} + W ${Number(hmW||0).toFixed(1)}</div>`;
+    const perf = perfMap[String(r.unitCode||'').trim().toUpperCase()];
+    const wLabel = perf ? Number(perf.w).toFixed(1) : (hmW ? Number(hmW).toFixed(1) : '—');
+    const typeServiceCell = `<b>${escUH(r.serviceType)||'—'}</b>
+      <div style="color:var(--text-faint); font-size:10px; margin-top:2px; font-family:'JetBrains Mono',monospace;">Target HM ${hmPlanNum||'—'}</div>`;
+
+    let sisaHmCell = '—';
+    if(sisaHm!==null){
+      if(sisaHm <= 0){
+        sisaHmCell = `<span style="color:var(--green); font-weight:700; font-family:'JetBrains Mono',monospace;">0 (siap)</span>`;
+      } else if(sisaHm <= 50){
+        sisaHmCell = `<span style="color:var(--orange); font-weight:700; font-family:'JetBrains Mono',monospace;">${sisaHm}</span>`;
+      } else {
+        sisaHmCell = `<span style="font-family:'JetBrains Mono',monospace;">${sisaHm}</span>`;
+      }
     }
-    const sourceNote = hasHmAktual && r.hmAktualDate
-      ? `<div style="color:var(--text-faint); font-size:10px; margin-top:2px;">${r.hmAktualManual ? 'Input manual' : `dari HM ${r.hmAktualDate}`}</div>`
-      : '';
+
+    let daysCell = '—';
+    if(daysLeft===0){
+      daysCell = `<span style="color:var(--green); font-weight:600;">Siap service</span>`;
+    } else if(daysLeft!==null && daysLeft>0){
+      const urgent = daysLeft <= 7;
+      daysCell = `<span style="color:${urgent?'var(--orange)':'var(--text)'}; font-weight:${urgent?'700':'400'};">~${daysLeft} hari</span>`;
+    }
+
     return `<tr>
-      <td>${r.planDate||'—'}</td>
-      <td>${r.unitCode}</td>
-      <td>${r.typeUnit}</td>
-      <td>${r.hmPlan||'—'}</td>
-      <td style="min-width:110px;">
-        <input type="number" min="0" value="${hasHmAktual?r.hmAktual:''}" placeholder="—" onchange="updatePlanHmAktual('${r.id}', this.value)" style="background:var(--panel-2); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-family:inherit; font-size:12px; width:100%;">
-        ${gapNote}${sourceNote}
+      <td>${planMonthLabel(r.planDate)}</td>
+      <td>${formatDateDMY(r.planDate)}</td>
+      <td>${escUH(r.unitCode)}</td>
+      <td>${escUH(r.typeUnit)}</td>
+      <td>${typeServiceCell}</td>
+      <td style="min-width:100px;">
+        <b style="font-family:'JetBrains Mono',monospace;">${hmAktualNum!==null?Number(hmAktualNum).toFixed(1):'—'}</b>
+        ${sourceNote}
       </td>
-      <td>${r.serviceType}</td>
-      <td>${r.mechanic}</td>
+      <td>${sisaHmCell}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${wLabel}</td>
+      <td>${daysCell}</td>
+      <td>${escUH(r.mechanic)}</td>
       <td><span class="pill ${statusClass}">${statusLabel}</span></td>
       <td>
         <select onchange="updatePlanExecStatus('${r.id}', this.value)" class="${exec==='Close'?'exec-close':'exec-open'}">
@@ -7127,32 +7256,69 @@ function renderPlanTable(){
           <option value="Close" ${exec==='Close'?'selected':''}>Close</option>
         </select>
       </td>
-      <td><input type="date" value="${r.execDate||''}" onchange="updatePlanExecDate('${r.id}', this.value)" style="background:var(--panel-2); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-family:inherit; font-size:12px;"></td>
-      <td style="white-space:normal; min-width:150px;">${r.notes||'—'}</td>
+      <td><input type="date" value="${r.execDate||''}" onchange="updatePlanExecDate('${r.id}', this.value)" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-family:inherit; font-size:12px;"></td>
       <td>${isSupervisor ? `<button class="btn danger" onclick="deletePlan('${r.id}')">Hapus</button>` : ''}</td>
     </tr>`;
   }).join('');
   attachTopScroll('plan');
-}
-window.updatePlanHmAktual = async function(id, value){
-  const r = planRecords.find(x=>x.id===id);
-  if(!r) return;
-  if(value===''){
-    r.hmAktual = '';
-    r.hmAktualDate = '';
-    r.hmAktualManual = false;
-  } else {
-    r.hmAktual = Number(value);
-    r.hmAktualDate = new Date().toISOString().slice(0,10);
-    r.hmAktualManual = true; // ditandai input manual sampai disinkron ulang dari Monitoring HM
-  }
-  await savePlan();
-  renderAll();
+  renderRecordServiceTable();
 }
 
-/* ---- Ambil HM aktual terakhir tiap unit dari data Monitoring HM (hmRecords) ----
-   Dipilih berdasarkan baris dengan tanggal paling baru per Kode Unit; kalau ada beberapa
-   baris di tanggal yang sama, ambil HM Akhir yang paling besar. */
+/** Record Service Unit: otomatis dari Plan Service yang sudah Close. */
+function renderRecordServiceTable(){
+  const tbody = document.getElementById('plan-record-tbody');
+  if(!tbody) return;
+
+  const closed = planRecords.filter(isPlanClosed);
+  if(!closed.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Belum ada record service. Unit yang di-Close di Plan Service akan muncul di sini otomatis.</td></tr>`;
+    try{ attachTopScroll('plan-record'); }catch(_e){}
+    return;
+  }
+
+  // Urut terbaru eksekusi dulu
+  const rows = closed.map(enrichPlanRow).sort((a,b)=>{
+    const da = a.r.execDate || a.r.planDate || '';
+    const db = b.r.execDate || b.r.planDate || '';
+    return db.localeCompare(da);
+  });
+
+  tbody.innerHTML = rows.map(({ r, hmAktualNum, hmPlanNum })=>`<tr>
+    <td>${planMonthLabel(r.execDate || r.planDate)}</td>
+    <td>${formatDateDMY(r.planDate)}</td>
+    <td>${formatDateDMY(r.execDate)}</td>
+    <td>${escUH(r.unitCode)}</td>
+    <td>${escUH(r.typeUnit)}</td>
+    <td><b>${escUH(r.serviceType)||'—'}</b></td>
+    <td style="font-family:'JetBrains Mono',monospace;">${hmPlanNum||'—'}</td>
+    <td style="font-family:'JetBrains Mono',monospace;">${hmAktualNum!==null?Number(hmAktualNum).toFixed(1):'—'}</td>
+    <td>${escUH(r.mechanic)||'—'}</td>
+    <td>
+      <span class="pill done">Close</span>
+      <button type="button" class="btn small secondary" style="margin-left:6px;" onclick="reopenPlanService('${r.id}')" title="Kembalikan ke Schedule Plan Service (Open)">↩ Open</button>
+    </td>
+  </tr>`).join('');
+  try{ attachTopScroll('plan-record'); }catch(_e){}
+}
+
+/** Kembalikan record Close ke Schedule Plan Service (status Open). */
+window.reopenPlanService = async function(id){
+  const r = planRecords.find(x=>x.id===id);
+  if(!r) return;
+  r.execStatus = 'Open';
+  r.status = 'Planned';
+  r.execDate = '';
+  await savePlan();
+  renderPlanTable();
+  renderRecordServiceTable();
+};
+
+// Filter bulan Plan Service
+document.getElementById('plan-filter-month')?.addEventListener('change', ()=>{
+  renderPlanTable();
+});
+
+/* ---- Ambil HM aktual terakhir tiap unit dari data Monitoring HM (hmRecords) ---- */
 function getLatestHMPerUnit(){
   const map = {};
   hmRecords.forEach(r=>{
@@ -7167,65 +7333,286 @@ function getLatestHMPerUnit(){
   return map;
 }
 
-/* ---- Sinkron Plan Service dari data Monitoring HM ----
-   Mengisi/memperbarui kolom HM Aktual tiap rencana dari HM terakhir unit terkait, lalu
-   otomatis menandai rencana Planned sebagai Done/Close kalau HM aktual sudah mencapai atau
-   melewati HM Rencana. Rencana yang sudah Done/Close tidak diutak-atik statusnya, hanya
-   HM Aktual-nya yang diperbarui supaya datanya tetap sesuai data HM terbaru. */
-async function syncPlanFromHM(){
-  const latestHM = getLatestHMPerUnit();
-  if(!Object.keys(latestHM).length){
-    alert('Belum ada data Monitoring HM untuk disinkronkan. Upload data HM terlebih dulu di panel Monitoring HM.');
-    return;
+/**
+ * Interval service preventif per Type Unit (HM).
+ * - WA500-6R / PC210-10MO : 500, 1000, 2000, 3000, 4000, 5000, ...
+ * - D85ESS-2A             : 250, 500, 750, 1000, 1250, 1500, ... (kelipatan 250)
+ */
+function getServiceIntervalsForType(typeUnit){
+  const t = String(typeUnit||'').trim().toUpperCase();
+  if(t.includes('D85ESS') || t.includes('D85')){
+    return [
+      { hrs: 250, label: 'PS 250 Hrs' },
+      { hrs: 500, label: 'PS 500 Hrs' },
+      { hrs: 750, label: 'PS 750 Hrs' },
+      { hrs: 1000, label: 'PS 1000 Hrs' },
+      { hrs: 1250, label: 'PS 1250 Hrs' },
+      { hrs: 1500, label: 'PS 1500 Hrs' },
+      { hrs: 1750, label: 'PS 1750 Hrs' },
+      { hrs: 2000, label: 'PS 2000 Hrs' },
+      { hrs: 2500, label: 'PS 2500 Hrs' },
+      { hrs: 3000, label: 'PS 3000 Hrs' },
+      { hrs: 4000, label: 'PS 4000 Hrs' },
+      { hrs: 5000, label: 'PS 5000 Hrs' }
+    ];
   }
-  let updated = 0, autoClosed = 0, noMatch = 0;
-  planRecords.forEach(r=>{
-    const info = latestHM[String(r.unitCode||'').trim()];
-    if(!info){ noMatch++; return; }
-    r.hmAktual = info.hm;
-    r.hmAktualDate = info.tanggal;
-    r.hmAktualManual = false;
-    updated++;
-    const hmPlanNum = Number(r.hmPlan)||0;
-    if(r.status==='Planned' && r.execStatus!=='Close' && hmPlanNum && info.hm>=hmPlanNum){
-      r.status = 'Done';
-      r.execStatus = 'Close';
-      r.execDate = r.execDate || info.tanggal;
-      r.notes = (r.notes ? r.notes+' | ' : '') + `Auto-sinkron Monitoring HM: HM aktual ${info.hm} (${info.tanggal}) sudah mencapai/melewati HM rencana ${hmPlanNum}.`;
-      autoClosed++;
+  // WA500-6R (Wheel Loader) & PC210-10MO (Excavator) & default
+  return [
+    { hrs: 500, label: 'PS 500 Hrs' },
+    { hrs: 1000, label: 'PS 1000 Hrs' },
+    { hrs: 2000, label: 'PS 2000 Hrs' },
+    { hrs: 3000, label: 'PS 3000 Hrs' },
+    { hrs: 4000, label: 'PS 4000 Hrs' },
+    { hrs: 5000, label: 'PS 5000 Hrs' },
+    { hrs: 6000, label: 'PS 6000 Hrs' },
+    { hrs: 8000, label: 'PS 8000 Hrs' },
+    { hrs: 10000, label: 'PS 10000 Hrs' }
+  ];
+}
+
+/**
+ * HM Total unit = HM terakhir (Monitoring HM) + Waktu Operasi W (sheet performance).
+ */
+function calcHmTotalForUnit(unitCode){
+  const code = String(unitCode||'').trim();
+  if(!code) return null;
+  const latestHM = getLatestHMPerUnit();
+  const info = latestHM[code] || latestHM[code.toUpperCase()];
+  const perfMap = getPerformanceWByUnit();
+  const perf = perfMap[code.toUpperCase()];
+  const hmBase = info ? Number(info.hm)||0 : null;
+  const w = perf ? Number(perf.w)||0 : 0;
+  if(hmBase===null && !perf) return null;
+  const base = hmBase!==null ? hmBase : 0;
+  return {
+    hmBase: hmBase,
+    hmBaseDate: info ? info.tanggal : '',
+    w: w,
+    hmTotal: Math.round((base + w) * 10) / 10,
+    periodLabel: (mapaData && mapaData.periodStart && mapaData.periodEnd)
+      ? (mapaData.periodStart + ' s/d ' + mapaData.periodEnd)
+      : (mapaData && mapaData.fileName) || ''
+  };
+}
+
+/** HM rencana berikutnya untuk interval tertentu (kelipatan di atas HM total). */
+function nextHmMilestone(hmTotal, intervalHrs){
+  const h = Number(hmTotal)||0;
+  const iv = Number(intervalHrs)||250;
+  let next = Math.ceil(h / iv) * iv;
+  if(next <= h) next += iv;
+  return next;
+}
+
+/** Estimasi tanggal rencana dari sisa HM / laju W harian. */
+function estimatePlanDateFromHm(unitCode, hmPlan, hmTotal){
+  const days = estimateDaysToHmPlan(unitCode, hmPlan, hmTotal);
+  const d = new Date();
+  if(days!==null && days > 0) d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0,10);
+}
+
+/**
+ * HAPUS semua plan lama, lalu GENERATE ulang otomatis dari:
+ * HM terakhir (Monitoring HM) + W (sheet performance) → HM Total
+ * → jadwal PS berikutnya per unit (interval 250/500/1000/2000/4000/5000).
+ */
+async function rebuildPlanServiceAuto(opts){
+  opts = opts || {};
+  const silent = !!opts.silent;
+
+  // Pastikan performance terbaru
+  try{ await ensurePerformanceSynced({ force: true }); }catch(_e){}
+
+  const latestHM = getLatestHMPerUnit();
+  const perfMap = getPerformanceWByUnit();
+  const unitCodes = new Set();
+  Object.keys(latestHM).forEach(u=>unitCodes.add(u));
+  Object.keys(perfMap).forEach(u=>unitCodes.add(u));
+  // Juga unit master
+  (UNITS||[]).forEach(u=>{ if(u.code) unitCodes.add(u.code); });
+
+  if(!unitCodes.size){
+    if(!silent) alert('Tidak ada unit / data HM / Performance untuk generate Plan Service.');
+    return { ok:false, created:0 };
+  }
+
+  // HAPUS SEMUA plan lama
+  planRecords = [];
+
+  const today = new Date().toISOString().slice(0,10);
+  let created = 0;
+
+  unitCodes.forEach(code=>{
+    const calc = calcHmTotalForUnit(code);
+    if(!calc) return;
+    const u = (UNITS||[]).find(x=>String(x.code).toUpperCase()===String(code).toUpperCase());
+    const typeUnit = u ? u.type : '';
+    const hmTotal = calc.hmTotal;
+    const intervals = getServiceIntervalsForType(typeUnit);
+
+    intervals.forEach(iv=>{
+      // HM Rencana = kelipatan interval berikutnya di atas HM Total (satu per jenis service)
+      const hmPlan = nextHmMilestone(hmTotal, iv.hrs);
+      // Hanya yang jatuh tempo berikutnya (jarak sisa ≤ 1× interval)
+      if(hmPlan - hmTotal > iv.hrs) return;
+
+      // HM mencapai target = siap service, tetap Open sampai dieksekusi manual (Close)
+      const planDate = estimatePlanDateFromHm(code, hmPlan, hmTotal);
+
+      planRecords.push({
+        id: uid(),
+        unitCode: code,
+        typeUnit: typeUnit,
+        planDate: planDate,
+        hmPlan: hmPlan,
+        serviceType: iv.label,
+        mechanic: '',
+        status: 'Planned',
+        execStatus: 'Open',
+        execDate: '',
+        hmBase: calc.hmBase,
+        hmBaseDate: calc.hmBaseDate,
+        hmW: calc.w,
+        hmAktual: hmTotal,
+        hmAktualDate: calc.hmBaseDate || today,
+        hmAktualManual: false,
+        notes: `Auto [${typeUnit||'—'}]: HM ${calc.hmBase!==null?calc.hmBase:'—'} + W ${calc.w} = ${hmTotal} → ${iv.label} @ ${hmPlan}`
+      });
+      created++;
+    });
+  });
+
+  // Urutkan: unit, lalu HM rencana
+  planRecords.sort((a,b)=>{
+    const u = String(a.unitCode).localeCompare(String(b.unitCode));
+    if(u!==0) return u;
+    return (Number(a.hmPlan)||0) - (Number(b.hmPlan)||0);
+  });
+
+  await savePlan();
+  renderPlanTable();
+  if(!silent){
+    alert('✓ Plan Service dihapus & digenerate ulang otomatis.\n' +
+      'Rumus: HM Total = HM terakhir (Monitoring HM) + W (Performance)\n' +
+      created + ' jadwal service dibuat untuk ' + unitCodes.size + ' unit.');
+  }
+  return { ok:true, created, units: unitCodes.size };
+}
+
+/** Sync performance + HM, update HM Total di baris existing, atau generate jika kosong. */
+async function syncPlanAll(){
+  const btn = document.getElementById('btn-sync-plan-all');
+  if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
+  try{
+    await fetchPerformanceFromSheets({ manual:false });
+    if(!planRecords.length){
+      await rebuildPlanServiceAuto({ silent:true });
+      alert('✓ Plan Service digenerate otomatis dari HM terakhir + W performance.\n' + planRecords.length + ' jadwal.');
+    } else {
+      // Update HM Total saja — Close HANYA manual setelah service benar-benar dieksekusi
+      let updated = 0;
+      planRecords.forEach(r=>{
+        if(isPlanClosed(r)) return; // record close tidak diutak-atik HM-nya di sync (opsional: tetap update)
+        const calc = calcHmTotalForUnit(r.unitCode);
+        if(!calc) return;
+        r.hmBase = calc.hmBase;
+        r.hmBaseDate = calc.hmBaseDate;
+        r.hmW = calc.w;
+        r.hmAktual = calc.hmTotal;
+        r.hmAktualDate = calc.hmBaseDate || new Date().toISOString().slice(0,10);
+        r.hmAktualManual = false;
+        updated++;
+      });
+      await savePlan();
+      renderPlanTable();
+      alert('✓ Sync Schedule Plan Service selesai.\n' +
+        'HM Total = HM terakhir + W performance\n' +
+        updated + ' baris open diperbarui.\n' +
+        'Status Close hanya diubah manual setelah service dieksekusi.');
     }
+  }catch(e){
+    alert('⚠ Sync gagal: ' + (e.message||e));
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '☁ Sync & Generate Otomatis'; }
+  }
+}
+document.getElementById('btn-sync-plan-all')?.addEventListener('click', syncPlanAll);
+
+document.getElementById('btn-rebuild-plan')?.addEventListener('click', async ()=>{
+  if(!confirm('Hapus SEMUA jadwal Plan Service lama dan generate ulang dari HM terakhir + W performance?')) return;
+  const btn = document.getElementById('btn-rebuild-plan');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Generate...'; }
+  try{
+    await rebuildPlanServiceAuto({ silent:false });
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '🗑 Hapus & Generate Ulang'; }
+  }
+});
+
+// Alias agar auto-open panel tetap jalan
+async function syncPlanFromHM(opts){
+  opts = opts || {};
+  if(!planRecords.length){
+    return rebuildPlanServiceAuto({ silent: !!opts.silent });
+  }
+  // Update HM total saja — jangan auto-Close
+  let updated = 0;
+  planRecords.forEach(r=>{
+    if(isPlanClosed(r)) return;
+    const calc = calcHmTotalForUnit(r.unitCode);
+    if(!calc) return;
+    r.hmBase = calc.hmBase;
+    r.hmBaseDate = calc.hmBaseDate;
+    r.hmW = calc.w;
+    r.hmAktual = calc.hmTotal;
+    r.hmAktualDate = calc.hmBaseDate || new Date().toISOString().slice(0,10);
+    updated++;
   });
   await savePlan();
-  renderAll();
-  alert(`Sinkron Monitoring HM selesai: ${updated} rencana diperbarui HM aktual-nya${autoClosed?`, ${autoClosed} di antaranya otomatis ditandai Done/Close`:''}.${noMatch?` ${noMatch} rencana tidak punya data HM yang cocok untuk unit tsb.`:''}`);
+  if(!opts.silent) renderAll(); else renderPlanTable();
+  return { ok:true, updated, autoClosed: 0 };
 }
-document.getElementById('btn-sync-plan-hm').addEventListener('click', syncPlanFromHM);
+
 window.updatePlanExecStatus = async function(id, value){
   const r = planRecords.find(x=>x.id===id);
   if(!r) return;
   r.execStatus = value;
-  if(value==='Close' && !r.execDate){
-    r.execDate = new Date().toISOString().slice(0,10);
+  if(value==='Close'){
+    r.status = 'Done';
+    if(!r.execDate) r.execDate = new Date().toISOString().slice(0,10);
+    // Ambil HM total terbaru saat close
+    const calc = calcHmTotalForUnit(r.unitCode);
+    if(calc){
+      r.hmBase = calc.hmBase;
+      r.hmW = calc.w;
+      r.hmAktual = calc.hmTotal;
+      r.hmAktualDate = calc.hmBaseDate || r.execDate;
+    }
+  } else if(value==='Open'){
+    r.status = 'Planned';
   }
   await savePlan();
-  renderAll();
-}
+  renderPlanTable(); // pindah otomatis ke Record Service Unit jika Close
+  renderRecordServiceTable();
+};
 window.updatePlanExecDate = async function(id, value){
   const r = planRecords.find(x=>x.id===id);
   if(!r) return;
   r.execDate = value;
   await savePlan();
-  renderAll();
-}
+  renderPlanTable();
+  renderRecordServiceTable();
+};
 window.deletePlan = async function(id){
   if(!canEditPanel('plan')) return;
   planRecords = planRecords.filter(r=>r.id!==id);
   await savePlan();
-  renderAll();
-}
-document.getElementById('btn-import-plan').addEventListener('click', importPlanSeed);
-document.getElementById('daily-import-service-btn').addEventListener('click', importDailyServiceSeedManual);
-document.getElementById('daily-bulk-delete-btn').addEventListener('click', bulkDeleteDailyByCodeRange);
+  renderPlanTable();
+  renderRecordServiceTable();
+};
+document.getElementById('daily-import-service-btn')?.addEventListener('click', importDailyServiceSeedManual);
+document.getElementById('daily-bulk-delete-btn')?.addEventListener('click', bulkDeleteDailyByCodeRange);
 
 /* ================= PLANNING SYSTEM (MONTHLY MAINTENANCE PLANNING) ================= */
 const psUnitSelect = document.getElementById('ps-unitcode');
@@ -7388,7 +7775,7 @@ function renderPlanningMechanicNotify(){
 
   const monthLabel = new Date(curMonth+'-01T00:00:00').toLocaleDateString('id-ID', { month:'long', year:'numeric' });
   const list = myPlans.slice(0,5).map(r=>
-    `<li>${r.unitCode} — ${r.component||'—'} <span style="color:var(--text-faint);">(due ${r.dueDate||'—'})</span></li>`
+    `<li>${r.unitCode} — ${r.component||'—'} <span style="color:var(--text-faint);">(due ${formatDateDMY(r.dueDate)})</span></li>`
   ).join('');
   box.innerHTML = `
     <div class="banner warn" style="align-items:flex-start; display:block;">
@@ -7456,9 +7843,9 @@ function renderPlanningTable(){
         <td style="white-space:normal; min-width:200px;">${r.jobDesc||'—'}</td>
         <td><span class="cat ${r.component}">${r.component}</span></td>
         <td>${r.noPR||'—'}</td>
-        <td>${r.planDate||'—'}</td>
-        <td>${r.dueDate||'—'}</td>
-        <td>${r.workDate||'—'}</td>
+        <td>${formatDateDMY(r.planDate)}</td>
+        <td>${formatDateDMY(r.dueDate)}</td>
+        <td>${formatDateDMY(r.workDate)}</td>
         <td>${jamMulaiCell}</td>
         <td>${jamSelesaiCell}</td>
         <td>${durasiCell}</td>
@@ -7500,7 +7887,7 @@ window.promptJamPekerjaan = function(id){
     return;
   }
   psCloseActiveId = id;
-  document.getElementById('ps-close-info').innerHTML = `<b>${r.unitCode}</b> — ${r.jobDesc||'—'} <br>Component: <b>${r.component}</b> · Due: <b>${r.dueDate||'—'}</b>`;
+  document.getElementById('ps-close-info').innerHTML = `<b>${r.unitCode}</b> — ${r.jobDesc||'—'} <br>Component: <b>${r.component}</b> · Due: <b>${formatDateDMY(r.dueDate)}</b>`;
   document.getElementById('ps-close-workdate').value = r.workDate || new Date().toISOString().slice(0,10);
   document.getElementById('ps-close-jammulai').value = r.jamMulai || '';
   document.getElementById('ps-close-jamselesai').value = r.jamSelesai || '';
@@ -7836,7 +8223,7 @@ function renderP2HTable(){
       const resendBtn = r.status==='Ada Temuan' ? `<button type="button" class="btn small secondary" onclick="resendP2HNotify('${r.id}')">Kirim WA</button> ` : '';
       return `
       <tr>
-        <td>${r.tanggal||'—'}</td>
+        <td>${formatDateDMY(r.tanggal)}</td>
         <td>${r.shift}</td>
         <td>${r.unitCode}</td>
         <td>${r.typeUnit}</td>
@@ -8079,7 +8466,7 @@ function renderPreInspectionPlans(){
       actions += `<button class="btn small secondary" onclick="markPreInspectionPlanDone('${r.id}')">Tandai Done</button>`;
     }
     return `<tr>
-      <td>${r.tanggal||'—'}</td>
+      <td>${formatDateDMY(r.tanggal)}</td>
       <td>${escUH(r.unitCode)}</td>
       <td>${escUH(r.typeUnit)}</td>
       <td>${escUH(r.mechanicName)}</td>
@@ -8140,7 +8527,7 @@ function renderPreInspectionMechanicNotify(){
   }
   const list = myPlans.slice(0,6).map(r=>{
     const overdue = r.tanggal && r.tanggal < today;
-    return `<li style="margin-bottom:4px;"><b>${escUH(r.unitCode)}</b> — ${escUH(r.typeUnit||'')} · Jadwal <b>${r.tanggal||'—'}</b>${overdue?' <span style="color:var(--red);">(terlambat)</span>':''}${r.notes?` · ${escUH(r.notes)}`:''}</li>`;
+    return `<li style="margin-bottom:4px;"><b>${escUH(r.unitCode)}</b> — ${escUH(r.typeUnit||'')} · Jadwal <b>${formatDateDMY(r.tanggal)}</b>${overdue?' <span style="color:var(--red);">(terlambat)</span>':''}${r.notes?` · ${escUH(r.notes)}`:''}</li>`;
   }).join('');
   box.style.display = '';
   box.innerHTML = `
@@ -8351,7 +8738,7 @@ function renderPreInspectionTable(){
       }
       return `
       <tr>
-        <td>${r.tanggal||'—'}</td>
+        <td>${formatDateDMY(r.tanggal)}</td>
         <td>${r.unitCode}</td>
         <td>${r.typeUnit}</td>
         <td>${r.hm||'—'}</td>
@@ -8448,7 +8835,7 @@ function renderHistory(){
   } else {
     tbody.innerHTML = rows.map(r=>`
       <tr>
-        <td>${r.tanggal||'—'}</td><td>${r.unitCode}</td><td>${r.typeUnit}</td><td>${r.hm||'—'}</td>
+        <td>${formatDateDMY(r.tanggal)}</td><td>${r.unitCode}</td><td>${r.typeUnit}</td><td>${r.hm||'—'}</td>
         <td><span class="cat ${r.category}">${r.category==='Daily'?'Daily Maint.':r.category}</span></td>
         <td style="white-space:normal; min-width:180px;">${r.jobDesc||'—'}</td>
         <td>${fmtDur(r.duration)}</td><td>${r.mechanic}</td><td>${r.area}</td>
@@ -9274,13 +9661,13 @@ function renderKPIChartDashboard(k, globalStats){
 
   // Urutan kartu: MA, PA, MTBS, MTTR, PMR, SA (sesuai referensi)
   const monthlyKpiDefs = [
-    { key:'ma',   label:'MA',   full:'MECHANICAL AVAILABILITY', unit:'%',   target:KPI_TARGET.ma,   value:kMonthly.ma||0,   color:'#22C55E', targetHint:'90%', icon:'gear' },
-    { key:'pa',   label:'PA',   full:'PHYSICAL AVAILABILITY',   unit:'%',   target:KPI_TARGET.pa,   value:kMonthly.pa||0,   color:'#3B82F6', targetHint:'90%', icon:'shield' },
-    { key:'mtbs', label:'MTBS', full:'MEAN TIME BETWEEN STOPPAGES', unit:' hrs', target:KPI_TARGET.mtbs, value:kMonthly.mtbs||0, color:'#A78BFA', targetHint:'80 jam', icon:'hourglass' },
+    { key:'ma',   label:'MA',   full:'MECHANICAL AVAILABILITY', unit:'%',   target:KPI_TARGET.ma,   value:kMonthly.ma||0,   color:'#22C55E', targetHint:'≥90%', icon:'gear' },
+    { key:'pa',   label:'PA',   full:'PHYSICAL AVAILABILITY',   unit:'%',   target:KPI_TARGET.pa,   value:kMonthly.pa||0,   color:'#3B82F6', targetHint:'≥90%', icon:'shield' },
+    { key:'mtbs', label:'MTBS', full:'MEAN TIME BETWEEN STOPPAGES', unit:' hrs', target:KPI_TARGET.mtbs, value:kMonthly.mtbs||0, color:'#A78BFA', targetHint:'>80 jam', icon:'hourglass' },
     /* MTTR: tampilkan % capaian; target budget 90% (<36 jam = 100% of weight) */
-    { key:'mttr', label:'MTTR', full:'MEAN TIME TO REPAIR',     unit:'%',   target:90, value:kpiAchievePct('mttr', kMonthly.mttr||0), color:'#F97316', targetHint:'<36 jam = 100%', icon:'wrench', rawHours:kMonthly.mttr||0 },
-    { key:'pmr',  label:'PMR',  full:'PLANNED MAINTENANCE RATIO', unit:'%', target:KPI_TARGET.pmr, value:kMonthly.pmr||0, color:'#A3E635', targetHint:'90%', icon:'clipboard' },
-    { key:'sa',   label:'SA',   full:'SERVICE ACCURACY',        unit:'%',   target:KPI_TARGET.sa,   value:kMonthly.sa||0,   color:'#38BDF8', targetHint:'90%', icon:'headset' },
+    { key:'mttr', label:'MTTR', full:'MEAN TIME TO REPAIR',     unit:'%',   target:90, value:kpiAchievePct('mttr', kMonthly.mttr||0), color:'#F97316', targetHint:'90%', icon:'wrench', rawHours:kMonthly.mttr||0 },
+    { key:'pmr',  label:'PMR',  full:'PLANNED MAINTENANCE RATIO', unit:'%', target:KPI_TARGET.pmr, value:kMonthly.pmr||0, color:'#A3E635', targetHint:'>90%', icon:'clipboard' },
+    { key:'sa',   label:'SA',   full:'SERVICE ACCURACY',        unit:'%',   target:KPI_TARGET.sa,   value:kMonthly.sa||0,   color:'#38BDF8', targetHint:'>90%', icon:'headset' },
   ];
 
   // --- Rekap Quarter (donut 4D + KPI summary quarter, ikut filter periode triwulan, live sync dari
@@ -10525,7 +10912,7 @@ function computeMechanicNotifications(){
       notifs.push({
         id:'plan-'+r.id, view:'plan', icon:'🛠️', urgent:overdue,
         title: overdue ? 'Plan Service Terlambat' : 'Plan Service Terjadwal',
-        body:`${r.unitCode||'-'} — ${r.serviceType||'Service'} · Rencana ${r.planDate||'-'}${overdue?' (lewat jadwal)':''}`,
+        body:`${r.unitCode||'-'} — ${r.serviceType||'Service'} · Rencana ${formatDateDMY(r.planDate)}${overdue?' (lewat jadwal)':''}`,
         date: r.planDate||''
       });
     });
@@ -10540,7 +10927,7 @@ function computeMechanicNotifications(){
       notifs.push({
         id:'planning-'+r.id, view:'planningsystem', icon:'📋', urgent:overdue,
         title: overdue ? 'Jadwal Maintenance Terlambat' : 'Rencana Jadwal Maintenance Baru',
-        body:`${r.unitCode||'-'} — ${r.component||'-'} · Due ${r.dueDate||'-'}${asPic2?' · sebagai PIC Mechanic 2':''}`,
+        body:`${r.unitCode||'-'} — ${r.component||'-'} · Due ${formatDateDMY(r.dueDate)}${asPic2?' · sebagai PIC Mechanic 2':''}`,
         date: r.dueDate||''
       });
     });
@@ -10553,7 +10940,7 @@ function computeMechanicNotifications(){
       notifs.push({
         id:'preins-plan-'+r.id, view:'preinspection', icon:'🔍', urgent:overdue,
         title: overdue ? 'Jadwal Pre Inspection Terlambat' : 'Jadwal Pre Inspection Baru',
-        body:`${r.unitCode||'-'} — ${r.typeUnit||''} · Tanggal ${r.tanggal||'-'}${r.notes?' · '+r.notes:''}`,
+        body:`${r.unitCode||'-'} — ${r.typeUnit||''} · Tanggal ${formatDateDMY(r.tanggal)}${r.notes?' · '+r.notes:''}`,
         date: r.tanggal||''
       });
     });
@@ -10594,7 +10981,7 @@ function computeSupervisorNotifications(){
     notifs.push({
       id:'plan-sv-'+r.id, view:'plan', icon:'🛠️', urgent:overdue,
       title: overdue ? 'Plan Service Terlambat' : 'Plan Service Akan Jatuh Tempo',
-      body:`${r.unitCode||'-'} — ${r.serviceType||'Service'} · PIC ${r.mechanic||'-'} · ${r.planDate}`,
+      body:`${r.unitCode||'-'} — ${r.serviceType||'Service'} · PIC ${r.mechanic||'-'} · ${formatDateDMY(r.planDate)}`,
       date: r.planDate||''
     });
   });
@@ -10776,7 +11163,7 @@ function renderBreakdownReportTable(){
   } else {
     tbody.innerHTML = rows.map(r=>`
       <tr>
-        <td>${r.tanggal||'—'}</td>
+        <td>${formatDateDMY(r.tanggal)}</td>
         <td>${r.jamBreakdown||'—'}</td>
         <td>${r.shift||'—'}</td>
         <td>${escUH(r.unitCode)}</td>
