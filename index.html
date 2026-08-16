@@ -1829,22 +1829,15 @@ body.role-pjo .view > .banner{ display:none !important; }
         </div>
       </section>
 
-      <!-- PLAN SERVICE (auto-sync: Monitoring HM + sheet performance — tanpa form input manual) -->
+      <!-- PLAN SERVICE (auto-sync: W sheet performance — tanpa Daily Maintenance, tanpa batasan periode) -->
       <section class="view" id="view-plan">
         <div class="panel">
           <div class="panel-head">
             <h2>Schedule Plan Service <span class="tag">AUTO SYNC</span></h2>
             <div class="toolbar">
               <button type="button" class="btn small" id="btn-sync-plan-all" title="Sync performance + HM, lalu generate jadwal otomatis">☁ Sync & Generate Otomatis</button>
-              <button type="button" class="btn small secondary" id="btn-rebuild-plan" title="Hapus semua plan lama dan buat ulang dari HM terakhir + W">🗑 Hapus & Generate Ulang</button>
+              <button type="button" class="btn small secondary" id="btn-rebuild-plan" title="Hapus semua plan lama dan buat ulang dari W sheet performance">🗑 Hapus & Generate Ulang</button>
             </div>
-          </div>
-          <div class="hint" style="margin-top:-8px; margin-bottom:12px;" id="plan-sync-hint">
-            Schedule Plan Service <b>otomatis</b> per type unit
-            (WA500/PC210 → 500/1000/2000… · D85ESS → 250/500/750/1000…).
-            <b>HM Total</b> = baseline HM (Daily / Monitoring HM, tanggal ≤ awal periode sheet performance)
-            + <b>W</b> periode tersebut. Jika bacaan HM sudah di dalam periode, W tidak ditambah lagi
-            (hindari double-count). Sync live tiap ~45 detik dari sheet performance — <b>tanpa upload HM manual</b>.
           </div>
           <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
             <label style="font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin:0;">Filter Bulan</label>
@@ -1873,7 +1866,7 @@ body.role-pjo .view > .banner{ display:none !important; }
                 <th>Unit Code</th>
                 <th>Type Unit</th>
                 <th>Type Service <span style="color:var(--text-faint); font-weight:400;">(interval)</span></th>
-                <th>HM Total <span style="color:var(--text-faint); font-weight:400;">(baseline ≤ periode + W)</span></th>
+                <th>HM Total <span style="color:var(--text-faint); font-weight:400;">(W performance)</span></th>
                 <th>Sisa HM</th>
                 <th>Waktu Operasi W</th>
                 <th>Est. Sisa Hari</th>
@@ -4469,7 +4462,7 @@ async function loadData(){
     const flag = await appStorage.get('plan-seeded-flag');
     seeded = flag ? JSON.parse(flag.value) === true : false;
   }catch(e){ seeded = false; }
-  // Plan Service sekarang FULL AUTO dari HM terakhir + W performance.
+  // Plan Service FULL AUTO dari W sheet performance (tanpa HM Daily Maintenance).
   // Seed Excel lama (PLAN_SEED / history) TIDAK lagi di-load otomatis.
   try{ await appStorage.set('plan-seeded-flag', JSON.stringify(true)); }catch(e){}
   try{ await appStorage.set('plan-history-seeded-flag', JSON.stringify(true)); }catch(e){}
@@ -4614,7 +4607,7 @@ navItems.forEach(item=>{
     if(item.dataset.view==='plan'){
       renderPlanTable();
       (async ()=>{
-        // Refresh Daily Maintenance (HM input) + sheet performance (W) sebelum hitung HM Total
+        // Refresh sheet performance (W) + HM terakhir sebelum hitung HM Total Plan Service
         try{ await refreshDailyRecords(); }catch(_e){}
         try{ await ensurePerformanceSynced({ force:true }); }catch(_e){}
         try{
@@ -7220,8 +7213,7 @@ function renderPlanTable(){
     const statusClass = isOverdue ? 'overdue' : 'planned';
     const exec = r.execStatus || 'Open';
     const baseLabel = hmBase!==null && hmBase!==undefined ? Number(hmBase).toFixed(1) : '—';
-    const srcTag = hmSource==='monitoring' ? 'Mon.HM' : 'Daily';
-    const sourceNote = `<div style="color:var(--text-faint); font-size:10px; margin-top:2px;">${srcTag} ${baseLabel} + W ${Number(hmW||0).toFixed(1)}${hmBase!==null && hmBase!==undefined && r.hmBaseDate ? ' · baseline '+formatDateDMY(r.hmBaseDate) : ''}</div>`;
+    const sourceNote = `<div style="color:var(--text-faint); font-size:10px; margin-top:2px;">W performance ${Number(hmW||0).toFixed(1)}${hmBase!==null && hmBase!==undefined ? ' · base '+baseLabel : ''}</div>`;
     const perf = perfMap[String(r.unitCode||'').trim().toUpperCase()];
     const wLabel = perf ? Number(perf.w).toFixed(1) : (hmW ? Number(hmW).toFixed(1) : '—');
     const typeServiceCell = `<b>${escUH(r.serviceType)||'—'}</b>
@@ -7368,12 +7360,11 @@ document.getElementById('plan-filter-month')?.addEventListener('change', ()=>{
 });
 
 /* ---- HM terakhir per unit dari Monitoring HM (hmRecords) — fallback ---- */
-function getLatestHMPerUnitFromMonitoring(asOfDate){
+function getLatestHMPerUnitFromMonitoring(){
   const map = {};
   (hmRecords||[]).forEach(r=>{
     const unitCode = String(r.unitCode||'').trim();
     if(!unitCode || !r.tanggal) return;
-    if(asOfDate && r.tanggal > asOfDate) return;
     const hmAkhir = Number(r.hmAkhir)||0;
     if(!hmAkhir) return;
     const cur = map[unitCode];
@@ -7387,16 +7378,12 @@ function getLatestHMPerUnitFromMonitoring(asOfDate){
 /**
  * HM terakhir per unit dari input Daily Maintenance (kolom HM).
  * Dipilih record dengan tanggal paling baru; jika sama tanggal, HM terbesar.
- * Prioritas utama untuk HM Total di Plan Service.
- * asOfDate (opsional, YYYY-MM-DD): batasi hanya record ≤ tanggal tersebut
- * (dipakai agar baseline sesuai awal periode sheet performance).
  */
-function getLatestHMPerUnitFromDaily(asOfDate){
+function getLatestHMPerUnitFromDaily(){
   const map = {};
   (dailyRecords||[]).forEach(r=>{
     const unitCode = String(r.unitCode||'').trim();
     if(!unitCode || !r.tanggal) return;
-    if(asOfDate && r.tanggal > asOfDate) return;
     const hm = Number(r.hm);
     if(!hm || isNaN(hm) || hm<=0) return;
     const cur = map[unitCode];
@@ -7408,15 +7395,23 @@ function getLatestHMPerUnitFromDaily(asOfDate){
 }
 
 /**
- * Gabungan: Daily Maintenance dulu, fallback Monitoring HM.
- * asOfDate (opsional): batasi baseline HM agar cocok dengan periode performance.
+ * HM baseline untuk keperluan umum (bukan Plan Service).
+ * Daily Maintenance dulu, fallback Monitoring HM.
  */
-function getLatestHMPerUnit(asOfDate){
-  const fromDaily = getLatestHMPerUnitFromDaily(asOfDate);
-  const fromMon = getLatestHMPerUnitFromMonitoring(asOfDate);
+function getLatestHMPerUnit(){
+  const fromDaily = getLatestHMPerUnitFromDaily();
+  const fromMon = getLatestHMPerUnitFromMonitoring();
   const map = Object.assign({}, fromMon, fromDaily);
   Object.keys(fromDaily).forEach(k=>{ map[k] = fromDaily[k]; });
   return map;
+}
+
+/**
+ * HM baseline KHUSUS Plan Service — TIDAK memakai Record Daily Maintenance.
+ * Hanya Monitoring HM (jika ada) sebagai base; W selalu dari sheet performance.
+ */
+function getPlanServiceHMBase(){
+  return getLatestHMPerUnitFromMonitoring();
 }
 
 /**
@@ -7457,71 +7452,30 @@ function getServiceIntervalsForType(typeUnit){
 }
 
 /**
- * HM Total unit — sesuai periode sheet performance:
- *
- * 1. Ada periodStart di performance → ambil baseline HM paling akhir
- *    dengan tanggal ≤ periodStart (Daily dulu, fallback Monitoring HM),
- *    lalu HM Total = baseline + W (waktu operasi periode tersebut).
- *    Ini mencegah double-count bila data HM di dalam periode sudah
- *    mencatat kenaikan jam yang sama dengan kolom W.
- *
- * 2. Tidak ada info periode → fallback lama: HM terakhir (tanpa batas
- *    tanggal) + W.
- *
- * 3. Tidak ada baseline sama sekali, tapi ada W → HM Total = W
- *    (unit baru / belum ada bacaan HM).
- *
- * Sync otomatis saat panel Plan dibuka / tombol Sync / live poll.
+ * HM Total untuk Plan Service:
+ *   = base Monitoring HM (jika ada) + Waktu Operasi W dari sheet performance
+ * TIDAK memakai HM dari Record Daily Maintenance.
+ * Tanpa batasan periode — sheet performance sudah sinkron dengan database HM actual.
+ * Sync otomatis saat panel Plan dibuka / tombol Sync / live poll (~45 detik).
  */
 function calcHmTotalForUnit(unitCode){
   const code = String(unitCode||'').trim();
   if(!code) return null;
-
+  // Plan Service: jangan ambil HM dari Daily Maintenance
+  const latestHM = getPlanServiceHMBase();
+  const info = latestHM[code] || latestHM[code.toUpperCase()];
   const perfMap = getPerformanceWByUnit();
   const perf = perfMap[code.toUpperCase()] || perfMap[code];
-  const w = perf ? Number(perf.w)||0 : 0;
-
-  let asOf = '';
-  if(mapaData && mapaData.periodStart){
-    asOf = mapaData.periodStart;
-  }
-
-  let latestHM = getLatestHMPerUnit(asOf || undefined);
-  let info = latestHM[code] || latestHM[code.toUpperCase()];
-
-  let usedPeriodBaseline = !!(info && asOf);
-  if(!info){
-    latestHM = getLatestHMPerUnit();
-    info = latestHM[code] || latestHM[code.toUpperCase()];
-    usedPeriodBaseline = false;
-  }
-
   const hmBase = info ? Number(info.hm)||0 : null;
+  const w = perf ? Number(perf.w)||0 : 0;
   if(hmBase===null && !perf) return null;
-
   const base = hmBase!==null ? hmBase : 0;
-  let addW = w;
-  let hmTotal;
-
-  if(info && !usedPeriodBaseline && asOf && info.tanggal){
-    if(info.tanggal >= asOf){
-      addW = 0;
-      hmTotal = Math.round(base * 10) / 10;
-    } else {
-      hmTotal = Math.round((base + addW) * 10) / 10;
-    }
-  } else {
-    hmTotal = Math.round((base + addW) * 10) / 10;
-  }
-
   return {
     hmBase: hmBase,
     hmBaseDate: info ? info.tanggal : '',
-    hmSource: info ? (info.source||'daily') : '',
-    w: addW,
-    wRaw: w,
-    hmTotal: hmTotal,
-    periodAware: !!asOf,
+    hmSource: info ? 'monitoring' : (perf ? 'performance' : ''),
+    w: w,
+    hmTotal: Math.round((base + w) * 10) / 10,
     periodLabel: (mapaData && mapaData.periodStart && mapaData.periodEnd)
       ? (mapaData.periodStart + ' s/d ' + mapaData.periodEnd)
       : (mapaData && mapaData.fileName) || ''
@@ -7547,8 +7501,9 @@ function estimatePlanDateFromHm(unitCode, hmPlan, hmTotal){
 
 /**
  * HAPUS semua plan lama, lalu GENERATE ulang otomatis dari:
- * HM terakhir (Monitoring HM) + W (sheet performance) → HM Total
+ * HM terakhir + W (sheet performance) → HM Total
  * → jadwal PS berikutnya per unit (interval 250/500/1000/2000/4000/5000).
+ * Tanpa batasan periode — W diambil langsung dari sheet performance.
  */
 async function rebuildPlanServiceAuto(opts){
   opts = opts || {};
@@ -7610,7 +7565,7 @@ async function rebuildPlanServiceAuto(opts){
         hmAktual: hmTotal,
         hmAktualDate: calc.hmBaseDate || today,
         hmAktualManual: false,
-        notes: `Auto [${typeUnit||'—'}]: baseline HM ${calc.hmBase!==null?calc.hmBase:'—'} (${calc.hmBaseDate||'—'}) + W ${calc.w} = ${hmTotal} → ${iv.label} @ ${hmPlan}${calc.periodAware?' [periode '+ (calc.periodLabel||'') +']':''}`
+        notes: `Auto [${typeUnit||'—'}]: W performance ${calc.w}${calc.hmBase!==null?' · base '+calc.hmBase:''} = ${hmTotal} → ${iv.label} @ ${hmPlan}`
       });
       created++;
     });
@@ -7627,8 +7582,8 @@ async function rebuildPlanServiceAuto(opts){
   renderPlanTable();
   if(!silent){
     alert('✓ Plan Service dihapus & digenerate ulang otomatis.\n' +
-      'Rumus: HM Total = baseline HM (≤ awal periode performance) + W periode\n' +
-      '(jika HM terakhir sudah di dalam periode, W tidak ditambah lagi — hindari double-count)\n' +
+      'Rumus: HM Total = W (sheet performance) ± base Monitoring HM jika ada\n' +
+      'Tidak memakai HM dari Record Daily Maintenance. Tanpa batasan periode.\n' +
       created + ' jadwal service dibuat untuk ' + unitCodes.size + ' unit.');
   }
   return { ok:true, created, units: unitCodes.size };
@@ -7642,7 +7597,7 @@ async function syncPlanAll(){
     await fetchPerformanceFromSheets({ manual:false });
     if(!planRecords.length){
       await rebuildPlanServiceAuto({ silent:true });
-      alert('✓ Plan Service digenerate otomatis dari HM terakhir + W performance.\n' + planRecords.length + ' jadwal.');
+      alert('✓ Plan Service digenerate otomatis dari W sheet performance.\n' + planRecords.length + ' jadwal.');
     } else {
       // Update HM Total saja — Close HANYA manual setelah service benar-benar dieksekusi
       let updated = 0;
@@ -7661,10 +7616,10 @@ async function syncPlanAll(){
       await savePlan();
       renderPlanTable();
       alert('✓ Sync Schedule Plan Service selesai.\n' +
-        'HM Total = baseline HM (sesuai periode performance) + W\n' +
+        'HM Total sync dari W sheet performance (bukan Daily Maintenance).\n' +
         updated + ' baris open diperbarui.\n' +
         'Status Close hanya diubah manual setelah service dieksekusi.\n' +
-        'Selanjutnya auto-sync tiap ~45 detik dari sheet performance (tanpa upload HM manual).');
+        'Auto-sync tiap ~45 detik dari sheet performance (tanpa batasan periode).');
     }
   }catch(e){
     alert('⚠ Sync gagal: ' + (e.message||e));
@@ -7675,7 +7630,7 @@ async function syncPlanAll(){
 document.getElementById('btn-sync-plan-all')?.addEventListener('click', syncPlanAll);
 
 document.getElementById('btn-rebuild-plan')?.addEventListener('click', async ()=>{
-  if(!confirm('Hapus SEMUA jadwal Plan Service lama dan generate ulang dari HM terakhir + W performance?')) return;
+  if(!confirm('Hapus SEMUA jadwal Plan Service lama dan generate ulang dari W sheet performance?')) return;
   const btn = document.getElementById('btn-rebuild-plan');
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Generate...'; }
   try{
@@ -9778,6 +9733,152 @@ function onKpiTrendQuarterChange(selectEl){
   autoSyncPerformanceAndRefresh('dashboard');
 }
 
+/* ================= SERVICE CHART 4D + TABEL PENCAPAIAN (Dashboard KPI) =================
+ * Dimensi: Unit × Bulan × Status (Close/Open/Overdue) × Type Service
+ * Sumber: planRecords (semua unit, semua bulan)
+ */
+function collectService4DStats(){
+  const today = new Date().toISOString().slice(0,10);
+  const byUnit = {};
+  const byMonth = {};
+  const byType = {};
+  let total=0, closed=0, open=0, overdue=0;
+  (planRecords||[]).forEach(r=>{
+    if(!r) return;
+    total++;
+    const code = String(r.unitCode||'—').trim() || '—';
+    const mk = (r.planDate||'').slice(0,7) || 'unknown';
+    const stype = String(r.serviceType||'Service').trim() || 'Service';
+    const isClosed = !!(r.execStatus==='Close' || r.status==='Done');
+    const isOverdue = !isClosed && r.planDate && r.planDate < today;
+    if(isClosed) closed++;
+    else if(isOverdue) overdue++;
+    else open++;
+
+    if(!byUnit[code]) byUnit[code] = { unit:code, total:0, closed:0, open:0, overdue:0 };
+    byUnit[code].total++;
+    if(isClosed) byUnit[code].closed++;
+    else if(isOverdue) byUnit[code].overdue++;
+    else byUnit[code].open++;
+
+    if(!byMonth[mk]) byMonth[mk] = { month:mk, total:0, closed:0, open:0, overdue:0 };
+    byMonth[mk].total++;
+    if(isClosed) byMonth[mk].closed++;
+    else if(isOverdue) byMonth[mk].overdue++;
+    else byMonth[mk].open++;
+
+    if(!byType[stype]) byType[stype] = { type:stype, total:0, closed:0 };
+    byType[stype].total++;
+    if(isClosed) byType[stype].closed++;
+  });
+  const unitRows = Object.values(byUnit).sort((a,b)=>a.unit.localeCompare(b.unit));
+  const monthRows = Object.values(byMonth).sort((a,b)=>a.month.localeCompare(b.month));
+  const typeRows = Object.values(byType).sort((a,b)=>b.total-a.total);
+  return { total, closed, open, overdue, unitRows, monthRows, typeRows };
+}
+
+function service4DChartSVG(stats){
+  const rows = stats.unitRows;
+  if(!rows.length){
+    return `<div style="padding:28px;text-align:center;color:var(--text-faint);font-size:12px">Belum ada data Plan Service.</div>`;
+  }
+  const W = 640, H = Math.max(180, 28 + rows.length * 28 + 36);
+  const left = 72, right = 16, top = 16, bottom = 36;
+  const plotW = W - left - right, plotH = H - top - bottom;
+  const maxT = Math.max(1, ...rows.map(r=>r.total));
+  const barH = Math.min(18, (plotH / rows.length) * 0.7);
+  const gap = plotH / rows.length;
+  const colors = { closed:'#4CAF6D', open:'#4A90D9', overdue:'#E5484D' };
+  let bars = '';
+  rows.forEach((r,i)=>{
+    const y = top + i*gap + (gap-barH)/2;
+    const x0 = left;
+    const wClosed = (r.closed/maxT)*plotW;
+    const wOpen = (r.open/maxT)*plotW;
+    const wOver = (r.overdue/maxT)*plotW;
+    let x = x0;
+    if(wClosed>0){ bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1,wClosed).toFixed(1)}" height="${barH}" fill="${colors.closed}" rx="2"/>`; x+=wClosed; }
+    if(wOpen>0){ bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1,wOpen).toFixed(1)}" height="${barH}" fill="${colors.open}" rx="2"/>`; x+=wOpen; }
+    if(wOver>0){ bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1,wOver).toFixed(1)}" height="${barH}" fill="${colors.overdue}" rx="2"/>`; }
+    const pct = r.total ? Math.round(r.closed/r.total*100) : 0;
+    bars += `<text x="${left-8}" y="${(y+barH/2+3.5).toFixed(1)}" text-anchor="end" fill="#9AA0A8" font-size="10" font-family="JetBrains Mono,monospace">${r.unit}</text>`;
+    bars += `<text x="${(left+plotW+4).toFixed(1)}" y="${(y+barH/2+3.5).toFixed(1)}" fill="#EDEEF0" font-size="10" font-family="JetBrains Mono,monospace">${pct}%</text>`;
+  });
+  // axis ticks
+  let axis = `<line x1="${left}" y1="${top+plotH}" x2="${left+plotW}" y2="${top+plotH}" stroke="#33383f" stroke-width="1"/>`;
+  [0,0.25,0.5,0.75,1].forEach(t=>{
+    const x = left + t*plotW;
+    axis += `<line x1="${x.toFixed(1)}" y1="${top}" x2="${x.toFixed(1)}" y2="${top+plotH}" stroke="#252932" stroke-width="1"/>`;
+    axis += `<text x="${x.toFixed(1)}" y="${H-12}" text-anchor="middle" fill="#5C636B" font-size="9" font-family="JetBrains Mono,monospace">${Math.round(t*maxT)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="auto" style="display:block">${axis}${bars}</svg>`;
+}
+
+function serviceTypeMiniBarsSVG(stats){
+  const rows = stats.typeRows.slice(0,8);
+  if(!rows.length) return '';
+  const W=280, H=Math.max(120, 16+rows.length*22);
+  const left=90, plotW=W-left-40;
+  let html = '';
+  rows.forEach((r,i)=>{
+    const y = 10 + i*22;
+    const pct = r.total ? r.closed/r.total : 0;
+    const w = Math.max(2, pct*plotW);
+    html += `<text x="0" y="${y+11}" fill="#9AA0A8" font-size="9" font-family="JetBrains Mono,monospace">${String(r.type).slice(0,12)}</text>`;
+    html += `<rect x="${left}" y="${y+2}" width="${plotW}" height="12" fill="#252932" rx="2"/>`;
+    html += `<rect x="${left}" y="${y+2}" width="${w.toFixed(1)}" height="12" fill="#FFC72C" rx="2"/>`;
+    html += `<text x="${left+plotW+4}" y="${y+11}" fill="#EDEEF0" font-size="9" font-family="JetBrains Mono,monospace">${Math.round(pct*100)}%</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="auto" style="display:block">${html}</svg>`;
+}
+
+function buildServiceAchievementTableHTML(stats){
+  if(!stats.unitRows.length){
+    return `<tr><td colspan="7" style="text-align:center;color:var(--text-faint);padding:18px">Belum ada data Plan Service.</td></tr>`;
+  }
+  // Matrix unit × bulan
+  const months = stats.monthRows.map(m=>m.month).filter(m=>m && m!=='unknown');
+  const today = new Date().toISOString().slice(0,10);
+  // Precompute closed/total per unit-month
+  const cell = {};
+  (planRecords||[]).forEach(r=>{
+    if(!r) return;
+    const u = String(r.unitCode||'—').trim()||'—';
+    const mk = (r.planDate||'').slice(0,7);
+    if(!mk) return;
+    const key = u+'|'+mk;
+    if(!cell[key]) cell[key] = { total:0, closed:0 };
+    cell[key].total++;
+    if(r.execStatus==='Close' || r.status==='Done') cell[key].closed++;
+  });
+  const monthHeaders = months.map(m=>{
+    const [y,mm] = m.split('-');
+    const label = (BULAN_NAMA && BULAN_NAMA[Number(mm)]) ? BULAN_NAMA[Number(mm)].slice(0,3)+' '+y : m;
+    return `<th style="text-align:center;white-space:nowrap">${label}</th>`;
+  }).join('');
+  const body = stats.unitRows.map(u=>{
+    const overallPct = u.total ? Math.round(u.closed/u.total*100) : 0;
+    const col = overallPct>=80?'#4CAF6D':overallPct>=50?'#FFC72C':'#E5484D';
+    const monthCells = months.map(m=>{
+      const c = cell[u.unit+'|'+m];
+      if(!c || !c.total) return `<td style="text-align:center;color:var(--text-faint)">—</td>`;
+      const p = Math.round(c.closed/c.total*100);
+      const pc = p>=80?'#4CAF6D':p>=50?'#FFC72C':'#E5484D';
+      return `<td style="text-align:center;font-family:JetBrains Mono,monospace;font-size:11px;color:${pc}">${c.closed}/${c.total}<div style="font-size:9px;opacity:.85">${p}%</div></td>`;
+    }).join('');
+    return `<tr>
+      <td style="font-family:JetBrains Mono,monospace;color:var(--yellow);font-weight:600">${escUH(u.unit)}</td>
+      <td style="text-align:center">${u.total}</td>
+      <td style="text-align:center;color:#4CAF6D">${u.closed}</td>
+      <td style="text-align:center;color:#4A90D9">${u.open}</td>
+      <td style="text-align:center;color:#E5484D">${u.overdue}</td>
+      <td style="text-align:center;font-weight:700;color:${col};font-family:JetBrains Mono,monospace">${overallPct}%</td>
+      ${monthCells}
+    </tr>`;
+  }).join('');
+  return { monthHeaders, body, months };
+}
+
 function renderKPIChartDashboard(k, globalStats){
   const wrap = document.getElementById('kpi-chart-dashboard');
   if(!wrap) return;
@@ -10418,6 +10519,63 @@ function renderKPIChartDashboard(k, globalStats){
         </div>
       </div>
     </div>
+    ${(() => {
+      const svc = collectService4DStats();
+      const ach = buildServiceAchievementTableHTML(svc);
+      const achPct = svc.total ? Math.round(svc.closed/svc.total*100) : 0;
+      const typeChart = serviceTypeMiniBarsSVG(svc);
+      return `
+    <div class="dash-mid-grid">
+      <div class="dash-panel">
+        <div class="dash-panel-title">DASHBOARD SERVICE</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--text-dim)">Total <b style="color:var(--text)">${svc.total}</b></div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:#4CAF6D">Close <b>${svc.closed}</b></div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:#4A90D9">Open <b>${svc.open}</b></div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:#E5484D">Overdue <b>${svc.overdue}</b></div>
+          <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--yellow)">Achievement <b>${achPct}%</b></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.4fr 0.8fr;gap:16px;align-items:start">
+          <div>
+            <div style="font-size:10px;color:var(--text-faint);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Stacked by Unit (Close / Open / Overdue)</div>
+            ${service4DChartSVG(svc)}
+            <div class="dash-legend" style="margin-top:8px">
+              <span><i style="background:#4CAF6D"></i>Close</span>
+              <span><i style="background:#4A90D9"></i>Open</span>
+              <span><i style="background:#E5484D"></i>Overdue</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text-faint);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">% Close per Type Service</div>
+            ${typeChart||'<div style="color:var(--text-faint);font-size:12px;padding:12px">—</div>'}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dash-mid-grid">
+      <div class="dash-panel">
+        <div class="dash-panel-title">SERVICE ACHIEVEMENT</div>
+        <div style="overflow-x:auto">
+          <table class="dash-sum-table" style="min-width:640px">
+            <thead>
+              <tr>
+                <th>Unit</th>
+                <th style="text-align:center">Total</th>
+                <th style="text-align:center">Close</th>
+                <th style="text-align:center">Open</th>
+                <th style="text-align:center">Overdue</th>
+                <th style="text-align:center">% Ach</th>
+                ${ach.monthHeaders||''}
+              </tr>
+            </thead>
+            <tbody>
+              ${typeof ach==='object' && ach.body ? ach.body : '<tr><td colspan="6" style="text-align:center;color:var(--text-faint);padding:18px">Belum ada data Plan Service.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+    })()}
     <div class="dash-mid-grid">
       <div class="dash-panel">
         <div class="chart-panel-title-row">
