@@ -1392,7 +1392,6 @@ body.role-pjo .view > .banner{ display:none !important; }
             <h2><span class="tag">SYNC</span> Sheet Performance + Fallback Manual</h2>
             <div class="toolbar">
               <button type="button" class="btn small" id="mapa-sync-perf-btn" title="Ambil W/S/R terbaru dari sheet performance di Google Spreadsheet">☁ Sync dari Sheet Performance</button>
-              <button type="button" class="btn small" id="dashboard-sync-sheet-btn" title="Kirim KPI Dashboard panel ke tab spreadsheet dashboard">☁ Sync Dashboard → Sheet</button>
               <button type="button" class="btn secondary small" id="mapa-template-btn">⬇ Unduh Template</button>
               <button type="button" class="btn danger" id="mapa-clear-btn" style="display:none;">Hapus Data</button>
             </div>
@@ -3957,10 +3956,9 @@ const BACKEND_CONFIG = {
   supabaseUrl: 'https://boabocernsqrqklvasjm.supabase.co',
   supabaseAnonKey: 'sb_publishable_k6bgzzLNwk8_1QKxl_5uEg_EzAlkj5L',
 
-  // ---- Sinkron Google Sheets (Daily Maintenance + Performance MA/PA + Dashboard KPI) ----
+  // ---- Sinkron Google Sheets (Daily Maintenance + Performance MA/PA) ----
   // Spreadsheet: https://docs.google.com/spreadsheets/d/1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4
-  // Apps Script: getPerformance + sync (sheet "data") + syncDashboard (sheet "dashboard")
-  // Pastikan tab spreadsheet bernama tepat: "dashboard" (huruf kecil).
+  // Apps Script deploy v21 (11 Agu 2026) — getPerformance + sync sheet data
   sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
   sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbx31DQTu96c5pO_46P0mJHE2bBten4d5ynCThs-G_V03QFnq4v1Mknjujj7Ohd6up4/exec',
 };
@@ -6763,155 +6761,6 @@ document.getElementById('daily-sync-sheets-btn')?.addEventListener('click', asyn
   if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
   try{ await syncDailyToSheets({ manual:true }); }
   finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet data'; } }
-});
-
-/**
- * Bangun baris data Dashboard KPI (sama dengan yang tampil di panel) untuk di-push ke sheet "dashboard".
- * Satu baris ALL (agregat) + satu baris per unit A2B.
- */
-function buildDashboardSheetRecords(){
-  const period = (typeof kpiMonthlyChartPeriodValue !== 'undefined' && kpiMonthlyChartPeriodValue)
-    ? kpiMonthlyChartPeriodValue : '';
-  let periodLabel = 'ALL';
-  let startStr = '', endStr = '';
-  if(period){
-    const [y,m] = period.split('-').map(Number);
-    if(y && m){
-      startStr = toDateStr(new Date(y, m-1, 1));
-      endStr = toDateStr(new Date(y, m, 0));
-      periodLabel = period;
-    }
-  }
-  const kAll = period ? computeKPIsFor(period) : computeKPIs();
-  const syncedAt = new Date().toISOString();
-  const round1 = v => (v==null || isNaN(Number(v))) ? 0 : Math.round(Number(v)*10)/10;
-  const rowOf = (scope, k) => ({
-    synced_at: syncedAt,
-    period: periodLabel,
-    period_start: startStr || '',
-    period_end: endStr || '',
-    scope: scope,
-    mtbs: round1(k.mtbs),
-    mttr: round1(k.mttr),
-    pmr: round1(k.pmr),
-    sa: round1(k.sa),
-    ma: round1(k.ma),
-    pa: round1(k.pa),
-    target_mtbs: KPI_TARGET.mtbs,
-    target_mttr: KPI_TARGET.mttr,
-    target_pmr: KPI_TARGET.pmr,
-    target_sa: KPI_TARGET.sa,
-    target_ma: KPI_TARGET.ma,
-    target_pa: KPI_TARGET.pa,
-    bd_count: k.bdCount != null ? k.bdCount : '',
-    total_hm: k.totalHM != null ? round1(k.totalHM) : '',
-    overdue_plans: k.overduePlans != null ? k.overduePlans : '',
-    pending_approval: k.pendingApproval != null ? k.pendingApproval : ''
-  });
-  const records = [ rowOf('ALL', kAll) ];
-  const unitList = (typeof PLAN_SERVICE_ALLOWED_UNITS !== 'undefined' && PLAN_SERVICE_ALLOWED_UNITS.size)
-    ? Array.from(PLAN_SERVICE_ALLOWED_UNITS)
-    : (UNITS||[]).map(u=>u.code).filter(Boolean);
-  unitList.forEach(code=>{
-    let uk;
-    if(startStr && endStr && typeof computeUnitKPIsForRange === 'function'){
-      uk = computeUnitKPIsForRange(code, startStr, endStr);
-      const mapa = resolveMaPa(code, startStr, endStr);
-      uk = Object.assign({}, uk, { ma: mapa.ma, pa: mapa.pa });
-    } else {
-      uk = computeUnitKPIs(code);
-    }
-    records.push(rowOf(code, uk));
-  });
-  return records;
-}
-
-/**
- * Push KPI Dashboard panel → tab spreadsheet "dashboard".
- * Pola sama dengan syncDailyToSheets (action sync + sheet name).
- * Apps Script harus menangani sheet "dashboard" (lihat komentar GAS di bawah / README deploy).
- */
-let _dashboardSyncInFlight = null;
-let _dashboardLastSyncAt = 0;
-const DASHBOARD_SYNC_TTL_MS = 25000;
-
-async function syncDashboardToSheets(opts){
-  opts = opts || {};
-  if(!BACKEND_CONFIG.sheetsWebAppUrl){
-    if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG.');
-    return { ok:false, error:'no_url' };
-  }
-  if(!opts.force && _dashboardLastSyncAt && (Date.now()-_dashboardLastSyncAt) < DASHBOARD_SYNC_TTL_MS){
-    return { ok:true, cached:true };
-  }
-  if(_dashboardSyncInFlight && !opts.manual) return _dashboardSyncInFlight;
-
-  const run = (async ()=>{
-    try{
-      const records = buildDashboardSheetRecords();
-      const res = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'syncDashboard',
-          sheet: 'dashboard',
-          spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
-          records: records,
-          syncedAt: new Date().toISOString()
-        }),
-        cache: 'no-store'
-      });
-      let data = null;
-      try{ data = await res.json(); }catch(_e){ data = null; }
-
-      // Fallback: action generik "sync" + sheet dashboard (jika deploy belum punya syncDashboard)
-      if(!data || data.ok!==true){
-        const res2 = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'sync',
-            sheet: 'dashboard',
-            spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
-            records: records,
-            syncedAt: new Date().toISOString()
-          }),
-          cache: 'no-store'
-        });
-        try{ data = await res2.json(); }catch(_e){ data = null; }
-      }
-
-      if(data && data.ok){
-        _dashboardLastSyncAt = Date.now();
-      }
-      if(opts.manual){
-        if(data && data.ok){
-          alert('✓ Dashboard KPI tersinkron ke sheet "dashboard".\n' +
-            records.length + ' baris (ALL + per unit).\nRefresh tab spreadsheet untuk melihat data.');
-        } else {
-          alert('⚠ Sync Dashboard gagal: ' + ((data && data.error) || 'tidak ada respons OK') +
-            '\nPastikan tab "dashboard" ada di spreadsheet dan Apps Script menangani action syncDashboard / sync.');
-        }
-      }
-      return data || { ok:false, error:'no_response' };
-    }catch(e){
-      console.error('syncDashboardToSheets', e);
-      if(opts.manual) alert('⚠ Sync Dashboard gagal: ' + (e.message||e));
-      return { ok:false, error:String(e) };
-    }finally{
-      _dashboardSyncInFlight = null;
-    }
-  })();
-
-  if(!opts.manual) _dashboardSyncInFlight = run;
-  return run;
-}
-
-document.getElementById('dashboard-sync-sheet-btn')?.addEventListener('click', async ()=>{
-  const btn = document.getElementById('dashboard-sync-sheet-btn');
-  if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
-  try{ await syncDashboardToSheets({ manual:true, force:true }); }
-  finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync Dashboard → Sheet'; } }
 });
 
 function approvalPillHTML(r){
@@ -11760,8 +11609,6 @@ function renderDashboard(){
   const k = computeKPIsFor(kpiMonthlyChartPeriodValue);
   const globalStats = computeKPIs(); // overdue plan & pending approval selalu snapshot terkini, tidak tergantung filter periode
   renderKPIChartDashboard(k, globalStats);
-  // Auto-push KPI Dashboard ke sheet "dashboard" (silent, TTL-limited)
-  try{ syncDashboardToSheets({ manual:false }); }catch(_e){}
   // Kartu gauge KPI individual dihapus — detail % sudah ada di tabel KPI Report Monthly & Rekap Triwulan
   const grid = document.getElementById('kpi-grid');
   if(grid) grid.innerHTML = '';
@@ -11943,10 +11790,7 @@ async function autoSyncPerformanceAndRefresh(which){
     await ensurePerformanceSynced({ force:true });
   }catch(e){ console.warn('auto sync performance', e); }
   if(which==='units' || which==='all') renderUnitCards();
-  if(which==='dashboard' || which==='all'){
-    renderDashboard();
-    try{ await syncDashboardToSheets({ manual:false, force:true }); }catch(_e){}
-  }
+  if(which==='dashboard' || which==='all') renderDashboard();
 }
 
 /** Live poll setiap 45 detik — Performance + HM Sekarang update otomatis per hari. */
