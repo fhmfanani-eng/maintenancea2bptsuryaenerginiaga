@@ -346,6 +346,36 @@ textarea{ resize:vertical; min-height:56px; }
 .btn.danger{ background:transparent; color:var(--red); border:1px solid var(--red); padding:5px 9px; font-size:10px;}
 .btn.small{ padding:5px 10px; font-size:10px; }
 
+
+
+/* Plan Service reference header styling */
+#plan-table thead th{
+  background:#244f78;
+  color:#F7FAFC;
+  border-right:1px solid rgba(255,255,255,0.18);
+  text-align:center;
+  font-weight:700;
+}
+#plan-table thead th:nth-child(4){ background:#27577f; }
+#plan-table tbody td:nth-child(4){
+  background:rgba(255,199,44,0.10);
+}
+
+/* PLAN SERVICE: Estimasi Tanggal | Bulan | Unit | Target HM | Service Type | Working Hours | WH/Hari | HM Sekarang | Est. Sisa HM | ... */
+#plan-table th:nth-child(1), #plan-table td:nth-child(1){ min-width:125px; text-align:center; }
+#plan-table th:nth-child(2), #plan-table td:nth-child(2){ min-width:110px; text-align:center; }
+#plan-table th:nth-child(3), #plan-table td:nth-child(3){ min-width:95px; text-align:center; }
+#plan-table th:nth-child(4), #plan-table td:nth-child(4){ min-width:105px; text-align:center; }
+#plan-table th:nth-child(5), #plan-table td:nth-child(5){ min-width:120px; text-align:center; }
+#plan-table th:nth-child(6), #plan-table td:nth-child(6){ min-width:110px; text-align:center; }
+#plan-table th:nth-child(7), #plan-table td:nth-child(7){ min-width:90px; text-align:center; }
+#plan-table th:nth-child(8), #plan-table td:nth-child(8){ min-width:110px; text-align:center; }
+#plan-table th:nth-child(9), #plan-table td:nth-child(9){ min-width:105px; text-align:center; }
+#plan-table td:nth-child(4) b{ color:var(--yellow) !important; font-family:'JetBrains Mono',monospace; font-size:15px; }
+#plan-table td:nth-child(6) b{ color:#7fe0e0 !important; font-family:'JetBrains Mono',monospace; font-size:14px; }
+#plan-table td:nth-child(7) b{ color:var(--yellow) !important; font-family:'JetBrains Mono',monospace; font-size:15px; }
+#plan-table td:nth-child(8) b{ color:var(--text) !important; font-family:'JetBrains Mono',monospace; font-size:14px; }
+
 /* TABLE */
 .table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); }
 /* Scrollbar tambahan di ATAS tabel lebar (mis. Record Daily Maintenance) agar mudah
@@ -1362,6 +1392,7 @@ body.role-pjo .view > .banner{ display:none !important; }
             <h2><span class="tag">SYNC</span> Sheet Performance + Fallback Manual</h2>
             <div class="toolbar">
               <button type="button" class="btn small" id="mapa-sync-perf-btn" title="Ambil W/S/R terbaru dari sheet performance di Google Spreadsheet">☁ Sync dari Sheet Performance</button>
+              <button type="button" class="btn small" id="dashboard-sync-sheet-btn" title="Kirim KPI Dashboard panel ke tab spreadsheet dashboard">☁ Sync Dashboard → Sheet</button>
               <button type="button" class="btn secondary small" id="mapa-template-btn">⬇ Unduh Template</button>
               <button type="button" class="btn danger" id="mapa-clear-btn" style="display:none;">Hapus Data</button>
             </div>
@@ -1833,47 +1864,45 @@ body.role-pjo .view > .banner{ display:none !important; }
       <section class="view" id="view-plan">
         <div class="panel">
           <div class="panel-head">
-            <h2>Schedule Plan Service <span class="tag">AUTO SYNC</span></h2>
+            <h2>Schedule Plan Service <span class="tag">AUTO SYNC · 4 UNIT LOCK</span></h2>
             <div class="toolbar">
               <button type="button" class="btn small" id="btn-sync-plan-all" title="Sync performance + HM, lalu generate jadwal otomatis">☁ Sync & Generate Otomatis</button>
               <button type="button" class="btn small secondary" id="btn-rebuild-plan" title="Hapus semua plan lama dan buat ulang dari W sheet performance">🗑 Hapus & Generate Ulang</button>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-            <label style="font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin:0;">Filter Bulan</label>
-            <select id="plan-filter-month" style="min-width:160px; background:var(--panel-2); border:1px solid var(--line); color:var(--yellow); font-weight:600; padding:8px 10px; border-radius:var(--radius);">
-              <option value="">Semua Bulan</option>
-              <option value="01">Januari</option>
-              <option value="02">Februari</option>
-              <option value="03">Maret</option>
-              <option value="04">April</option>
-              <option value="05">Mei</option>
-              <option value="06">Juni</option>
-              <option value="07">Juli</option>
-              <option value="08">Agustus</option>
-              <option value="09">September</option>
-              <option value="10">Oktober</option>
-              <option value="11">November</option>
-              <option value="12">Desember</option>
-            </select>
+          <div class="panel period-panel" style="margin-bottom:14px; padding:14px 16px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <span class="period-range-label">Periode / Hari</span>
+              <div class="field period-input-group period-date-group" style="margin-bottom:0;">
+                <span class="period-input-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+                <input type="date" id="plan-period-start" class="period-date-input" title="Tanggal mulai filter Plan Service">
+              </div>
+              <span class="period-range-sep">sd</span>
+              <div class="field period-input-group period-date-group" style="margin-bottom:0;">
+                <span class="period-input-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+                <input type="date" id="plan-period-end" class="period-date-input" title="Tanggal akhir filter Plan Service (HM Sekarang dihitung s/d tanggal ini)">
+              </div>
+              <button type="button" class="btn secondary small" id="plan-period-reset-btn" title="Hapus filter tanggal">✕ Reset Periode</button>
+              <button type="button" class="btn small secondary" id="plan-period-today-btn" title="Set periode ke hari ini saja">Hari Ini</button>
+            </div>
           </div>
           <div class="scroll-top-track" id="plan-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="plan-scroll-top-inner"></div></div>
           <div class="table-wrap" id="plan-table-wrap">
             <table id="plan-table">
               <thead><tr>
+                <th>Estimasi Tanggal</th>
                 <th>Bulan</th>
-                <th>Tgl Rencana</th>
-                <th>Unit Code</th>
-                <th>Type Unit</th>
-                <th>Type Service <span style="color:var(--text-faint); font-weight:400;">(interval)</span></th>
-                <th>HM Total <span style="color:var(--text-faint); font-weight:400;">(W performance)</span></th>
-                <th>Sisa HM</th>
-                <th>Waktu Operasi W</th>
-                <th>Est. Sisa Hari</th>
-                <th>PIC</th>
+                <th>Unit</th>
+                <th>Target HM</th>
+                <th>Service Type</th>
+                <th>Working Hours</th>
+                <th>WH/Hari</th>
+                <th>HM Sekarang</th>
+                <th>Est. Sisa HM</th>
                 <th>Status</th>
                 <th>Status Eksekusi</th>
                 <th>Tgl Eksekusi</th>
+                <th>PIC</th>
                 <th></th>
               </tr></thead>
               <tbody id="plan-tbody"></tbody>
@@ -1902,13 +1931,11 @@ body.role-pjo .view > .banner{ display:none !important; }
             <table id="plan-record-table">
               <thead><tr>
                 <th>Bulan</th>
-                <th>Tgl Rencana</th>
                 <th>Tgl Eksekusi</th>
                 <th>Unit Code</th>
                 <th>Type Unit</th>
                 <th>Type Service</th>
-                <th>HM Target</th>
-                <th>HM Total (saat close)</th>
+                <th>HM Eksekusi</th>
                 <th>PIC</th>
                 <th>Status</th>
               </tr></thead>
@@ -2343,6 +2370,8 @@ const PLAN_SERVICE_HISTORY_SEED = [
   ['2026-07-11','SWA-101',5000,5000.2,'PS 1000 Hrs'],
   ['2026-07-15','SBD-103',4750,4779.3,'PS 250 Hrs'],
   ['2026-07-21','SWA-102',5000,5011.3,'PS 1000 Hrs'],
+  ['2026-07-02','SPC-104',2500,2524,'PS 500 Hrs'],
+  ['2026-08-16','SBD-103',5000,5009,'PS 1000 Hrs'],
 ].map(row=>{
   const [planDate, unitCode, hmPlan, hmAktual, serviceType] = row;
   const u = UNITS.find(x=>x.code===unitCode);
@@ -3883,6 +3912,19 @@ const HM_SEED = [
   ['2026-08-04','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',4850.8,4858.3,7.5,81,''],
   ['2026-08-04','BC','Barging','Denri Holmen Ambarita','Malam','SWA-102','Trimming & Loading',5196.2,5204.7,8.5,0,''],
   ['2026-08-05','BC','Barging','Denri Holmen Ambarita','Malam','SWA-102','Trimming & Loading',5196.2,5204.7,8.5,0,''],
+  ['2026-08-16','BC','Triming','Husen L','Siang','SBD-103','Treming',5004.8,5009.7,4.9,0,''],
+  ['2026-08-16','BC','Barging','Suntoko','Siang','SWA-102','Barging',5357,5364.9,7.9,0,''],
+  ['2026-08-16','BC','Barging','Dede Darmawan','Siang','SWA-101','Barging coal bc',5494.7,5501.4,6.7,0,''],
+  ['2026-08-16','BBA','General','Denri Holmen Ambarita','Siang','Long Arm 07','Travel Jetty-PIT Tengah',6421.9,6425.9,4,0,''],
+  ['2026-08-16','BC','Triming','Miki Mustakim','Malam','SBD-103','Triming',5010,5018.2,8.2,0,''],
+  ['2026-08-16','BC','Triming','Jhohan','Malam','SWA-102','Triming coal bc',5364.9,5370.5,5.6,0,''],
+  ['2026-08-16','BC','Triming','Hairul Fadly','Malam','SWA-101','Trimming',5501.4,5509.6,8.2,0,''],
+  ['2026-08-17','BC','Langsir','Dede Darmawan','Siang','SPC-104','Lambung material dan General',2905.9,2923.9,18,210,''],
+  ['2026-08-17','BC','Langsir','Husen L','Siang','SBD-103','Langsir matrial',5018.4,5024.4,6,166,''],
+  ['2026-08-17','BC','Langsir','Suntoko','Siang','SWA-102','Langsir',5370.5,5377,6.5,235,''],
+  ['2026-08-17','BBA','General','Denri Holmen Ambarita','Siang','Long Arm 07','Evacuassi Coal Terbakar PIT TENGAH',6425.9,6428.9,3,0,''],
+  ['2026-08-17','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',5377,5380.4,3.4,0,''],
+  ['2026-08-17','BC','Barging','Hairul Fadly','Malam','SWA-101','Barging',5509.6,5518.1,8.5,0,''],
 ].map((row,i)=>{
   const [tanggal,user,category,nama,shift,unitCode,pekerjaan,hmAwal,hmAkhir,hmTotal,fuel,keterangan] = row;
   return {
@@ -3915,9 +3957,10 @@ const BACKEND_CONFIG = {
   supabaseUrl: 'https://boabocernsqrqklvasjm.supabase.co',
   supabaseAnonKey: 'sb_publishable_k6bgzzLNwk8_1QKxl_5uEg_EzAlkj5L',
 
-  // ---- Sinkron Google Sheets (Daily Maintenance + Performance MA/PA) ----
+  // ---- Sinkron Google Sheets (Daily Maintenance + Performance MA/PA + Dashboard KPI) ----
   // Spreadsheet: https://docs.google.com/spreadsheets/d/1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4
-  // Apps Script deploy v21 (11 Agu 2026) — getPerformance + sync sheet data
+  // Apps Script: getPerformance + sync (sheet "data") + syncDashboard (sheet "dashboard")
+  // Pastikan tab spreadsheet bernama tepat: "dashboard" (huruf kecil).
   sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
   sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbx31DQTu96c5pO_46P0mJHE2bBten4d5ynCThs-G_V03QFnq4v1Mknjujj7Ohd6up4/exec',
 };
@@ -4101,6 +4144,19 @@ function updateStorageStatusUI(){
 
 let dailyRecords = [];
 let planRecords = [];
+
+/* PLAN SERVICE LOCK — hanya 4 unit yang diperbolehkan.
+ * Semua generate, sync, render, dan penyimpanan Plan Service dibatasi ke unit ini.
+ */
+const PLAN_SERVICE_ALLOWED_UNITS = new Set(['SWA-101','SWA-102','SBD-103','SPC-104']);
+function isPlanServiceAllowedUnit(code){
+  return PLAN_SERVICE_ALLOWED_UNITS.has(String(code||'').trim().toUpperCase());
+}
+function sanitizePlanServiceUnits(){
+  if(!Array.isArray(planRecords)) planRecords = [];
+  planRecords = planRecords.filter(r => r && isPlanServiceAllowedUnit(r.unitCode));
+  return planRecords;
+}
 let planningSystemRecords = [];
 let p2hRecords = [];
 let preInspectionRecords = [];
@@ -4360,6 +4416,37 @@ async function loadData(){
     const p = await appStorage.get('plan-records');
     planRecords = p ? JSON.parse(p.value) : [];
   }catch(e){ planRecords = []; }
+  // Pastikan riwayat service (PLAN_SERVICE_HISTORY_SEED) selalu ada di planRecords —
+  // termasuk baris baru (mis. SPC-104 02/07/2026, SBD-103 16/08/2026) tanpa menghapus data existing.
+  // Juga sinkronkan HM Eksekusi (hmAktual) dari seed sesuai unit + tanggal + type service.
+  try{
+    const seedList = (typeof PLAN_SERVICE_HISTORY_SEED!=='undefined' ? PLAN_SERVICE_HISTORY_SEED : []);
+    const histKeys = new Set(planRecords.map(r=>String(r.unitCode||'')+'|'+String(r.planDate||'')+'|'+String(r.hmPlan||'')));
+    let changed = false;
+    // Update HM Eksekusi (hmAktual) untuk baris existing yang cocok unit+tanggal+serviceType
+    seedList.forEach(s=>{
+      const match = planRecords.find(r=>
+        String(r.unitCode||'')===String(s.unitCode||'') &&
+        String(r.planDate||'')===String(s.planDate||'') &&
+        String(r.serviceType||'')===String(s.serviceType||'')
+      );
+      if(match && (match.hmAktual===undefined || match.hmAktual===null || match.hmAktual==='' || Number(match.hmAktual)!==Number(s.hmAktual))){
+        match.hmAktual = s.hmAktual;
+        match.hmAktualDate = s.hmAktualDate || s.planDate;
+        if(!match.execStatus || match.execStatus==='Open'){ match.execStatus='Close'; match.status='Done'; match.execDate=match.execDate||s.planDate; }
+        changed = true;
+      }
+    });
+    const histToAdd = seedList.filter(r=>!histKeys.has(String(r.unitCode||'')+'|'+String(r.planDate||'')+'|'+String(r.hmPlan||'')));
+    if(histToAdd.length){
+      planRecords = histToAdd.concat(planRecords);
+      changed = true;
+    }
+    // Hapus duplikat setelah merge seed
+    const removed = dedupePlanRecords();
+    if(removed) changed = true;
+    if(changed) await savePlan();
+  }catch(e){ console.warn('merge plan history seed failed', e); }
   try{
     const ps = await appStorage.get('planning-system-records');
     planningSystemRecords = ps ? JSON.parse(ps.value) : [];
@@ -4415,6 +4502,29 @@ async function loadData(){
       await saveHM();
     }
     try{ await appStorage.set('hm-seed-topup-flag', JSON.stringify(true)); }catch(e){}
+  }
+
+  // Top-up data HM 17-Agu-2026 (terbaru) — flag baru agar install lama ikut dapat baris baru
+  let hmTopUpAug17Done = false;
+  try{
+    const f = await appStorage.get('hm-seed-topup-aug17-2026');
+    hmTopUpAug17Done = f ? JSON.parse(f.value) === true : false;
+  }catch(e){ hmTopUpAug17Done = false; }
+  if(!hmTopUpAug17Done){
+    const existingIds = new Set(hmRecords.map(r=>r.id));
+    const keyOf = r => [String(r.tanggal||''), String(r.unitCode||'').toUpperCase(), String(r.hmAkhir||'')].join('|');
+    const existingKeys = new Set(hmRecords.map(keyOf));
+    const aug17 = HM_SEED.filter(r=>String(r.tanggal||'')==='2026-08-17');
+    const toAdd = aug17.filter(r=>!existingIds.has(r.id) && !existingKeys.has(keyOf(r)));
+    hmRecords.forEach(r=>{
+      if(String(r.tanggal)!=='2026-08-17') return;
+      const code = String(r.unitCode||'').toUpperCase();
+      if(code==='SPC-104' && Number(r.hmAkhir)===2923.9 && Number(r.fuel||0)===0) r.fuel = 210;
+      if(code==='SBD-103' && Number(r.hmAkhir)===5024.4 && Number(r.fuel||0)===0) r.fuel = 166;
+    });
+    if(toAdd.length) hmRecords = hmRecords.concat(toAdd);
+    await saveHM();
+    try{ await appStorage.set('hm-seed-topup-aug17-2026', JSON.stringify(true)); }catch(e){}
   }
   try{
     const mapa = await appStorage.get('mapa-data');
@@ -4503,6 +4613,7 @@ async function importPlanSeed(){
   const toAdd = combinedSeed.filter(r=>!existingKeys.has(r.unitCode+'|'+r.planDate+'|'+r.hmPlan));
   if(toAdd.length===0){ alert('Semua jadwal dari Excel sudah ada di tabel.'); return; }
   planRecords = toAdd.concat(planRecords);
+  dedupePlanRecords();
   await savePlan();
   try{ await appStorage.set('plan-seeded-flag', JSON.stringify(true)); }catch(e){}
   renderAll();
@@ -4537,7 +4648,10 @@ async function refreshDailyRecords(){
   }catch(e){ console.error('refresh daily records gagal', e); }
 }
 async function savePlan(){
-  try{ await appStorage.set('plan-records', JSON.stringify(planRecords)); }
+  try{
+    sanitizePlanServiceUnits();
+    await appStorage.set('plan-records', JSON.stringify(planRecords));
+  }
   catch(e){ console.error('save plan failed', e); }
 }
 /* Ambil ulang planningSystemRecords langsung dari database, tidak bergantung channel realtime
@@ -6651,6 +6765,155 @@ document.getElementById('daily-sync-sheets-btn')?.addEventListener('click', asyn
   finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet data'; } }
 });
 
+/**
+ * Bangun baris data Dashboard KPI (sama dengan yang tampil di panel) untuk di-push ke sheet "dashboard".
+ * Satu baris ALL (agregat) + satu baris per unit A2B.
+ */
+function buildDashboardSheetRecords(){
+  const period = (typeof kpiMonthlyChartPeriodValue !== 'undefined' && kpiMonthlyChartPeriodValue)
+    ? kpiMonthlyChartPeriodValue : '';
+  let periodLabel = 'ALL';
+  let startStr = '', endStr = '';
+  if(period){
+    const [y,m] = period.split('-').map(Number);
+    if(y && m){
+      startStr = toDateStr(new Date(y, m-1, 1));
+      endStr = toDateStr(new Date(y, m, 0));
+      periodLabel = period;
+    }
+  }
+  const kAll = period ? computeKPIsFor(period) : computeKPIs();
+  const syncedAt = new Date().toISOString();
+  const round1 = v => (v==null || isNaN(Number(v))) ? 0 : Math.round(Number(v)*10)/10;
+  const rowOf = (scope, k) => ({
+    synced_at: syncedAt,
+    period: periodLabel,
+    period_start: startStr || '',
+    period_end: endStr || '',
+    scope: scope,
+    mtbs: round1(k.mtbs),
+    mttr: round1(k.mttr),
+    pmr: round1(k.pmr),
+    sa: round1(k.sa),
+    ma: round1(k.ma),
+    pa: round1(k.pa),
+    target_mtbs: KPI_TARGET.mtbs,
+    target_mttr: KPI_TARGET.mttr,
+    target_pmr: KPI_TARGET.pmr,
+    target_sa: KPI_TARGET.sa,
+    target_ma: KPI_TARGET.ma,
+    target_pa: KPI_TARGET.pa,
+    bd_count: k.bdCount != null ? k.bdCount : '',
+    total_hm: k.totalHM != null ? round1(k.totalHM) : '',
+    overdue_plans: k.overduePlans != null ? k.overduePlans : '',
+    pending_approval: k.pendingApproval != null ? k.pendingApproval : ''
+  });
+  const records = [ rowOf('ALL', kAll) ];
+  const unitList = (typeof PLAN_SERVICE_ALLOWED_UNITS !== 'undefined' && PLAN_SERVICE_ALLOWED_UNITS.size)
+    ? Array.from(PLAN_SERVICE_ALLOWED_UNITS)
+    : (UNITS||[]).map(u=>u.code).filter(Boolean);
+  unitList.forEach(code=>{
+    let uk;
+    if(startStr && endStr && typeof computeUnitKPIsForRange === 'function'){
+      uk = computeUnitKPIsForRange(code, startStr, endStr);
+      const mapa = resolveMaPa(code, startStr, endStr);
+      uk = Object.assign({}, uk, { ma: mapa.ma, pa: mapa.pa });
+    } else {
+      uk = computeUnitKPIs(code);
+    }
+    records.push(rowOf(code, uk));
+  });
+  return records;
+}
+
+/**
+ * Push KPI Dashboard panel → tab spreadsheet "dashboard".
+ * Pola sama dengan syncDailyToSheets (action sync + sheet name).
+ * Apps Script harus menangani sheet "dashboard" (lihat komentar GAS di bawah / README deploy).
+ */
+let _dashboardSyncInFlight = null;
+let _dashboardLastSyncAt = 0;
+const DASHBOARD_SYNC_TTL_MS = 25000;
+
+async function syncDashboardToSheets(opts){
+  opts = opts || {};
+  if(!BACKEND_CONFIG.sheetsWebAppUrl){
+    if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG.');
+    return { ok:false, error:'no_url' };
+  }
+  if(!opts.force && _dashboardLastSyncAt && (Date.now()-_dashboardLastSyncAt) < DASHBOARD_SYNC_TTL_MS){
+    return { ok:true, cached:true };
+  }
+  if(_dashboardSyncInFlight && !opts.manual) return _dashboardSyncInFlight;
+
+  const run = (async ()=>{
+    try{
+      const records = buildDashboardSheetRecords();
+      const res = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'syncDashboard',
+          sheet: 'dashboard',
+          spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
+          records: records,
+          syncedAt: new Date().toISOString()
+        }),
+        cache: 'no-store'
+      });
+      let data = null;
+      try{ data = await res.json(); }catch(_e){ data = null; }
+
+      // Fallback: action generik "sync" + sheet dashboard (jika deploy belum punya syncDashboard)
+      if(!data || data.ok!==true){
+        const res2 = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'sync',
+            sheet: 'dashboard',
+            spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
+            records: records,
+            syncedAt: new Date().toISOString()
+          }),
+          cache: 'no-store'
+        });
+        try{ data = await res2.json(); }catch(_e){ data = null; }
+      }
+
+      if(data && data.ok){
+        _dashboardLastSyncAt = Date.now();
+      }
+      if(opts.manual){
+        if(data && data.ok){
+          alert('✓ Dashboard KPI tersinkron ke sheet "dashboard".\n' +
+            records.length + ' baris (ALL + per unit).\nRefresh tab spreadsheet untuk melihat data.');
+        } else {
+          alert('⚠ Sync Dashboard gagal: ' + ((data && data.error) || 'tidak ada respons OK') +
+            '\nPastikan tab "dashboard" ada di spreadsheet dan Apps Script menangani action syncDashboard / sync.');
+        }
+      }
+      return data || { ok:false, error:'no_response' };
+    }catch(e){
+      console.error('syncDashboardToSheets', e);
+      if(opts.manual) alert('⚠ Sync Dashboard gagal: ' + (e.message||e));
+      return { ok:false, error:String(e) };
+    }finally{
+      _dashboardSyncInFlight = null;
+    }
+  })();
+
+  if(!opts.manual) _dashboardSyncInFlight = run;
+  return run;
+}
+
+document.getElementById('dashboard-sync-sheet-btn')?.addEventListener('click', async ()=>{
+  const btn = document.getElementById('dashboard-sync-sheet-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
+  try{ await syncDashboardToSheets({ manual:true, force:true }); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync Dashboard → Sheet'; } }
+});
+
 function approvalPillHTML(r){
   const a = r.approvalStatus || 'Pending';
   const cls = a==='Approved'?'approved':a==='Rejected'?'rejected':'pending';
@@ -7112,28 +7375,205 @@ function getPerformanceWByUnit(){
       w: Number(r.w)||0,
       s: Number(r.s)||0,
       r: Number(r.r)||0,
-      t: Number(r.t)||0
+      t: Number(r.t)||0,
+      whPerDay: Number(r.workingHoursPerDay != null ? r.workingHoursPerDay : r.whPerDay) || 18
     };
   });
   return map;
 }
 
-/** Estimasi sisa hari ke HM Rencana berdasarkan laju W periode performance. */
-function estimateDaysToHmPlan(unitCode, hmPlan, hmAktual){
-  const perf = getPerformanceWByUnit()[String(unitCode||'').trim().toUpperCase()];
-  if(!perf || !perf.w) return null;
-  const remain = (Number(hmPlan)||0) - (Number(hmAktual)||0);
-  if(remain <= 0) return 0;
-  let days = 30;
-  if(mapaData && mapaData.periodStart && mapaData.periodEnd){
-    const a = new Date(mapaData.periodStart+'T00:00:00');
-    const b = new Date(mapaData.periodEnd+'T00:00:00');
-    const d = Math.round((b - a) / 86400000) + 1;
-    if(d > 0) days = d;
+/**
+ * Jam operasi Performance per hari dan per unit.
+ * W pada sheet performance adalah WAKTU OPERASI kumulatif untuk periode sheet.
+ * Karena operasi unit standar 18 jam/hari, nilai W/hari hanya dipakai sebagai
+ * informasi aktual Performance; perhitungan Plan Service memakai kapasitas 18 jam/hari.
+ */
+function getPerformanceWorkingHoursPerDay(unitCode){
+  const code = String(unitCode||'').trim().toUpperCase();
+  const perf = getPerformanceWByUnit()[code];
+  const periodDays = getPerformancePeriodDays();
+  if(!perf || !(Number(perf.w) > 0) || periodDays<=0) return 18;
+  const wPerDay = Number(perf.w) / periodDays;
+  if(!(wPerDay > 0)) return 18;
+  return Math.round(Math.min(18, Math.max(0, wPerDay)) * 10) / 10;
+}
+
+function getPerformancePeriodDays(){
+  if(!(mapaData && mapaData.periodStart && mapaData.periodEnd)) return 0;
+  const a = new Date(mapaData.periodStart+'T00:00:00');
+  const b = new Date(mapaData.periodEnd+'T00:00:00');
+  const d = Math.round((b-a)/86400000)+1;
+  return d>0 ? d : 0;
+}
+
+/**
+ * Jam kerja Plan Service per hari.
+ * Standar operasi unit = 18 jam/hari. Nilai Performance W/hari tetap dihitung
+ * otomatis per unit untuk ditampilkan dan audit, tetapi tidak membuat jadwal
+ * service mundur ketika sheet performance hanya berisi periode historis.
+ */
+function getDailyWorkingHours(unitCode){
+  const PLAN_WORKING_HOURS_PER_DAY = 18;
+  return PLAN_WORKING_HOURS_PER_DAY;
+}
+
+/** Record service Close terakhir untuk unit (HM + tanggal eksekusi). */
+function getLastServiceForUnit(unitCode){
+  const code = String(unitCode||'').trim();
+  if(!code) return null;
+  const closed = (planRecords||[]).filter(r=>
+    isPlanClosed(r) && String(r.unitCode||'').trim() === code &&
+    r.hmAktual!==undefined && r.hmAktual!==null && r.hmAktual!==''
+  );
+  if(!closed.length) return null;
+  closed.sort((a,b)=>{
+    const da = a.execDate || a.planDate || '';
+    const db = b.execDate || b.planDate || '';
+    return db.localeCompare(da);
+  });
+  return closed[0];
+}
+
+/**
+ * HM Sekarang per unit — KHUSUS Plan Service.
+ * Baseline = Monitoring HM (HM Akhir) + (hari berlalu × 18 jam/hari).
+ * Update otomatis tiap hari & tiap sync Performance.
+ * Jika belum ada Monitoring HM, fallback ke HM service Close terakhir.
+ */
+function getPlanPeriodRange(){
+  const endEl = document.getElementById('plan-period-end');
+  const startEl = document.getElementById('plan-period-start');
+  const end = endEl && endEl.value ? endEl.value : '';
+  const start = startEl && startEl.value ? startEl.value : '';
+  return { start, end };
+}
+function getPlanPeriodAsOfDate(){
+  const { start, end } = getPlanPeriodRange();
+  // As-of = akhir periode; jika hanya start diisi, pakai start (filter 1 hari)
+  return end || start || '';
+}
+
+/**
+ * HM aktual Monitoring per unit untuk rentang/periode filter.
+ * - Ada periodStart & periodEnd: ambil HM Akhir terakhir dengan tanggal dalam [start, end]
+ *   (jika tidak ada di dalam rentang, fallback ke HM terakhir ≤ periodEnd).
+ * - Hanya periodEnd / asOf: HM Akhir terakhir dengan tanggal ≤ asOf.
+ * - Tanpa filter: HM Akhir terakhir overall.
+ * TANPA proyeksi +18 jam/hari — hanya nilai actual dari Monitoring HM.
+ */
+function getActualMonitoringHM(unitCode, periodStart, periodEnd){
+  const code = String(unitCode||'').trim().toUpperCase();
+  if(!code) return null;
+  const rows = (hmRecords||[]).filter(r=>{
+    const u = String(r.unitCode||'').trim().toUpperCase();
+    if(u !== code) return false;
+    const t = String(r.tanggal||'');
+    if(!t) return false;
+    const hm = Number(r.hmAkhir);
+    if(!hm || isNaN(hm)) return false;
+    return true;
+  });
+  if(!rows.length) return null;
+
+  const start = periodStart && String(periodStart).length>=10 ? String(periodStart).slice(0,10) : '';
+  const end = periodEnd && String(periodEnd).length>=10 ? String(periodEnd).slice(0,10) : '';
+  const asOf = end || start || '';
+
+  let candidates = rows;
+  if(start && end){
+    const inRange = rows.filter(r=> r.tanggal >= start && r.tanggal <= end);
+    if(inRange.length) candidates = inRange;
+    else candidates = rows.filter(r=> r.tanggal <= end);
+  } else if(asOf){
+    candidates = rows.filter(r=> r.tanggal <= asOf);
   }
-  const wPerDay = perf.w / days;
-  if(wPerDay <= 0) return null;
+  if(!candidates.length) return null;
+
+  candidates.sort((a,b)=>{
+    if(a.tanggal !== b.tanggal) return a.tanggal < b.tanggal ? 1 : -1;
+    return (Number(b.hmAkhir)||0) - (Number(a.hmAkhir)||0);
+  });
+  const best = candidates[0];
+  return {
+    hm: Math.round(Number(best.hmAkhir)*10)/10,
+    tanggal: best.tanggal,
+    source: 'monitoring-actual'
+  };
+}
+
+/**
+ * HM Sekarang = HM AKTUAL Monitoring sesuai filter periode.
+ * Tidak menambah estimasi jam kerja harian.
+ */
+function calcHmSekarang(unitCode, asOfDateStr){
+  const dailyWh = getDailyWorkingHours(unitCode);
+  const code = String(unitCode||'').trim().toUpperCase();
+  const range = getPlanPeriodRange();
+  const periodStart = range.start || '';
+  const periodEnd = range.end || (asOfDateStr && String(asOfDateStr).length>=10 ? String(asOfDateStr).slice(0,10) : '');
+
+  const actual = getActualMonitoringHM(code, periodStart, periodEnd);
+  const lastSvc = getLastServiceForUnit(unitCode);
+  const liveCalc = calcHmTotalForUnit(unitCode);
+
+  let lastHm = null;
+  let lastDate = '';
+  let source = '';
+  let hmNow = null;
+
+  if(actual && actual.hm!=null){
+    lastHm = actual.hm;
+    lastDate = actual.tanggal;
+    hmNow = actual.hm;
+    source = actual.source;
+  } else if(lastSvc && lastSvc.hmAktual!=null){
+    lastHm = Number(lastSvc.hmAktual);
+    lastDate = lastSvc.execDate || lastSvc.planDate || '';
+    hmNow = lastHm;
+    source = 'service';
+  } else if(liveCalc && liveCalc.hmBase!=null){
+    lastHm = Number(liveCalc.hmBase);
+    lastDate = liveCalc.hmBaseDate || '';
+    hmNow = lastHm;
+    source = 'live-base';
+  }
+
+  const asOfStr = periodEnd || periodStart || (new Date().toISOString().slice(0,10));
+  return {
+    hmNow,
+    dailyWh,
+    source,
+    lastHm,
+    lastDate,
+    daysElapsed: 0,
+    liveCalc,
+    asOfDate: asOfStr
+  };
+}
+
+/** Est. Sisa HM = HM Target (plan) − HM Sekarang. */
+function calcEstSisaHm(hmPlan, hmSekarang){
+  if(hmSekarang===null || hmSekarang===undefined || hmPlan===null || hmPlan===undefined) return null;
+  return Math.round((Number(hmPlan) - Number(hmSekarang)) * 10) / 10;
+}
+
+/** Est. Sisa Hari = Est Sisa HM ÷ WH/hari unit (ceil). 0 jika sudah lewat target. */
+function estimateDaysToHmPlan(unitCode, hmPlan, hmAktual){
+  const remain = calcEstSisaHm(hmPlan, hmAktual);
+  if(remain===null) return null;
+  if(remain <= 0) return 0;
+  const wPerDay = getDailyWorkingHours(unitCode);
+  if(!(wPerDay > 0)) return null;
   return Math.ceil(remain / wPerDay);
+}
+
+/** Tgl rencana = hari ini + Est Sisa Hari. */
+function estimatePlanDateFromHm(unitCode, hmPlan, hmTotal){
+  const days = estimateDaysToHmPlan(unitCode, hmPlan, hmTotal);
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  if(days!==null && days > 0) d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0,10);
 }
 
 const BULAN_NAMA = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -7142,37 +7582,210 @@ function planMonthKey(planDate){
   if(!planDate || String(planDate).length < 7) return '';
   return String(planDate).slice(5,7); // MM
 }
+/** Key filter Bulan+Tahun: YYYY-MM */
+function planYearMonthKey(planDate){
+  if(!planDate || String(planDate).length < 7) return '';
+  return String(planDate).slice(0,7); // YYYY-MM
+}
 function planMonthLabel(planDate){
   const m = Number(planMonthKey(planDate));
-  return (m>=1 && m<=12) ? BULAN_NAMA[m] : '—';
+  const y = (planDate && String(planDate).length>=4) ? String(planDate).slice(0,4) : '';
+  if(!(m>=1 && m<=12)) return '—';
+  return y ? (BULAN_NAMA[m] + ' ' + y) : BULAN_NAMA[m];
+}
+/** Isi opsi Filter Bulan/Tahun dari jadwal plan + tahun berjalan (±1 tahun). */
+function populatePlanMonthYearFilter(){
+  const sel = document.getElementById('plan-filter-month');
+  if(!sel) return;
+  const prev = sel.value || '';
+  const keys = new Set();
+  const now = new Date();
+  const yNow = now.getFullYear();
+  // Tahun berjalan −1 s/d +1, semua bulan
+  for(let y = yNow - 1; y <= yNow + 1; y++){
+    for(let m = 1; m <= 12; m++){
+      keys.add(y + '-' + String(m).padStart(2,'0'));
+    }
+  }
+  // Tambah dari planRecords yang ada
+  (planRecords||[]).forEach(r=>{
+    const k = planYearMonthKey(r.planDate || r.execDate || '');
+    if(k) keys.add(k);
+  });
+  const sorted = Array.from(keys).sort();
+  sel.innerHTML = '<option value="">Semua Bulan / Tahun</option>' +
+    sorted.map(k=>{
+      const [yy, mm] = k.split('-');
+      const mi = Number(mm);
+      const label = (mi>=1 && mi<=12) ? (BULAN_NAMA[mi] + ' ' + yy) : k;
+      return '<option value="'+k+'">'+label+'</option>';
+    }).join('');
+  if(prev && sorted.includes(prev)) sel.value = prev;
+  else sel.value = '';
 }
 
 function isPlanClosed(r){
   return r && (r.execStatus==='Close' || r.status==='Done');
 }
 
-/** Enrich plan row dengan HM total, sisa HM, hari. */
+/** Enrich plan row: HM Sekarang (dari HM aktual), Est Sisa HM, Est Sisa Hari, Tgl Rencana. */
 function enrichPlanRow(r){
   const liveCalc = calcHmTotalForUnit(r.unitCode);
+  const asOf = getPlanPeriodAsOfDate();
+  const cur = calcHmSekarang(r.unitCode, asOf || undefined);
   const hmBase = (r.hmBase!==undefined && r.hmBase!==null && r.hmBase!=='') ? Number(r.hmBase) : (liveCalc ? liveCalc.hmBase : null);
   const hmW = (r.hmW!==undefined && r.hmW!==null) ? Number(r.hmW) : (liveCalc ? liveCalc.w : 0);
+  const isClosed = isPlanClosed(r);
   const hasHmAktual = r.hmAktual!==undefined && r.hmAktual!=='' && r.hmAktual!==null;
-  const hmAktualNum = hasHmAktual ? Number(r.hmAktual) : (liveCalc ? liveCalc.hmTotal : null);
+
+  // HM Sekarang: untuk OPEN pakai kalkulasi live dari HM aktual; CLOSE kunci ke nilai saat close
+  let hmSekarang = null;
+  if(isClosed && hasHmAktual){
+    hmSekarang = Number(r.hmAktual);
+  } else if(cur.hmNow!==null && cur.hmNow!==undefined){
+    hmSekarang = Number(cur.hmNow);
+  } else if(hasHmAktual){
+    hmSekarang = Number(r.hmAktual);
+  } else if(liveCalc){
+    hmSekarang = liveCalc.hmTotal;
+  }
+
   const hmPlanNum = Number(r.hmPlan)||0;
-  const sisaHm = (hmAktualNum!==null && hmPlanNum)
-    ? Math.round((hmPlanNum - hmAktualNum) * 10) / 10
-    : null;
-  const daysLeft = estimateDaysToHmPlan(r.unitCode, r.hmPlan, hmAktualNum);
-  const hmSource = (liveCalc && liveCalc.hmSource) ? liveCalc.hmSource : (r.hmSource || 'daily');
-  return { r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft, hmSource };
+  const hmAktualNum = hmSekarang; // alias: HM yang dipakai hitung sisa = HM Sekarang
+  const sisaHm = calcEstSisaHm(hmPlanNum, hmSekarang);
+  const daysLeft = estimateDaysToHmPlan(r.unitCode, hmPlanNum, hmSekarang);
+  const dailyWh = cur.dailyWh || getDailyWorkingHours(r.unitCode);
+  const hmSource = cur.source || (liveCalc && liveCalc.hmSource) || (r.hmSource || '');
+
+  // Untuk OPEN: pertahankan HM Target yang sudah dijadwalkan.
+  // Bila HM aktual sudah >= target, record tetap pada target tersebut agar status
+  // dapat berubah otomatis menjadi OVERDUE/JATUH TEMPO sampai service di-Close.
+  let hmPlanLive = hmPlanNum;
+  if(!isClosed && hmSekarang!=null){
+    const typeUnit=r.typeUnit || ((UNITS||[]).find(u=>u.code===r.unitCode)||{}).type || '';
+    hmPlanLive=Number(r.hmPlan)||0;
+    const typeUpper=String(typeUnit||'').toUpperCase();
+    const isDozerType=typeUpper.includes('D85ESS') || typeUpper.includes('D85') || String(r.unitCode||'').toUpperCase().startsWith('SBD-');
+    const serviceStep=isDozerType ? 250 : 500;
+    if(!hmPlanLive){
+      hmPlanLive=nextPlanHmTarget(hmSekarang, r.unitCode);
+      r.hmPlan=hmPlanLive;
+    }else if(!isFixedAugustPlanRecord(r)){
+      // Normalisasi target lama ke grid service yang benar.
+      // PENTING: target yang sudah terlewati TIDAK dinaikkan ke milestone berikutnya.
+      // Target tetap dipertahankan agar status OVERDUE dapat terlihat.
+      hmPlanLive=Math.ceil(hmPlanLive/serviceStep)*serviceStep;
+      r.hmPlan=hmPlanLive;
+    }
+    r.serviceType=getPsTypeForTargetHm(typeUnit,hmPlanLive).label;
+  }
+
+  // Hitung ulang sisa & hari dengan HM Interval
+  const sisaHmLive = calcEstSisaHm(hmPlanLive, hmSekarang);
+  const daysLeftLive = estimateDaysToHmPlan(r.unitCode, hmPlanLive, hmSekarang);
+
+  // Tgl Rencana / Est tanggal otomatis dari Est Sisa Hari (WH performance / 18 jam)
+  let planDateAuto = r.planDate;
+  if(!isClosed && !isFixedAugustPlanRecord(r) && daysLeftLive!==null){
+    planDateAuto = estimatePlanDateFromHm(r.unitCode, hmPlanLive, hmSekarang);
+    if(planDateAuto) r.planDate = planDateAuto;
+  }
+
+  return {
+    r, hmBase, hmW, hmAktualNum, hmPlanNum: hmPlanLive,
+    sisaHm: sisaHmLive, daysLeft: daysLeftLive, hmSource,
+    hmSekarang, dailyWh, planDateAuto,
+    lastHm: cur.lastHm, lastDate: cur.lastDate, daysElapsed: cur.daysElapsed||0
+  };
 }
 
 /** Plan Service: hanya yang BELUM Close — Type Service (bukan HM Rencana). */
+
+/** Hapus data plan service yang doble/duplikat.
+ *  Open  → unik per unitCode + hmPlan + serviceType.
+ *           Dua PS berbeda boleh memiliki HM Target yang sama.
+ *  Close → unik per unitCode + tgl eksekusi/rencana + hmPlan + serviceType.
+ *  Juga unik per id.
+ */
+function dedupePlanRecords(){
+  sanitizePlanServiceUnits();
+  if(!Array.isArray(planRecords) || !planRecords.length) return 0;
+  const before = planRecords.length;
+  const byId = new Set();
+  const openMap = new Map();   // key: unit|hmPlan -> record
+  const closedList = [];
+  const closedKeys = new Set();
+
+  function intervalHrsOf(r){
+    const m = String(r.serviceType||'').match(/(\d+)\s*Hrs?/i);
+    return m ? Number(m[1]) : (Number(r.hmPlan)||999999);
+  }
+
+  // Urut: planDate naik supaya yang lebih dekat diproses dulu; Close di belakang
+  const sorted = planRecords.slice().sort((a,b)=>{
+    const ac = isPlanClosed(a) ? 1 : 0;
+    const bc = isPlanClosed(b) ? 1 : 0;
+    if(ac !== bc) return ac - bc;
+    const da = a.planDate || a.execDate || '';
+    const db = b.planDate || b.execDate || '';
+    return String(da).localeCompare(String(db));
+  });
+
+  sorted.forEach(r=>{
+    if(!r) return;
+    const id = String(r.id||'');
+    if(id && byId.has(id)) return;
+    if(id) byId.add(id);
+
+    const unit = String(r.unitCode||'').trim().toUpperCase();
+    const svc = String(r.serviceType||'').trim();
+    const hm = String(r.hmPlan||'');
+    const tgl = String(r.execDate || r.planDate || '');
+
+    if(isPlanClosed(r)){
+      const ck = unit+'|'+tgl+'|'+hm+'|'+svc;
+      if(closedKeys.has(ck)) return;
+      closedKeys.add(ck);
+      closedList.push(r);
+    } else {
+      // Open: unik per unit + HM Target + PS Type.
+      const ok = unit+'|'+hm+'|'+svc;
+      if(openMap.has(ok)){
+        const prev = openMap.get(ok);
+        const prevDate = prev.planDate || '';
+        const curDate = r.planDate || '';
+        const prevHrs = intervalHrsOf(prev);
+        const curHrs = intervalHrsOf(r);
+        // Prioritas: tgl lebih dekat, lalu interval lebih kecil (lebih spesifik)
+        if(curDate && (!prevDate || curDate < prevDate)){
+          openMap.set(ok, r);
+        } else if(curDate === prevDate && curHrs < prevHrs){
+          openMap.set(ok, r);
+        } else if(!curDate && !prevDate && curHrs < prevHrs){
+          openMap.set(ok, r);
+        }
+        return;
+      }
+      openMap.set(ok, r);
+    }
+  });
+
+  planRecords = Array.from(openMap.values()).concat(closedList);
+  return before - planRecords.length;
+}
+
 function renderPlanTable(){
   const tbody = document.getElementById('plan-tbody');
   if(!tbody) return;
 
-  const openPlans = planRecords.filter(r=>!isPlanClosed(r));
+  // Bersihkan duplikat sebelum tampil
+  const removed = dedupePlanRecords();
+  if(removed > 0){
+    try{ savePlan(); }catch(_e){}
+  }
+
+  sanitizePlanServiceUnits();
+  const openPlans = planRecords.filter(r=>isPlanServiceAllowedUnit(r.unitCode) && !isPlanClosed(r));
   if(!openPlans.length){
     tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Belum ada jadwal open. Klik <b>Sync &amp; Generate Otomatis</b> atau semua sudah Close (lihat Record Service Unit).</td></tr>`;
     attachTopScroll('plan');
@@ -7183,11 +7796,16 @@ function renderPlanTable(){
   const isSupervisor = currentRole()==='Supervisor';
   const today = new Date().toISOString().slice(0,10);
   const perfMap = getPerformanceWByUnit();
-  const monthFilter = (document.getElementById('plan-filter-month')||{}).value || '';
+  const periodStart = (document.getElementById('plan-period-start')||{}).value || '';
+  const periodEnd = (document.getElementById('plan-period-end')||{}).value || '';
+  const asOfDate = getPlanPeriodAsOfDate() || today;
 
   const rows = openPlans.map(enrichPlanRow).filter(x=>{
-    if(!monthFilter) return true;
-    return planMonthKey(x.r.planDate) === monthFilter;
+    const pd = x.r.planDate || '';
+    if(periodStart && pd && pd < periodStart) return false;
+    if(periodEnd && pd && pd > periodEnd) return false;
+    if((periodStart || periodEnd) && !pd) return false;
+    return true;
   });
 
   // Urut Est. Sisa Hari paling dekat
@@ -7201,23 +7819,35 @@ function renderPlanTable(){
   });
 
   if(!rows.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Tidak ada jadwal open untuk filter bulan ini.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Tidak ada jadwal open untuk filter periode yang dipilih.</td></tr>`;
     attachTopScroll('plan');
     renderRecordServiceTable();
     return;
   }
 
-  tbody.innerHTML = rows.map(({ r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft, hmSource })=>{
-    const isOverdue = r.status==='Planned' && r.planDate && r.planDate < today;
+  tbody.innerHTML = rows.map(({ r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft, hmSource, hmSekarang, dailyWh, planDateAuto, lastHm, lastDate, daysElapsed })=>{
+    // Status live berdasarkan HM: OVERDUE jika HM sekarang sudah MELEWATI HM Target.
+    // Tidak memakai due date kalender sebagai pemicu utama.
+    const isOverdue = !isPlanClosed(r) && hmSekarang!=null && hmPlanNum>0 && Number(hmSekarang) > Number(hmPlanNum);
     const statusLabel = isOverdue ? 'Overdue' : (r.status||'Planned');
     const statusClass = isOverdue ? 'overdue' : 'planned';
+    if(!isPlanClosed(r)) r.status = isOverdue ? 'Overdue' : 'Planned';
     const exec = r.execStatus || 'Open';
     const baseLabel = hmBase!==null && hmBase!==undefined ? Number(hmBase).toFixed(1) : '—';
     const sourceNote = `<div style="color:var(--text-faint); font-size:10px; margin-top:2px;">W performance ${Number(hmW||0).toFixed(1)}${hmBase!==null && hmBase!==undefined ? ' · base '+baseLabel : ''}</div>`;
     const perf = perfMap[String(r.unitCode||'').trim().toUpperCase()];
     const wLabel = perf ? Number(perf.w).toFixed(1) : (hmW ? Number(hmW).toFixed(1) : '—');
-    const typeServiceCell = `<b>${escUH(r.serviceType)||'—'}</b>
-      <div style="color:var(--text-faint); font-size:10px; margin-top:2px; font-family:'JetBrains Mono',monospace;">Target HM ${hmPlanNum||'—'}</div>`;
+    // Tgl rencana dari Est Sisa Hari
+    const displayPlanDate = planDateAuto || r.planDate;
+    // Sinkronkan ke record (OPEN) supaya filter bulan & save ikut
+    if(!isPlanClosed(r) && !isFixedAugustPlanRecord(r) && planDateAuto && planDateAuto !== r.planDate){
+      r.planDate = planDateAuto;
+    }
+
+    // HM Interval hanya menampilkan angka target. PS Type dipisahkan ke kolom tersendiri
+    // dan mengikuti serviceType yang otomatis ditentukan dari HM target pada Plan Service.
+    const hmIntervalCell = `<b style="font-family:'JetBrains Mono',monospace; font-size:15px; color:var(--yellow);">${hmPlanNum||'—'}</b>`;
+    const psTypeCell = `<span class="pill planned" style="font-size:10px; padding:4px 9px;">${escUH(r.serviceType)||'PS'}</span>`;
 
     let sisaHmCell = '—';
     if(sisaHm!==null){
@@ -7226,32 +7856,23 @@ function renderPlanTable(){
       } else if(sisaHm <= 50){
         sisaHmCell = `<span style="color:var(--orange); font-weight:700; font-family:'JetBrains Mono',monospace;">${sisaHm}</span>`;
       } else {
-        sisaHmCell = `<span style="font-family:'JetBrains Mono',monospace;">${sisaHm}</span>`;
+        sisaHmCell = `<span style="font-family:'JetBrains Mono',monospace; font-weight:600;">${sisaHm}</span>`;
       }
     }
 
-    let daysCell = '—';
-    if(daysLeft===0){
-      daysCell = `<span style="color:var(--green); font-weight:600;">Siap service</span>`;
-    } else if(daysLeft!==null && daysLeft>0){
-      const urgent = daysLeft <= 7;
-      daysCell = `<span style="color:${urgent?'var(--orange)':'var(--text)'}; font-weight:${urgent?'700':'400'};">~${daysLeft} hari</span>`;
-    }
+    const workingHoursVal = perf ? Number(perf.w)||0 : (Number(hmW)||0);
+    const workingHoursLabel = (perf || hmW) ? workingHoursVal.toFixed(1) : '—';
 
     return `<tr>
-      <td>${planMonthLabel(r.planDate)}</td>
-      <td>${formatDateDMY(r.planDate)}</td>
+      <td>${formatDateDMY(displayPlanDate)}</td>
+      <td>${planMonthLabel(displayPlanDate)}</td>
       <td>${escUH(r.unitCode)}</td>
-      <td>${escUH(r.typeUnit)}</td>
-      <td>${typeServiceCell}</td>
-      <td style="min-width:100px;">
-        <b style="font-family:'JetBrains Mono',monospace;">${hmAktualNum!==null?Number(hmAktualNum).toFixed(1):'—'}</b>
-        ${sourceNote}
-      </td>
+      <td>${hmIntervalCell}</td>
+      <td>${psTypeCell}</td>
+      <td style="font-family:'JetBrains Mono',monospace;"><b style="color:#7fe0e0;">${workingHoursLabel}</b></td>
+      <td style="font-family:'JetBrains Mono',monospace;"><b style="color:var(--yellow);">18.0</b></td>
+      <td style="font-family:'JetBrains Mono',monospace;"><b>${hmSekarang!==null&&hmSekarang!==undefined?Number(hmSekarang).toFixed(1):'—'}</b></td>
       <td>${sisaHmCell}</td>
-      <td style="font-family:'JetBrains Mono',monospace;">${wLabel}</td>
-      <td>${daysCell}</td>
-      <td>${escUH(r.mechanic)}</td>
       <td><span class="pill ${statusClass}">${statusLabel}</span></td>
       <td>
         <select onchange="updatePlanExecStatus('${r.id}', this.value)" class="${exec==='Close'?'exec-close':'exec-open'}">
@@ -7260,6 +7881,7 @@ function renderPlanTable(){
         </select>
       </td>
       <td><input type="date" value="${r.execDate||''}" onchange="updatePlanExecDate('${r.id}', this.value)" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-family:inherit; font-size:12px;"></td>
+      <td>${escUH(r.mechanic)}</td>
       <td>${isSupervisor ? `<button class="btn danger" onclick="deletePlan('${r.id}')">Hapus</button>` : ''}</td>
     </tr>`;
   }).join('');
@@ -7302,7 +7924,7 @@ function renderRecordServiceTable(){
     const emptyMsg = unitFilter
       ? `Tidak ada record service untuk unit <b>${escUH(unitFilter)}</b>.`
       : 'Belum ada record service. Unit yang di-Close di Plan Service akan muncul di sini otomatis.';
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">${emptyMsg}</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">${emptyMsg}</td></tr>`;
     try{ attachTopScroll('plan-record'); }catch(_e){}
     return;
   }
@@ -7316,12 +7938,10 @@ function renderRecordServiceTable(){
 
   tbody.innerHTML = rows.map(({ r, hmAktualNum, hmPlanNum })=>`<tr>
     <td>${planMonthLabel(r.execDate || r.planDate)}</td>
-    <td>${formatDateDMY(r.planDate)}</td>
     <td>${formatDateDMY(r.execDate)}</td>
     <td>${escUH(r.unitCode)}</td>
     <td>${escUH(r.typeUnit)}</td>
     <td><b>${escUH(r.serviceType)||'—'}</b></td>
-    <td style="font-family:'JetBrains Mono',monospace;">${hmPlanNum||'—'}</td>
     <td style="font-family:'JetBrains Mono',monospace;">${hmAktualNum!==null?Number(hmAktualNum).toFixed(1):'—'}</td>
     <td>${escUH(r.mechanic)||'—'}</td>
     <td>
@@ -7347,16 +7967,49 @@ window.reopenPlanService = async function(id){
   const r = planRecords.find(x=>x.id===id);
   if(!r) return;
   r.execStatus = 'Open';
-  r.status = 'Planned';
   r.execDate = '';
+  try{
+    const cur=calcHmSekarang(r.unitCode);
+    if(cur && cur.hmNow!=null){
+      r.hmPlan = nextPlanHmTarget(cur.hmNow, r.unitCode);
+      const typeUnit=r.typeUnit || ((UNITS||[]).find(u=>String(u.code).toUpperCase()===String(r.unitCode).toUpperCase())||{}).type || '';
+      r.serviceType=getPsTypeForTargetHm(typeUnit,r.hmPlan).label;
+      r.planDate=estimatePlanDateFromHm(r.unitCode,r.hmPlan,cur.hmNow);
+      r.status=Number(cur.hmNow)>=Number(r.hmPlan) ? 'Overdue' : 'Planned';
+    }else{
+      r.status='Planned';
+    }
+  }catch(_e){ r.status='Planned'; }
   await savePlan();
   renderPlanTable();
   renderRecordServiceTable();
 };
 
 // Filter bulan Plan Service
-document.getElementById('plan-filter-month')?.addEventListener('change', ()=>{
+async function onPlanPeriodChange(){
+  // Sync performance dulu supaya Working Hours & HM mengikuti sheet
+  try{ await ensurePerformanceSynced({ force:true }); }catch(_e){}
+  if(planRecords && planRecords.length){
+    try{ await syncOpenPlanCoverage(getPerformanceWByUnit()); }catch(_e){}
+  }
   renderPlanTable();
+}
+document.getElementById('plan-period-start')?.addEventListener('change', onPlanPeriodChange);
+document.getElementById('plan-period-end')?.addEventListener('change', onPlanPeriodChange);
+document.getElementById('plan-period-reset-btn')?.addEventListener('click', ()=>{
+  const s = document.getElementById('plan-period-start');
+  const e = document.getElementById('plan-period-end');
+  if(s) s.value = '';
+  if(e) e.value = '';
+  onPlanPeriodChange();
+});
+document.getElementById('plan-period-today-btn')?.addEventListener('click', ()=>{
+  const today = new Date().toISOString().slice(0,10);
+  const s = document.getElementById('plan-period-start');
+  const e = document.getElementById('plan-period-end');
+  if(s) s.value = today;
+  if(e) e.value = today;
+  onPlanPeriodChange();
 });
 
 /* ---- HM terakhir per unit dari Monitoring HM (hmRecords) — fallback ---- */
@@ -7407,8 +8060,10 @@ function getLatestHMPerUnit(){
 }
 
 /**
- * HM baseline KHUSUS Plan Service — TIDAK memakai Record Daily Maintenance.
- * Hanya Monitoring HM (jika ada) sebagai base; W selalu dari sheet performance.
+ * HM baseline KHUSUS Plan Service.
+ * PENTING: Daily Maintenance TIDAK digunakan sebagai sumber HM Plan Service.
+ * Sumber HM hanya Monitoring HM (HM Akhir).
+ * Working Hours (W) tetap berasal dari sheet Performance secara live.
  */
 function getPlanServiceHMBase(){
   return getLatestHMPerUnitFromMonitoring();
@@ -7419,49 +8074,146 @@ function getPlanServiceHMBase(){
  * - WA500-6R / PC210-10MO : 500, 1000, 2000, 3000, 4000, 5000, ...
  * - D85ESS-2A             : 250, 500, 750, 1000, 1250, 1500, ... (kelipatan 250)
  */
+/**
+ * Tentukan PS Type berdasarkan HM Target.
+ * Untuk target tertentu, gunakan interval service standar terbesar yang tepat membagi HM Target.
+ * Contoh: 5.000 → PS 5000 Hrs, 5.500 → PS 500 Hrs, 6.000 → PS 2000 Hrs,
+ * 6.250 → PS 250 Hrs, 7.000 → PS 1000 Hrs.
+ */
+function getPsTypeForTargetHm(typeUnit, hmTarget){
+  const target=Number(hmTarget)||0;
+  if(target<=0) return { hrs:250, label:'PS 250 Hrs' };
+
+  const t=String(typeUnit||'').trim().toUpperCase();
+  const isDozer=t.includes('D85ESS') || t.includes('D85');
+
+  const candidates = isDozer ? [
+    {hrs:250,label:'PS 250 Hrs'},
+    {hrs:500,label:'PS 500 Hrs'},
+    {hrs:750,label:'PS 750 Hrs'},
+    {hrs:1000,label:'PS 1000 Hrs'},
+    {hrs:1250,label:'PS 1250 Hrs'},
+    {hrs:1500,label:'PS 1500 Hrs'},
+    {hrs:1750,label:'PS 1750 Hrs'},
+    {hrs:2000,label:'PS 2000 Hrs'},
+    {hrs:2500,label:'PS 2500 Hrs'},
+    {hrs:5000,label:'PS 5000 Hrs'}
+  ] : [
+    {hrs:250,label:'PS 250 Hrs'},
+    {hrs:500,label:'PS 500 Hrs'},
+    {hrs:1000,label:'PS 1000 Hrs'},
+    {hrs:2000,label:'PS 2000 Hrs'},
+    {hrs:4000,label:'PS 4000 Hrs'},
+    {hrs:5000,label:'PS 5000 Hrs'}
+  ];
+
+  const valid=candidates.filter(iv=>target % iv.hrs === 0);
+  if(!valid.length) return candidates[0];
+  valid.sort((a,b)=>b.hrs-a.hrs);
+  return valid[0];
+}
+
+/** HM target plan berikutnya dihitung pada grid 250 HM, sesuai pola Plan Service. */
+/**
+ * HM target service berikutnya berdasarkan tipe unit.
+ * Dozer D85 memakai grid 250 HM; WA500/PC210 dan unit non-dozer
+ * memakai grid service 500 HM. Contoh SPC-104 HM 2923 -> target 3000.
+ */
+function nextPlanHmTarget(hmNow, unitCode){
+  const code = String(unitCode||'').trim().toUpperCase();
+  const unit = (UNITS||[]).find(u=>String(u.code||'').trim().toUpperCase()===code);
+  const type = String(unit?.type||'').toUpperCase();
+  const isDozer = type.includes('D85ESS') || type.includes('D85') || code.startsWith('SBD-');
+  return nextHmMilestone(hmNow, isDozer ? 250 : 500);
+}
+
+/** Target plan dari HM sekarang sampai batas target dashboard. */
+/**
+ * Batas generate Plan Service otomatis.
+ * Sistem membuat jadwal terus ke depan berbasis waktu (bukan berhenti di HM 10.000),
+ * sehingga Plan Service selalu tersedia mulai bulan berikutnya dan bulan-bulan setelahnya.
+ * Default horizon = 36 bulan dari tanggal hari ini.
+ */
+const PLAN_SERVICE_HORIZON_MONTHS = 36;
+
+function getPlanGenerationMaxHm(unitCode, hmNow){
+  const current = Number(hmNow)||0;
+  const whDay = Number(getDailyWorkingHours(unitCode)) || 18;
+  const horizonDays = PLAN_SERVICE_HORIZON_MONTHS * 30.4375;
+  const projected = current + (Math.max(whDay, 1) * horizonDays);
+  return Math.ceil(projected / 250) * 250;
+}
+
+function buildFuturePlanTargets(hmNow, maxTarget, unitCode){
+  const code = String(unitCode||'').trim().toUpperCase();
+  const unit = (UNITS||[]).find(u=>String(u.code||'').trim().toUpperCase()===code);
+  const type = String(unit?.type||'').toUpperCase();
+  const isDozer = type.includes('D85ESS') || type.includes('D85') || code.startsWith('SBD-');
+  const step = isDozer ? 250 : 500;
+  const first=nextPlanHmTarget(hmNow, unitCode);
+  const dynamicMax = getPlanGenerationMaxHm(unitCode, hmNow);
+  const max=Math.max(Number(maxTarget)||0, dynamicMax, first);
+  const targets=[];
+  for(let hm=first; hm<=max; hm+=step) targets.push(hm);
+  return targets;
+}
+
 function getServiceIntervalsForType(typeUnit){
+  // Semua tipe unit (D85, WA500, PC210, dll) memakai daftar interval yang sama
+  // agar target HM 7000 / 7250 / 7500 / 8000 / 8250 / 8500 / 8750 / 9000 / dst ikut ter-generate.
   const t = String(typeUnit||'').trim().toUpperCase();
-  if(t.includes('D85ESS') || t.includes('D85')){
-    return [
-      { hrs: 250, label: 'PS 250 Hrs' },
-      { hrs: 500, label: 'PS 500 Hrs' },
-      { hrs: 750, label: 'PS 750 Hrs' },
-      { hrs: 1000, label: 'PS 1000 Hrs' },
-      { hrs: 1250, label: 'PS 1250 Hrs' },
-      { hrs: 1500, label: 'PS 1500 Hrs' },
-      { hrs: 1750, label: 'PS 1750 Hrs' },
-      { hrs: 2000, label: 'PS 2000 Hrs' },
-      { hrs: 2500, label: 'PS 2500 Hrs' },
-      { hrs: 3000, label: 'PS 3000 Hrs' },
-      { hrs: 4000, label: 'PS 4000 Hrs' },
-      { hrs: 5000, label: 'PS 5000 Hrs' }
-    ];
-  }
-  // WA500-6R (Wheel Loader) & PC210-10MO (Excavator) & default
-  return [
+  const isDozer = t.includes('D85ESS') || t.includes('D85');
+  // Dozer tetap punya interval 250-jam di awal; unit lain mulai dari 500.
+  // Milestone tinggi (7000+) sama untuk SEMUA unit.
+  const base = isDozer ? [
+    { hrs: 250, label: 'PS 250 Hrs' },
+    { hrs: 500, label: 'PS 500 Hrs' },
+    { hrs: 750, label: 'PS 750 Hrs' },
+    { hrs: 1000, label: 'PS 1000 Hrs' },
+    { hrs: 1250, label: 'PS 1250 Hrs' },
+    { hrs: 1500, label: 'PS 1500 Hrs' },
+    { hrs: 1750, label: 'PS 1750 Hrs' },
+    { hrs: 2000, label: 'PS 2000 Hrs' },
+    { hrs: 2500, label: 'PS 2500 Hrs' },
+    { hrs: 3000, label: 'PS 3000 Hrs' },
+    { hrs: 4000, label: 'PS 4000 Hrs' },
+    { hrs: 5000, label: 'PS 5000 Hrs' }
+  ] : [
+    { hrs: 250, label: 'PS 250 Hrs' },
     { hrs: 500, label: 'PS 500 Hrs' },
     { hrs: 1000, label: 'PS 1000 Hrs' },
     { hrs: 2000, label: 'PS 2000 Hrs' },
     { hrs: 3000, label: 'PS 3000 Hrs' },
     { hrs: 4000, label: 'PS 4000 Hrs' },
-    { hrs: 5000, label: 'PS 5000 Hrs' },
+    { hrs: 5000, label: 'PS 5000 Hrs' }
+  ];
+  // Milestone tinggi — berlaku untuk SEMUA unit
+  const high = [
     { hrs: 6000, label: 'PS 6000 Hrs' },
+    { hrs: 7000, label: 'PS 7000 Hrs' },
+    { hrs: 7250, label: 'PS 7250 Hrs' },
+    { hrs: 7500, label: 'PS 7500 Hrs' },
     { hrs: 8000, label: 'PS 8000 Hrs' },
+    { hrs: 8250, label: 'PS 8250 Hrs' },
+    { hrs: 8500, label: 'PS 8500 Hrs' },
+    { hrs: 8750, label: 'PS 8750 Hrs' },
+    { hrs: 9000, label: 'PS 9000 Hrs' },
     { hrs: 10000, label: 'PS 10000 Hrs' }
   ];
+  return base.concat(high);
 }
 
 /**
  * HM Total untuk Plan Service:
- *   = base Monitoring HM (jika ada) + Waktu Operasi W dari sheet performance
- * TIDAK memakai HM dari Record Daily Maintenance.
+ *   = HM baseline terbaru dari Monitoring HM
+ *     + Waktu Operasi W dari sheet performance.
  * Tanpa batasan periode — sheet performance sudah sinkron dengan database HM actual.
  * Sync otomatis saat panel Plan dibuka / tombol Sync / live poll (~45 detik).
  */
 function calcHmTotalForUnit(unitCode){
   const code = String(unitCode||'').trim();
   if(!code) return null;
-  // Plan Service: jangan ambil HM dari Daily Maintenance
+  // Plan Service: hanya Monitoring HM sebagai baseline.
   const latestHM = getPlanServiceHMBase();
   const info = latestHM[code] || latestHM[code.toUpperCase()];
   const perfMap = getPerformanceWByUnit();
@@ -7491,88 +8243,88 @@ function nextHmMilestone(hmTotal, intervalHrs){
   return next;
 }
 
-/** Estimasi tanggal rencana dari sisa HM / laju W harian. */
-function estimatePlanDateFromHm(unitCode, hmPlan, hmTotal){
-  const days = estimateDaysToHmPlan(unitCode, hmPlan, hmTotal);
-  const d = new Date();
-  if(days!==null && days > 0) d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0,10);
-}
+
 
 /**
  * HAPUS semua plan lama, lalu GENERATE ulang otomatis dari:
- * HM terakhir + W (sheet performance) → HM Total
- * → jadwal PS berikutnya per unit (interval 250/500/1000/2000/4000/5000).
+ * HM terakhir Monitoring + estimasi 18 jam/hari → HM Total
+ * → jadwal PS berikutnya per unit pada grid 250 HM sampai horizon masa depan.
  * Tanpa batasan periode — W diambil langsung dari sheet performance.
  */
 async function rebuildPlanServiceAuto(opts){
   opts = opts || {};
   const silent = !!opts.silent;
 
-  // Pastikan performance terbaru
-  try{ await ensurePerformanceSynced({ force: true }); }catch(_e){}
+  // Pastikan Performance terbaru sebelum menghitung seluruh jadwal.
+  try{ await ensurePerformanceSynced({ force:true }); }catch(_e){}
 
-  const latestHM = getLatestHMPerUnit();
+  const latestHM = getPlanServiceHMBase();
   const perfMap = getPerformanceWByUnit();
   const unitCodes = new Set();
-  Object.keys(latestHM).forEach(u=>unitCodes.add(u));
-  Object.keys(perfMap).forEach(u=>unitCodes.add(u));
-  // Juga unit master
-  (UNITS||[]).forEach(u=>{ if(u.code) unitCodes.add(u.code); });
+  Object.keys(latestHM).forEach(u=>{ if(isPlanServiceAllowedUnit(u)) unitCodes.add(String(u).trim().toUpperCase()); });
+  Object.keys(perfMap).forEach(u=>{ if(isPlanServiceAllowedUnit(u)) unitCodes.add(String(u).trim().toUpperCase()); });
+  (UNITS||[]).forEach(u=>{ if(u.code && isPlanServiceAllowedUnit(u.code)) unitCodes.add(String(u.code).trim().toUpperCase()); });
 
   if(!unitCodes.size){
     if(!silent) alert('Tidak ada unit / data HM / Performance untuk generate Plan Service.');
     return { ok:false, created:0 };
   }
 
-  // HAPUS SEMUA plan lama
-  planRecords = [];
+  // PENTING: histori CLOSE tetap dipertahankan.
+  const closedHistory = (planRecords||[]).filter(r=>isPlanClosed(r));
+  planRecords = closedHistory.slice();
 
   const today = new Date().toISOString().slice(0,10);
   let created = 0;
 
   unitCodes.forEach(code=>{
-    const calc = calcHmTotalForUnit(code);
-    if(!calc) return;
-    const u = (UNITS||[]).find(x=>String(x.code).toUpperCase()===String(code).toUpperCase());
-    const typeUnit = u ? u.type : '';
-    const hmTotal = calc.hmTotal;
-    const intervals = getServiceIntervalsForType(typeUnit);
+    const calc=calcHmTotalForUnit(code);
+    const cur=calcHmSekarang(code);
+    const hmTotal=(cur.hmNow!=null) ? cur.hmNow : (calc ? calc.hmTotal : null);
+    if(hmTotal==null) return;
 
-    intervals.forEach(iv=>{
-      // HM Rencana = kelipatan interval berikutnya di atas HM Total (satu per jenis service)
-      const hmPlan = nextHmMilestone(hmTotal, iv.hrs);
-      // Hanya yang jatuh tempo berikutnya (jarak sisa ≤ 1× interval)
-      if(hmPlan - hmTotal > iv.hrs) return;
+    const u=(UNITS||[]).find(x=>String(x.code).toUpperCase()===String(code).toUpperCase());
+    const typeUnit=u ? u.type : '';
+    const perf=perfMap[String(code||'').trim().toUpperCase()];
 
-      // HM mencapai target = siap service, tetap Open sampai dieksekusi manual (Close)
-      const planDate = estimatePlanDateFromHm(code, hmPlan, hmTotal);
+    // Generate dari HM sekarang sampai 36 bulan ke depan.
+    const targets=buildFuturePlanTargets(hmTotal, 0, code);
+
+    targets.forEach(hmPlan=>{
+      const ps=getPsTypeForTargetHm(typeUnit,hmPlan);
+      const planDate=estimatePlanDateFromHm(code,hmPlan,hmTotal);
 
       planRecords.push({
-        id: uid(),
-        unitCode: code,
-        typeUnit: typeUnit,
-        planDate: planDate,
-        hmPlan: hmPlan,
-        serviceType: iv.label,
-        mechanic: '',
-        status: 'Planned',
-        execStatus: 'Open',
-        execDate: '',
-        hmBase: calc.hmBase,
-        hmBaseDate: calc.hmBaseDate,
-        hmW: calc.w,
-        hmAktual: hmTotal,
-        hmAktualDate: calc.hmBaseDate || today,
-        hmAktualManual: false,
-        notes: `Auto [${typeUnit||'—'}]: W performance ${calc.w}${calc.hmBase!==null?' · base '+calc.hmBase:''} = ${hmTotal} → ${iv.label} @ ${hmPlan}`
+        id:uid(),
+        unitCode:code,
+        typeUnit:typeUnit,
+        planDate:planDate,
+        hmPlan:hmPlan,
+        serviceType:ps.label,
+        mechanic:'',
+        status:'Planned',
+        execStatus:'Open',
+        execDate:'',
+        hmBase:cur.lastHm!=null ? cur.lastHm : (calc ? calc.hmBase : null),
+        hmBaseDate:cur.lastDate || (calc ? calc.hmBaseDate : '') || '',
+        hmW:perf ? Number(perf.w)||0 : (calc ? calc.w : 0),
+        hmAktual:hmTotal,
+        hmAktualDate:cur.lastDate || (calc ? calc.hmBaseDate : '') || today,
+        hmAktualManual:false,
+        notes:`Auto [${typeUnit||'—'}]: HM terakhir ${cur.lastHm!=null?cur.lastHm:'—'} + WH Performance ${cur.dailyWh||getDailyWorkingHours(code)}h/hari → HM Target ${hmPlan} / ${ps.label}, Est tgl ${planDate}`
       });
       created++;
     });
   });
 
-  // Urutkan: unit, lalu HM rencana
+  // Pulihkan dua jadwal Agustus yang wajib: SWA-101 5500 dan SPC-104 3000.
+  created += ensureAugustPlanServiceRecords(perfMap);
+  dedupePlanRecords();
+
   planRecords.sort((a,b)=>{
+    const da=String(a.planDate||'');
+    const db=String(b.planDate||'');
+    if(da!==db) return da.localeCompare(db);
     const u = String(a.unitCode).localeCompare(String(b.unitCode));
     if(u!==0) return u;
     return (Number(a.hmPlan)||0) - (Number(b.hmPlan)||0);
@@ -7580,57 +8332,276 @@ async function rebuildPlanServiceAuto(opts){
 
   await savePlan();
   renderPlanTable();
+
   if(!silent){
-    alert('✓ Plan Service dihapus & digenerate ulang otomatis.\n' +
-      'Rumus: HM Total = W (sheet performance) ± base Monitoring HM jika ada\n' +
-      'Tidak memakai HM dari Record Daily Maintenance. Tanpa batasan periode.\n' +
+    alert('✓ Plan Service September–Desember dan seterusnya berhasil digenerate.\n' +
+      'HM awal = HM terbaru Monitoring HM + estimasi 18 jam kerja/hari.\n' +
+      'Target HM grid 250 jam dan jadwal dibuat hingga ' + PLAN_SERVICE_HORIZON_MONTHS + ' bulan ke depan.\n' +
       created + ' jadwal service dibuat untuk ' + unitCodes.size + ' unit.');
   }
+
   return { ok:true, created, units: unitCodes.size };
+}
+/**
+ * Sinkronkan Plan Service OPEN dengan HM terakhir aktual + WH dari Performance.
+ * HM Target selalu mengikuti interval PS Type.
+ */
+function syncOpenPlanRecordLive(r, perfMap){
+  if(!r || !isPlanServiceAllowedUnit(r.unitCode) || isPlanClosed(r)) return false;
+  const cur=calcHmSekarang(r.unitCode);
+  if(cur.hmNow==null) return false;
+
+  const code=String(r.unitCode||'').trim().toUpperCase();
+  const perf=perfMap && perfMap[code];
+  const typeUnit=r.typeUnit || ((UNITS||[]).find(u=>String(u.code).toUpperCase()===code)||{}).type || '';
+
+  r.hmBase=cur.lastHm!=null ? cur.lastHm : null;
+  r.hmBaseDate=cur.lastDate || '';
+  r.hmW=perf ? Number(perf.w)||0 : 0;
+  r.hmAktual=cur.hmNow;
+  r.hmAktualDate=new Date().toISOString().slice(0,10);
+  r.hmAktualManual=false;
+
+  let hmPlan=Number(r.hmPlan)||0;
+  // Target OPEN dipertahankan agar HM yang melewati target dapat terlihat sebagai OVERDUE.
+  // Hanya record tanpa target yang dibuatkan milestone baru.
+  const typeUpper=String(typeUnit||'').toUpperCase();
+  const isDozerType=typeUpper.includes('D85ESS') || typeUpper.includes('D85') || code.startsWith('SBD-');
+  const serviceStep=isDozerType ? 250 : 500;
+  if(!hmPlan){
+    hmPlan=nextPlanHmTarget(cur.hmNow, r.unitCode);
+    r.hmPlan=hmPlan;
+  }else{
+    // Normalisasi target lama ke grid service yang benar.
+    // PENTING: JANGAN menaikkan target yang sudah terlewati ke milestone berikutnya.
+    // Target service harus tetap menjadi titik interval yang dilalui unit agar
+    // status dapat berubah otomatis menjadi OVERDUE.
+    hmPlan=Math.ceil(hmPlan/serviceStep)*serviceStep;
+    r.hmPlan=hmPlan;
+  }
+
+  const ps=getPsTypeForTargetHm(typeUnit,hmPlan);
+  r.serviceType=ps.label;
+  // OVERDUE hanya jika HM sudah melewati target service.
+  // Saat HM tepat sama dengan target, status tetap Planned/Jatuh Tempo.
+  r.status=(Number(cur.hmNow)>hmPlan) ? 'Overdue' : 'Planned';
+  // Pertahankan tanggal manual/seeded jika sudah ada; tanggal baru hanya
+  // dihitung untuk record yang belum memiliki tanggal.
+  if(!r.planDate) r.planDate=estimatePlanDateFromHm(r.unitCode,hmPlan,cur.hmNow);
+
+  return true;
+}
+
+
+/** Record service Agustus yang tanggalnya dikunci sesuai jadwal awal. */
+function isFixedAugustPlanRecord(r){
+  if(!r || isPlanClosed(r)) return false;
+  const code=String(r.unitCode||'').trim().toUpperCase();
+  const hm=Number(r.hmPlan)||0;
+  const date=String(r.planDate||'').slice(0,10);
+  return (code==='SWA-101' && hm===5500 && date==='2026-08-18') ||
+         (code==='SPC-104' && hm===3000 && date==='2026-08-29');
+}
+
+/**
+ * Pastikan dua jadwal service Agustus yang wajib tetap tersedia.
+ * Jadwal ini berasal dari Plan Service yang sudah ditetapkan:
+ * - SWA-101 : 18-Agustus-2026, PS 5500 Hrs
+ * - SPC-104 : 29-Agustus-2026, PS 3000 Hrs
+ * Record tidak dihapus/diundur saat sinkronisasi; statusnya mengikuti HM aktual.
+ */
+function ensureAugustPlanServiceRecords(perfMap){
+  const required = [
+    { date:'2026-08-18', unitCode:'SWA-101', hmPlan:5500, mechanic:'SEN' },
+    { date:'2026-08-29', unitCode:'SPC-104', hmPlan:3000, mechanic:'Team UT ( Warranty )' }
+  ];
+  let added=0;
+  const perf = perfMap || getPerformanceWByUnit();
+
+  required.forEach(req=>{
+    const existing=(planRecords||[]).find(r=>
+      !isPlanClosed(r) &&
+      String(r.unitCode||'').toUpperCase()===req.unitCode &&
+      Number(r.hmPlan)===req.hmPlan
+    );
+
+    const unit=(UNITS||[]).find(u=>String(u.code||'').toUpperCase()===req.unitCode);
+    const cur=calcHmSekarang(req.unitCode);
+    const perfRow=perf[String(req.unitCode).toUpperCase()];
+    const hmAktual=cur && cur.hmNow!=null ? Number(cur.hmNow) : null;
+    const ps=getPsTypeForTargetHm(unit?unit.type:'',req.hmPlan);
+
+    if(existing){
+      // Restore the original August date/target if a previous sync moved it.
+      existing.planDate=req.date;
+      existing.hmPlan=req.hmPlan;
+      existing.serviceType=ps.label;
+      existing.status=(hmAktual!=null && hmAktual>req.hmPlan) ? 'Overdue' : 'Planned';
+      existing.execStatus=existing.execStatus || 'Open';
+      existing.mechanic=existing.mechanic || req.mechanic;
+      if(hmAktual!=null) existing.hmAktual=hmAktual;
+      existing.hmAktualDate=new Date().toISOString().slice(0,10);
+      existing.hmAktualManual=false;
+      return;
+    }
+
+    planRecords.push({
+      id:uid(),
+      unitCode:req.unitCode,
+      typeUnit:unit?unit.type:'',
+      planDate:req.date,
+      hmPlan:req.hmPlan,
+      serviceType:ps.label,
+      mechanic:req.mechanic,
+      status:(hmAktual!=null && hmAktual>req.hmPlan) ? 'Overdue' : 'Planned',
+      execStatus:'Open',
+      execDate:'',
+      hmBase:cur && cur.lastHm!=null ? cur.lastHm : null,
+      hmBaseDate:cur ? (cur.lastDate||'') : '',
+      hmW:perfRow ? Number(perfRow.w)||0 : 0,
+      hmAktual:hmAktual,
+      hmAktualDate:new Date().toISOString().slice(0,10),
+      hmAktualManual:false,
+      notes:`Fixed August Plan [${unit?unit.type:'—'}]: ${req.unitCode} → ${req.hmPlan} HM, tanggal ${req.date}. Status otomatis berdasarkan HM aktual.`
+    });
+    added++;
+  });
+  return added;
+}
+
+/**
+ * Sinkronisasi seluruh Plan Service OPEN:
+ * - HM aktual berasal dari HM terbaru Monitoring HM (bukan Daily Maintenance).
+ * - Working Hours berasal dari sheet Performance.
+ * - Target HM tetap grid 250 HM.
+ * - Jika target masa depan belum tersedia, baris baru otomatis ditambahkan.
+ * - PIC / catatan / data manual pada baris OPEN yang masih valid tetap dipertahankan.
+ */
+async function syncOpenPlanCoverage(perfMap){
+  const perf = perfMap || getPerformanceWByUnit();
+  sanitizePlanServiceUnits();
+  const unitCodes = new Set(
+    (UNITS||[])
+      .map(u=>u && u.code)
+      .filter(code=>isPlanServiceAllowedUnit(code))
+      .map(code=>String(code).trim().toUpperCase())
+  );
+
+  // Hanya 4 unit terkunci yang diproses.
+  (planRecords||[]).forEach(r=>{ if(r && isPlanServiceAllowedUnit(r.unitCode)) unitCodes.add(String(r.unitCode).trim().toUpperCase()); });
+  Object.keys(getPlanServiceHMBase()).forEach(u=>{ if(isPlanServiceAllowedUnit(u)) unitCodes.add(String(u).trim().toUpperCase()); });
+  Object.keys(perf||{}).forEach(u=>{ if(isPlanServiceAllowedUnit(u)) unitCodes.add(String(u).trim().toUpperCase()); });
+
+  let updated=0, added=0;
+
+  // Restore/preserve mandatory August service rows before normal synchronization.
+  added += ensureAugustPlanServiceRecords(perf);
+
+  unitCodes.forEach(code=>{
+    const cur = calcHmSekarang(code);
+    if(!cur || cur.hmNow==null) return;
+
+    const unit = (UNITS||[]).find(u=>String(u.code).toUpperCase()===String(code).toUpperCase());
+    const typeUnit = unit ? unit.type : '';
+    const desiredTargets = buildFuturePlanTargets(cur.hmNow, 0, code);
+    const desiredSet = new Set(desiredTargets.map(v=>String(v)));
+
+    // Update record OPEN yang sudah ada.
+    (planRecords||[]).forEach(r=>{
+      if(!r || isPlanClosed(r)) return;
+      if(String(r.unitCode).toUpperCase()!==String(code).toUpperCase()) return;
+      if(syncOpenPlanRecordLive(r, perf)) updated++;
+    });
+
+    // Setelah target yang terlewati dinaikkan, susun indeks target untuk unit.
+    const openByTarget = new Map();
+    (planRecords||[]).forEach(r=>{
+      if(!r || isPlanClosed(r)) return;
+      if(String(r.unitCode).toUpperCase()!==String(code).toUpperCase()) return;
+      const hm = Number(r.hmPlan)||0;
+      if(hm>cur.hmNow && !openByTarget.has(String(hm))) openByTarget.set(String(hm), r);
+    });
+
+    // Tambahkan target yang belum ada, termasuk bulan September–Desember dan seterusnya.
+    desiredTargets.forEach(hmPlan=>{
+      const key=String(hmPlan);
+      if(openByTarget.has(key)) return;
+
+      const ps=getPsTypeForTargetHm(typeUnit,hmPlan);
+      const planDate=estimatePlanDateFromHm(code,hmPlan,cur.hmNow);
+      const perfRow=perf[String(code||'').trim().toUpperCase()];
+
+      planRecords.push({
+        id:uid(),
+        unitCode:code,
+        typeUnit:typeUnit,
+        planDate:planDate,
+        hmPlan:hmPlan,
+        serviceType:ps.label,
+        mechanic:'',
+        status:'Planned',
+        execStatus:'Open',
+        execDate:'',
+        hmBase:cur.lastHm!=null ? cur.lastHm : null,
+        hmBaseDate:cur.lastDate || '',
+        hmW:perfRow ? Number(perfRow.w)||0 : Number(cur.dailyWh)||0,
+        hmAktual:cur.hmNow,
+        hmAktualDate:new Date().toISOString().slice(0,10),
+        hmAktualManual:false,
+        notes:`Auto Sync [${typeUnit||'—'}]: HM terakhir ${cur.lastHm!=null?cur.lastHm:'—'} + WH Performance ${cur.dailyWh||18}h/hari → HM Target ${hmPlan} / ${ps.label}, Est tgl ${planDate}`
+      });
+      openByTarget.set(key, true);
+      added++;
+    });
+  });
+
+  const removed=dedupePlanRecords();
+
+  planRecords.sort((a,b)=>{
+    const da=String(a.planDate||'');
+    const db=String(b.planDate||'');
+    if(da!==db) return da.localeCompare(db);
+    const u=String(a.unitCode||'').localeCompare(String(b.unitCode||''));
+    if(u!==0) return u;
+    return (Number(a.hmPlan)||0)-(Number(b.hmPlan)||0);
+  });
+
+  if(updated || added || removed) await savePlan();
+  return { updated, added, removed };
 }
 
 /** Sync performance + HM, update HM Total di baris existing, atau generate jika kosong. */
 async function syncPlanAll(){
   const btn = document.getElementById('btn-sync-plan-all');
-  if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
+  if(btn){ btn.disabled=true; btn.textContent='☁ Menyinkronkan...'; }
   try{
     await fetchPerformanceFromSheets({ manual:false });
+    const perfMap=getPerformanceWByUnit();
+
     if(!planRecords.length){
       await rebuildPlanServiceAuto({ silent:true });
-      alert('✓ Plan Service digenerate otomatis dari W sheet performance.\n' + planRecords.length + ' jadwal.');
-    } else {
-      // Update HM Total saja — Close HANYA manual setelah service benar-benar dieksekusi
-      let updated = 0;
-      planRecords.forEach(r=>{
-        if(isPlanClosed(r)) return; // record close tidak diutak-atik HM-nya di sync (opsional: tetap update)
-        const calc = calcHmTotalForUnit(r.unitCode);
-        if(!calc) return;
-        r.hmBase = calc.hmBase;
-        r.hmBaseDate = calc.hmBaseDate;
-        r.hmW = calc.w;
-        r.hmAktual = calc.hmTotal;
-        r.hmAktualDate = calc.hmBaseDate || new Date().toISOString().slice(0,10);
-        r.hmAktualManual = false;
-        updated++;
-      });
-      await savePlan();
+      alert('✓ Plan Service September–Desember dan seterusnya digenerate otomatis.\n' +
+        'HM awal = HM terbaru Daily Maintenance; estimasi kalender Plan Service memakai 18 jam/hari.\n' +
+        'Coverage jadwal = ' + PLAN_SERVICE_HORIZON_MONTHS + ' bulan ke depan.');
+    }else{
+      const res=await syncOpenPlanCoverage(perfMap);
       renderPlanTable();
       alert('✓ Sync Schedule Plan Service selesai.\n' +
-        'HM Total sync dari W sheet performance (bukan Daily Maintenance).\n' +
-        updated + ' baris open diperbarui.\n' +
-        'Status Close hanya diubah manual setelah service dieksekusi.\n' +
-        'Auto-sync tiap ~45 detik dari sheet performance (tanpa batasan periode).');
+        'HM terbaru mengikuti Monitoring HM; Plan Service memakai 18 jam/hari, sedangkan W Performance dihitung otomatis per hari/per unit.\n' +
+        'Target HM + PS Type mengikuti interval service; target yang terlewati tetap dipertahankan agar status otomatis OVERDUE.\n' +
+        'Update: '+res.updated+' | Tambah: '+res.added+' | Hapus duplikat: '+res.removed+'.\n' +
+        'Coverage otomatis sampai '+PLAN_SERVICE_HORIZON_MONTHS+' bulan ke depan.');
     }
   }catch(e){
-    alert('⚠ Sync gagal: ' + (e.message||e));
+    alert('⚠ Sync gagal: '+(e.message||e));
   }finally{
-    if(btn){ btn.disabled = false; btn.textContent = '☁ Sync & Generate Otomatis'; }
+    if(btn){ btn.disabled=false; btn.textContent='☁ Sync & Generate Otomatis'; }
   }
 }
 document.getElementById('btn-sync-plan-all')?.addEventListener('click', syncPlanAll);
 
 document.getElementById('btn-rebuild-plan')?.addEventListener('click', async ()=>{
-  if(!confirm('Hapus SEMUA jadwal Plan Service lama dan generate ulang dari W sheet performance?')) return;
+  if(!confirm('Hapus SEMUA jadwal Plan Service lama dan generate ulang dari W sheet performance? Jadwal Agustus SWA-101 5500 HM dan SPC-104 3000 HM akan dipulihkan otomatis.')) return;
   const btn = document.getElementById('btn-rebuild-plan');
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Generate...'; }
   try{
@@ -7642,26 +8613,13 @@ document.getElementById('btn-rebuild-plan')?.addEventListener('click', async ()=
 
 // Alias agar auto-open panel tetap jalan
 async function syncPlanFromHM(opts){
-  opts = opts || {};
+  opts=opts||{};
   if(!planRecords.length){
-    return rebuildPlanServiceAuto({ silent: !!opts.silent });
+    return rebuildPlanServiceAuto({ silent:!!opts.silent });
   }
-  // Update HM total saja — jangan auto-Close
-  let updated = 0;
-  planRecords.forEach(r=>{
-    if(isPlanClosed(r)) return;
-    const calc = calcHmTotalForUnit(r.unitCode);
-    if(!calc) return;
-    r.hmBase = calc.hmBase;
-    r.hmBaseDate = calc.hmBaseDate;
-    r.hmW = calc.w;
-    r.hmAktual = calc.hmTotal;
-    r.hmAktualDate = calc.hmBaseDate || new Date().toISOString().slice(0,10);
-    updated++;
-  });
-  await savePlan();
+  const res=await syncOpenPlanCoverage(getPerformanceWByUnit());
   if(!opts.silent) renderAll(); else renderPlanTable();
-  return { ok:true, updated, autoClosed: 0 };
+  return { ok:true, updated:res.updated, added:res.added, removed:res.removed, autoClosed:0 };
 }
 
 window.updatePlanExecStatus = async function(id, value){
@@ -7671,13 +8629,15 @@ window.updatePlanExecStatus = async function(id, value){
   if(value==='Close'){
     r.status = 'Done';
     if(!r.execDate) r.execDate = new Date().toISOString().slice(0,10);
-    // Ambil HM total terbaru saat close
-    const calc = calcHmTotalForUnit(r.unitCode);
-    if(calc){
-      r.hmBase = calc.hmBase;
-      r.hmW = calc.w;
-      r.hmAktual = calc.hmTotal;
-      r.hmAktualDate = calc.hmBaseDate || r.execDate;
+    // Ambil HM aktual terbaru saat close dari data HM + WH Performance.
+    const cur = calcHmSekarang(r.unitCode);
+    if(cur && cur.hmNow!=null){
+      const perf=getPerformanceWByUnit()[String(r.unitCode||'').trim().toUpperCase()];
+      r.hmBase=cur.lastHm!=null ? cur.lastHm : null;
+      r.hmBaseDate=cur.lastDate || '';
+      r.hmW=perf ? Number(perf.w)||0 : 0;
+      r.hmAktual=cur.hmNow;
+      r.hmAktualDate=new Date().toISOString().slice(0,10);
     }
   } else if(value==='Open'){
     r.status = 'Planned';
@@ -10800,6 +11760,8 @@ function renderDashboard(){
   const k = computeKPIsFor(kpiMonthlyChartPeriodValue);
   const globalStats = computeKPIs(); // overdue plan & pending approval selalu snapshot terkini, tidak tergantung filter periode
   renderKPIChartDashboard(k, globalStats);
+  // Auto-push KPI Dashboard ke sheet "dashboard" (silent, TTL-limited)
+  try{ syncDashboardToSheets({ manual:false }); }catch(_e){}
   // Kartu gauge KPI individual dihapus — detail % sudah ada di tabel KPI Report Monthly & Rekap Triwulan
   const grid = document.getElementById('kpi-grid');
   if(grid) grid.innerHTML = '';
@@ -10904,7 +11866,10 @@ async function fetchPerformanceFromSheets(opts){
         unit: String(r.unit||'').trim(),
         w, s, r: rv, t,
         workingHours: w,
-        totalWorkingHours: t
+        totalWorkingHours: t,
+        workingHoursPerDay: (data.periodStart && data.periodEnd)
+          ? Math.round((w / Math.max(1, Math.round((new Date(data.periodEnd+'T00:00:00') - new Date(data.periodStart+'T00:00:00'))/86400000)+1)) * 10) / 10
+          : 18
       };
     }).filter(r=>r.unit);
 
@@ -10978,47 +11943,46 @@ async function autoSyncPerformanceAndRefresh(which){
     await ensurePerformanceSynced({ force:true });
   }catch(e){ console.warn('auto sync performance', e); }
   if(which==='units' || which==='all') renderUnitCards();
-  if(which==='dashboard' || which==='all') renderDashboard();
+  if(which==='dashboard' || which==='all'){
+    renderDashboard();
+    try{ await syncDashboardToSheets({ manual:false, force:true }); }catch(_e){}
+  }
 }
 
-/** Live poll setiap 45 detik saat user login — sheet performance tetap nyambung.
- *  Saat W berubah, HM Total di Plan Service ikut di-refresh otomatis (tanpa upload HM manual). */
+/** Live poll setiap 45 detik — Performance + HM Sekarang update otomatis per hari. */
+let _lastPlanHmDay = '';
 function startPerformanceLiveSync(){
   if(_perfAutoTimer) return;
   _perfAutoTimer = setInterval(async ()=>{
     if(!loggedInUser) return;
     try{
+      const todayStr = new Date().toISOString().slice(0,10);
+      const dayChanged = _lastPlanHmDay && _lastPlanHmDay !== todayStr;
+      _lastPlanHmDay = todayStr;
+
       const prevStamp = (mapaData && mapaData.updatedAt) || '';
       const res = await ensurePerformanceSynced({ force:true });
-      if(res && res.ok){
-        const newStamp = (mapaData && mapaData.updatedAt) || '';
-        const changed = !!(res.changed || (newStamp && newStamp !== prevStamp));
-        if(changed){
-          const dash = document.getElementById('view-dashboard');
-          const units = document.getElementById('view-database');
-          const planView = document.getElementById('view-plan');
-          if(dash && dash.classList.contains('active')) renderDashboard();
-          if(units && units.classList.contains('active')) renderUnitCards();
-          if(planRecords && planRecords.length){
-            let updated = 0;
-            planRecords.forEach(r=>{
-              if(isPlanClosed(r)) return;
-              const calc = calcHmTotalForUnit(r.unitCode);
-              if(!calc) return;
-              r.hmBase = calc.hmBase;
-              r.hmBaseDate = calc.hmBaseDate;
-              r.hmW = calc.w;
-              r.hmAktual = calc.hmTotal;
-              r.hmAktualDate = calc.hmBaseDate || new Date().toISOString().slice(0,10);
-              r.hmAktualManual = false;
-              updated++;
-            });
-            if(updated){
-              try{ await savePlan(); }catch(_e){}
-              if(planView && planView.classList.contains('active')) renderPlanTable();
-            }
-          }
+      const newStamp = (mapaData && mapaData.updatedAt) || '';
+      const perfChanged = !!(res && res.ok && (res.changed || (newStamp && newStamp !== prevStamp)));
+
+      const dash = document.getElementById('view-dashboard');
+      const units = document.getElementById('view-database');
+      const planView = document.getElementById('view-plan');
+      const planActive = planView && planView.classList.contains('active');
+
+      if(perfChanged){
+        if(dash && dash.classList.contains('active')) renderDashboard();
+        if(units && units.classList.contains('active')) renderUnitCards();
+      }
+
+      if(planRecords && planRecords.length){
+        if(perfChanged || dayChanged){
+          try{ await syncOpenPlanCoverage(getPerformanceWByUnit()); }catch(_e){}
         }
+        // Selalu re-render bila Plan aktif → HM Sekarang & Working Hours live
+        if(planActive) renderPlanTable();
+      } else if(perfChanged || dayChanged){
+        try{ await rebuildPlanServiceAuto({ silent:true }); }catch(_e){}
       }
     }catch(e){ /* silent */ }
   }, 45000);
@@ -11504,6 +12468,7 @@ window.deleteBreakdownReport = async function(id){
 
 /* ================= RENDER ALL ================= */
 function renderAll(){
+  sanitizePlanServiceUnits();
   renderUnitCards();
   renderDailyTable();
   renderPlanTable();
