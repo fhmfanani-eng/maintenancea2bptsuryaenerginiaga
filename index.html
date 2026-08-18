@@ -3958,7 +3958,7 @@ const BACKEND_CONFIG = {
 
   // ---- Sinkron Google Sheets (Daily Maintenance + Performance MA/PA) ----
   // Spreadsheet: https://docs.google.com/spreadsheets/d/1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4
-  // Apps Script deploy v21 (11 Agu 2026) — getPerformance + sync sheet data
+  // Apps Script: getPerformance + sync (sheet "data")
   sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
   sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbx31DQTu96c5pO_46P0mJHE2bBten4d5ynCThs-G_V03QFnq4v1Mknjujj7Ohd6up4/exec',
 };
@@ -6762,6 +6762,12 @@ document.getElementById('daily-sync-sheets-btn')?.addEventListener('click', asyn
   try{ await syncDailyToSheets({ manual:true }); }
   finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet data'; } }
 });
+
+/**
+ * Bangun baris data Dashboard KPI (sama dengan yang tampil di panel) untuk di-push ke sheet "dashboard".
+ * Satu baris ALL (agregat) + satu baris per unit A2B.
+ */
+
 
 function approvalPillHTML(r){
   const a = r.approvalStatus || 'Pending';
@@ -11609,6 +11615,7 @@ function renderDashboard(){
   const k = computeKPIsFor(kpiMonthlyChartPeriodValue);
   const globalStats = computeKPIs(); // overdue plan & pending approval selalu snapshot terkini, tidak tergantung filter periode
   renderKPIChartDashboard(k, globalStats);
+  // Auto-push KPI Dashboard ke sheet "dashboard" (silent, TTL-limited)
   // Kartu gauge KPI individual dihapus — detail % sudah ada di tabel KPI Report Monthly & Rekap Triwulan
   const grid = document.getElementById('kpi-grid');
   if(grid) grid.innerHTML = '';
@@ -11790,7 +11797,9 @@ async function autoSyncPerformanceAndRefresh(which){
     await ensurePerformanceSynced({ force:true });
   }catch(e){ console.warn('auto sync performance', e); }
   if(which==='units' || which==='all') renderUnitCards();
-  if(which==='dashboard' || which==='all') renderDashboard();
+  if(which==='dashboard' || which==='all'){
+    renderDashboard();
+  }
 }
 
 /** Live poll setiap 45 detik — Performance + HM Sekarang update otomatis per hari. */
