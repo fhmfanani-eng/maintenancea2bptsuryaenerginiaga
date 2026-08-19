@@ -12241,7 +12241,16 @@ function renderKPIChartDashboard(k, globalStats){
     </div>
     <div class="dash-mid-grid">
       <div class="dash-panel">
-        <div class="dash-panel-title">SERVICE ACHIEVEMENT</div>
+        <div class="chart-panel-title-row">
+          <div class="dash-panel-title" style="margin-bottom:0">SERVICE ACHIEVEMENT</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Year period</span>
+            <select class="trend-quarter-select" onchange="onKpiServiceYearChange(this)" title="Filter tahun Plan Service">
+              <option value="" ${!activeServiceYear?'selected':''}>Semua Tahun</option>
+              ${yearOpts.map(y=>`<option value="${y}" ${y===activeServiceYear?'selected':''}>${y}</option>`).join('')}
+            </select>
+          </div>
+        </div>
         <div style="overflow-x:auto">
           <table class="dash-sum-table" style="min-width:640px">
             <thead>
