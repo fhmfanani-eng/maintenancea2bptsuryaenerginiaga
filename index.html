@@ -360,7 +360,7 @@ textarea{ resize:vertical; min-height:56px; }
   background:rgba(255,199,44,0.10);
 }
 
-/* PLAN SERVICE: Estimasi Tanggal | Bulan | Unit | Target HM | Service Type | Working Hours | WH/Hari | HM Sekarang | Est. Sisa HM | ... */
+/* PLAN SERVICE: Plan Date | Bulan | Unit | Target HM | Service Type | Working Hours | WH/Hari | HM Sekarang | Est. Sisa HM | ... */
 #plan-table th:nth-child(1), #plan-table td:nth-child(1){ min-width:125px; text-align:center; }
 #plan-table th:nth-child(2), #plan-table td:nth-child(2){ min-width:110px; text-align:center; }
 #plan-table th:nth-child(3), #plan-table td:nth-child(3){ min-width:95px; text-align:center; }
@@ -1020,6 +1020,10 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 /* PJO: sembunyikan juga banner info lain di atas panel */
 body.role-pjo #daily-role-banner{ display:none !important; }
 body.role-pjo .view > .banner{ display:none !important; }
+
+/* Mechanic: Historical Report hanya lihat tabel — filter & export disembunyikan */
+body.role-mechanic #history-filters{ display:none !important; }
+
 
 .nav-badge{
   display:inline-flex; align-items:center; justify-content:center;
@@ -1888,7 +1892,7 @@ body.role-pjo .view > .banner{ display:none !important; }
           <div class="table-wrap" id="plan-table-wrap">
             <table id="plan-table">
               <thead><tr>
-                <th>Estimasi Tanggal</th>
+                <th>Plan Date</th>
                 <th>Bulan</th>
                 <th>Unit</th>
                 <th>Target HM</th>
@@ -1902,7 +1906,6 @@ body.role-pjo .view > .banner{ display:none !important; }
                 <th>Status Eksekusi</th>
                 <th>Tgl Eksekusi</th>
                 <th>PIC</th>
-                <th></th>
               </tr></thead>
               <tbody id="plan-tbody"></tbody>
             </table>
@@ -2100,7 +2103,7 @@ body.role-pjo .view > .banner{ display:none !important; }
         <div class="section-title">Historical Report</div>
         <div class="panel">
           <div class="panel-head"><h2>Historical Report</h2></div>
-          <div class="filters">
+          <div class="filters" id="history-filters">
             <select id="h-unit"><option value="">Semua Unit</option></select>
             <select id="h-category"><option value="">Semua Kategori</option><option value="Breakdown">Breakdown</option><option value="Daily">Daily Maintenance</option><option value="Periodical">Periodical Maintenance</option></select>
             <select id="h-status"><option value="">Semua Status</option><option value="Open">Open</option><option value="Progress">On Progress</option><option value="Close">Close</option></select>
@@ -5519,6 +5522,8 @@ function updateRoleUI(){
   const isOperator = !isSupervisor && currentPosition()==='Operator';
   document.body.classList.toggle('role-supervisor', isSupervisor);
   document.body.classList.toggle('role-pjo', currentPosition()==='PJO');
+  const isMechanicUser = !!(loggedInUser && ((loggedInUser.role||'')==='Mechanic' || (loggedInUser.position||'')==='Mechanic'));
+  document.body.classList.toggle('role-mechanic', isMechanicUser);
   if(userInfoEl){ userInfoEl.textContent = loggedInUser ? `${loggedInUser.name} · ${loggedInUser.position || loggedInUser.role}` : '—'; }
   const banner = document.getElementById('daily-role-banner');
   if(banner){
@@ -5606,6 +5611,12 @@ function updateRoleUI(){
   }
   renderHMTable();
   updateBreakdownReportAccess();
+  // Historical Report: Mechanic hanya melihat tabel (tanpa filter/export)
+  const histFilters = document.getElementById('history-filters');
+  if(histFilters){
+    const mechOnlyView = !!(loggedInUser && ((loggedInUser.role||'')==='Mechanic' || (loggedInUser.position||'')==='Mechanic'));
+    histFilters.style.display = mechOnlyView ? 'none' : '';
+  }
   renderPreInspectionPlans();
   renderPreInspectionMechanicNotify();
   applyPanelAccessLocks();
@@ -8027,7 +8038,28 @@ function populatePlanMonthYearFilter(){
 }
 
 function isPlanClosed(r){
-  return r && (r.execStatus==='Close' || r.status==='Done');
+  if(!r) return false;
+  const exec = String(r.execStatus||'').trim().toLowerCase();
+  const st = String(r.status||'').trim().toLowerCase();
+  // Close jika Status Eksekusi = Close ATAU status Done (riwayat service selesai).
+  return exec === 'close' || st === 'done' || st === 'close';
+}
+
+/**
+ * PIC Plan Service otomatis:
+ * - Unit selain SPC-104 → selalu "SEN"
+ * - SPC-104 → "Team UT ( Warranty )" selama HM TARGET masih ≤ 6000 jam
+ *   (warranty Team UT hanya sampai 6000 HM); bila HM TARGET > 6000 → otomatis "SEN"
+ * hmTarget: HM Target / Interval plan (bukan HM sekarang). Boleh null → default Team UT.
+ */
+function resolvePlanPic(unitCode, hmTarget){
+  const code = String(unitCode||'').trim().toUpperCase();
+  if(code === 'SPC-104'){
+    const hm = (hmTarget===null || hmTarget===undefined || hmTarget==='') ? null : Number(hmTarget);
+    if(hm!==null && !isNaN(hm) && hm > 6000) return 'SEN';
+    return 'Team UT ( Warranty )';
+  }
+  return 'SEN';
 }
 
 /** Enrich plan row: HM Sekarang (dari HM aktual), Est Sisa HM, Est Sisa Hari, Tgl Rencana. */
@@ -8187,15 +8219,48 @@ function renderPlanTable(){
   }
 
   sanitizePlanServiceUnits();
+
+  // LOCK otomatis: baris OPEN yang unit+HM Plan ATAU unit+tanggal-nya sudah Close
+  // di Record Service Unit tidak boleh muncul lagi di Schedule Plan Service.
+  const closedHmKeys = new Set();   // unit|hmPlan
+  const closedDateKeys = new Set(); // unit|YYYY-MM-DD
+  (planRecords||[]).forEach(r=>{
+    if(!isPlanClosed(r)) return;
+    const unit = String(r.unitCode||'').trim().toUpperCase();
+    if(!unit) return;
+    const hm = Number(r.hmPlan)||0;
+    if(hm) closedHmKeys.add(unit+'|'+hm);
+    const d1 = String(r.execDate||'').slice(0,10);
+    const d2 = String(r.planDate||'').slice(0,10);
+    if(d1) closedDateKeys.add(unit+'|'+d1);
+    if(d2) closedDateKeys.add(unit+'|'+d2);
+  });
+  let purgedOpenDup = 0;
+  if(closedHmKeys.size || closedDateKeys.size){
+    planRecords = planRecords.filter(r=>{
+      if(isPlanClosed(r)) return true;
+      const unit = String(r.unitCode||'').trim().toUpperCase();
+      const hm = Number(r.hmPlan)||0;
+      const pd = String(r.planDate||'').slice(0,10);
+      if(unit && hm && closedHmKeys.has(unit+'|'+hm)){ purgedOpenDup++; return false; }
+      if(unit && pd && closedDateKeys.has(unit+'|'+pd)){ purgedOpenDup++; return false; }
+      return true;
+    });
+    if(purgedOpenDup > 0){
+      try{ savePlan(); }catch(_e){}
+    }
+  }
+
+  // Hanya tampilkan plan yang BELUM Close di Schedule Plan Service.
+  // Record Close masuk ke tabel Record Service Unit (bukan di sini).
   const openPlans = planRecords.filter(r=>isPlanServiceAllowedUnit(r.unitCode) && !isPlanClosed(r));
   if(!openPlans.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="15">Belum ada jadwal open. Klik <b>Sync &amp; Generate Otomatis</b> atau semua sudah Close (lihat Record Service Unit).</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Belum ada jadwal open. Klik <b>Sync &amp; Generate Otomatis</b> atau semua sudah Close (lihat Record Service Unit).</td></tr>`;
     attachTopScroll('plan');
     renderRecordServiceTable();
     return;
   }
 
-  const isSupervisor = currentRole()==='Supervisor';
   const today = new Date().toISOString().slice(0,10);
   const perfMap = getPerformanceWByUnit();
   const periodStart = (document.getElementById('plan-period-start')||{}).value || '';
@@ -8210,18 +8275,19 @@ function renderPlanTable(){
     return true;
   });
 
-  // Urut Est. Sisa Hari paling dekat
+  // Urut Plan Date naik (tanggal paling awal di atas), lalu Unit, lalu Target HM
   rows.sort((a,b)=>{
-    const da = (a.daysLeft===null || a.daysLeft===undefined) ? 999999 : Number(a.daysLeft);
-    const db = (b.daysLeft===null || b.daysLeft===undefined) ? 999999 : Number(b.daysLeft);
-    if(da !== db) return da - db;
-    const sa = (a.sisaHm===null) ? 999999 : a.sisaHm;
-    const sb = (b.sisaHm===null) ? 999999 : b.sisaHm;
-    return sa - sb;
+    const da = String(a.r.planDate || a.planDateAuto || '');
+    const db = String(b.r.planDate || b.planDateAuto || '');
+    if(da !== db) return da.localeCompare(db);
+    const ua = String(a.r.unitCode||'');
+    const ub = String(b.r.unitCode||'');
+    if(ua !== ub) return ua.localeCompare(ub);
+    return (Number(a.r.hmPlan)||0) - (Number(b.r.hmPlan)||0);
   });
 
   if(!rows.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="15">Tidak ada jadwal open untuk filter periode yang dipilih.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Tidak ada jadwal open untuk filter periode yang dipilih.</td></tr>`;
     attachTopScroll('plan');
     renderRecordServiceTable();
     return;
@@ -8265,6 +8331,12 @@ function renderPlanTable(){
     const workingHoursVal = perf ? Number(perf.w)||0 : (Number(hmW)||0);
     const workingHoursLabel = (perf || hmW) ? workingHoursVal.toFixed(1) : '—';
 
+    // PIC otomatis: unit lain = SEN; SPC-104 = Team UT s/d HM Target 6000, setelahnya SEN
+    const autoPic = resolvePlanPic(r.unitCode, hmPlanNum);
+    if(!isPlanClosed(r) && r.mechanic !== autoPic){
+      r.mechanic = autoPic;
+    }
+
     return `<tr>
       <td>${formatDateDMY(displayPlanDate)}</td>
       <td>${planMonthLabel(displayPlanDate)}</td>
@@ -8291,7 +8363,6 @@ function renderPlanTable(){
       </td>
       <td><input type="date" value="${r.execDate||''}" onchange="updatePlanExecDate('${r.id}', this.value)" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-family:inherit; font-size:12px;"></td>
       <td>${escUH(r.mechanic)}</td>
-      <td>${isSupervisor ? `<button class="btn danger" onclick="deletePlan('${r.id}')">Hapus</button>` : ''}</td>
     </tr>`;
   }).join('');
   attachTopScroll('plan');
@@ -8710,7 +8781,7 @@ async function rebuildPlanServiceAuto(opts){
         planDate:planDate,
         hmPlan:hmPlan,
         serviceType:ps.label,
-        mechanic:'',
+        mechanic:resolvePlanPic(code, hmPlan),
         status:'Planned',
         execStatus:'Open',
         execDate:'',
@@ -8794,6 +8865,8 @@ function syncOpenPlanRecordLive(r, perfMap){
   // OVERDUE hanya jika HM sudah melewati target service.
   // Saat HM tepat sama dengan target, status tetap Planned/Jatuh Tempo.
   r.status=(Number(cur.hmNow)>hmPlan) ? 'Overdue' : 'Planned';
+  // PIC otomatis mengikuti aturan unit + HM TARGET (SPC-104: Team UT ≤6000, SEN >6000)
+  r.mechanic = resolvePlanPic(r.unitCode, hmPlan);
   // Pertahankan tanggal manual/seeded jika sudah ada; tanggal baru hanya
   // dihitung untuk record yang belum memiliki tanggal.
   if(!r.planDate) r.planDate=estimatePlanDateFromHm(r.unitCode,hmPlan,cur.hmNow);
@@ -8828,9 +8901,22 @@ function ensureAugustPlanServiceRecords(perfMap){
   const perf = perfMap || getPerformanceWByUnit();
 
   required.forEach(req=>{
+    // Jika target ini SUDAH Close (by HM Plan ATAU by tanggal eksekusi/rencana),
+    // jangan buat ulang sebagai Open di Schedule Plan Service (lock otomatis).
+    const alreadyClosed=(planRecords||[]).some(r=>{
+      if(!isPlanClosed(r)) return false;
+      if(String(r.unitCode||'').trim().toUpperCase()!==req.unitCode) return false;
+      if(Number(r.hmPlan)===req.hmPlan) return true;
+      const d1 = String(r.execDate||'').slice(0,10);
+      const d2 = String(r.planDate||'').slice(0,10);
+      if(d1===req.date || d2===req.date) return true;
+      return false;
+    });
+    if(alreadyClosed) return;
+
     const existing=(planRecords||[]).find(r=>
       !isPlanClosed(r) &&
-      String(r.unitCode||'').toUpperCase()===req.unitCode &&
+      String(r.unitCode||'').trim().toUpperCase()===req.unitCode &&
       Number(r.hmPlan)===req.hmPlan
     );
 
@@ -8842,12 +8928,13 @@ function ensureAugustPlanServiceRecords(perfMap){
 
     if(existing){
       // Restore the original August date/target if a previous sync moved it.
+      // Jangan paksa Open ulang jika sudah Close (sudah dicek di atas).
       existing.planDate=req.date;
       existing.hmPlan=req.hmPlan;
       existing.serviceType=ps.label;
       existing.status=(hmAktual!=null && hmAktual>req.hmPlan) ? 'Overdue' : 'Planned';
-      existing.execStatus=existing.execStatus || 'Open';
-      existing.mechanic=existing.mechanic || req.mechanic;
+      if(!existing.execStatus || String(existing.execStatus).trim()==='') existing.execStatus='Open';
+      existing.mechanic=resolvePlanPic(req.unitCode, req.hmPlan);
       if(hmAktual!=null) existing.hmAktual=hmAktual;
       existing.hmAktualDate=new Date().toISOString().slice(0,10);
       existing.hmAktualManual=false;
@@ -8861,7 +8948,7 @@ function ensureAugustPlanServiceRecords(perfMap){
       planDate:req.date,
       hmPlan:req.hmPlan,
       serviceType:ps.label,
-      mechanic:req.mechanic,
+      mechanic:resolvePlanPic(req.unitCode, req.hmPlan),
       status:(hmAktual!=null && hmAktual>req.hmPlan) ? 'Overdue' : 'Planned',
       execStatus:'Open',
       execDate:'',
@@ -8931,10 +9018,20 @@ async function syncOpenPlanCoverage(perfMap){
       if(hm>cur.hmNow && !openByTarget.has(String(hm))) openByTarget.set(String(hm), r);
     });
 
+    // Target yang sudah Close untuk unit ini tidak boleh dibuat Open lagi.
+    const closedHmForUnit = new Set();
+    (planRecords||[]).forEach(r=>{
+      if(!r || !isPlanClosed(r)) return;
+      if(String(r.unitCode||'').trim().toUpperCase()!==String(code).toUpperCase()) return;
+      const hm = Number(r.hmPlan)||0;
+      if(hm) closedHmForUnit.add(String(hm));
+    });
+
     // Tambahkan target yang belum ada, termasuk bulan September–Desember dan seterusnya.
     desiredTargets.forEach(hmPlan=>{
       const key=String(hmPlan);
       if(openByTarget.has(key)) return;
+      if(closedHmForUnit.has(key)) return; // sudah dieksekusi Close
 
       const ps=getPsTypeForTargetHm(typeUnit,hmPlan);
       const planDate=estimatePlanDateFromHm(code,hmPlan,cur.hmNow);
@@ -8947,7 +9044,7 @@ async function syncOpenPlanCoverage(perfMap){
         planDate:planDate,
         hmPlan:hmPlan,
         serviceType:ps.label,
-        mechanic:'',
+        mechanic:resolvePlanPic(code, hmPlan),
         status:'Planned',
         execStatus:'Open',
         execDate:'',
@@ -9092,7 +9189,7 @@ async function ensureNextPlanAfterClose(closedRec){
     planDate: planDate,
     hmPlan: nextHm,
     serviceType: ps.label,
-    mechanic: closedRec.mechanic || '',
+    mechanic: resolvePlanPic(closedRec.unitCode, nextHm),
     status: 'Planned',
     execStatus: 'Open',
     execDate: '',
@@ -11209,7 +11306,28 @@ function onKpiTrendQuarterChange(selectEl){
  * Dimensi: Unit × Bulan × Status (Close/Open/Overdue) × Type Service
  * Sumber: planRecords (semua unit, semua bulan)
  */
-function collectService4DStats(){
+/* ---- Filter tahun untuk Dashboard Service & Service Achievement ---- */
+let kpiServiceYearValue = ''; // '' = Semua Tahun (default)
+
+function getServiceYearOptions(){
+  const years = new Set();
+  const START_YEAR = 2026;
+  const nowY = new Date().getFullYear();
+  for(let y = START_YEAR; y <= Math.max(nowY, START_YEAR); y++) years.add(String(y));
+  (planRecords||[]).forEach(r=>{
+    const y = (r && r.planDate) ? String(r.planDate).slice(0,4) : '';
+    if(/^\d{4}$/.test(y)) years.add(y);
+  });
+  return Array.from(years).sort((a,b)=>Number(b)-Number(a));
+}
+
+function onKpiServiceYearChange(selectEl){
+  kpiServiceYearValue = selectEl.value || '';
+  renderDashboard();
+}
+
+function collectService4DStats(yearFilter){
+  const year = (yearFilter !== undefined && yearFilter !== null) ? String(yearFilter||'') : String(kpiServiceYearValue||'');
   const today = new Date().toISOString().slice(0,10);
   const byUnit = {};
   const byMonth = {};
@@ -11217,12 +11335,14 @@ function collectService4DStats(){
   let total=0, closed=0, open=0, overdue=0;
   (planRecords||[]).forEach(r=>{
     if(!r) return;
+    const planDate = String(r.planDate||'');
+    if(year && planDate.slice(0,4) !== year) return;
     total++;
     const code = String(r.unitCode||'—').trim() || '—';
-    const mk = (r.planDate||'').slice(0,7) || 'unknown';
+    const mk = planDate.slice(0,7) || 'unknown';
     const stype = String(r.serviceType||'Service').trim() || 'Service';
     const isClosed = !!(r.execStatus==='Close' || r.status==='Done');
-    const isOverdue = !isClosed && r.planDate && r.planDate < today;
+    const isOverdue = !isClosed && planDate && planDate < today;
     if(isClosed) closed++;
     else if(isOverdue) overdue++;
     else open++;
@@ -11246,7 +11366,7 @@ function collectService4DStats(){
   const unitRows = Object.values(byUnit).sort((a,b)=>a.unit.localeCompare(b.unit));
   const monthRows = Object.values(byMonth).sort((a,b)=>a.month.localeCompare(b.month));
   const typeRows = Object.values(byType).sort((a,b)=>b.total-a.total);
-  return { total, closed, open, overdue, unitRows, monthRows, typeRows };
+  return { total, closed, open, overdue, unitRows, monthRows, typeRows, year };
 }
 
 function service4DChartSVG(stats){
@@ -11312,11 +11432,14 @@ function buildServiceAchievementTableHTML(stats){
   const months = stats.monthRows.map(m=>m.month).filter(m=>m && m!=='unknown');
   const today = new Date().toISOString().slice(0,10);
   // Precompute closed/total per unit-month
+  const year = String((stats && stats.year) || kpiServiceYearValue || '');
   const cell = {};
   (planRecords||[]).forEach(r=>{
     if(!r) return;
+    const planDate = String(r.planDate||'');
+    if(year && planDate.slice(0,4) !== year) return;
     const u = String(r.unitCode||'—').trim()||'—';
-    const mk = (r.planDate||'').slice(0,7);
+    const mk = planDate.slice(0,7);
     if(!mk) return;
     const key = u+'|'+mk;
     if(!cell[key]) cell[key] = { total:0, closed:0 };
@@ -11545,7 +11668,7 @@ function renderKPIChartDashboard(k, globalStats){
 
   // --- Multi-line trend chart (last 6 months) — readable labels (end-only, de-overlapped) ---
   function multiTrendSVG(){
-    const W=520, H=230, padL=40, padR=78, padT=18, padB=30;
+    const W=560, H=268, padL=42, padR=96, padT=28, padB=42;
     const chartW=W-padL-padR, chartH=H-padT-padB;
     const keys = monthlyKpiDefs.map(d=>d.key);
     const labels = Object.fromEntries(monthlyKpiDefs.map(d=>[d.key,d.label]));
@@ -11562,17 +11685,54 @@ function renderKPIChartDashboard(k, globalStats){
     const n = trendMonths.length;
     const xAt = i => padL + (n<=1? chartW/2 : i/(n-1)*chartW);
     const yAt = v => padT + chartH * (1 - Math.max(0,Math.min(130,v))/130);
-    const grid = [0,25,50,75,100,130].map(v=>{
-      const y=yAt(v);
-      const isT = v===100;
-      return `<line x1="${padL}" y1="${y}" x2="${padL+chartW}" y2="${y}" stroke="${isT?'#FFC72C':'#252a32'}" stroke-width="${isT?1.2:1}" ${isT?'stroke-dasharray="4 4" opacity="0.7"':''}/>
-        <text x="${padL-6}" y="${y+3}" text-anchor="end" font-size="9" fill="${isT?'#FFC72C':'#6a717a'}" font-family="JetBrains Mono, monospace">${v}</text>`;
+    const uid = 'tr' + (typeof kpiChartInstanceSeq!=='undefined' ? (kpiChartInstanceSeq++) : Math.floor(Math.random()*1e6));
+
+    // Soft panel + vertical month guides
+    const panelBg = `<rect x="${padL}" y="${padT}" width="${chartW}" height="${chartH}" rx="6" fill="url(#${uid}-panel)" stroke="rgba(255,255,255,0.04)"/>`;
+    const vGuides = trendMonths.map((m,i)=>{
+      const x = xAt(i);
+      return `<line x1="${x.toFixed(1)}" y1="${padT}" x2="${x.toFixed(1)}" y2="${padT+chartH}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
     }).join('');
+
     const seriesPts = keys.map(key=>{
       const pts = trendMonths.map((m,i)=>({ x:xAt(i), y:yAt(plotVal(m,key)), v:plotVal(m,key) }));
       return { key, pts, color:colors[key], label:labels[key] };
     });
-    const lines = seriesPts.map(s=>{
+
+    // Sumbu Y: skala persentase tetap (0–130), bukan nilai % capaian kalkulasi tiap KPI.
+    // Hanya menampilkan angka persentase sumbu (0, 25, 50, 75, 100, 125) + garis TARGET di 100%.
+    const yTickVals = [0, 25, 50, 75, 100, 125];
+    const grid = yTickVals.map(v=>{
+      const y=yAt(v);
+      const isHundred = v===100;
+      if(isHundred){
+        return `<line x1="${padL}" y1="${y}" x2="${padL+chartW}" y2="${y}" stroke="#FFC72C" stroke-width="1.4" stroke-dasharray="5 4" opacity="0.85"/>
+          <rect x="${padL+chartW-52}" y="${y-9}" width="48" height="16" rx="3" fill="rgba(255,199,44,0.12)" stroke="rgba(255,199,44,0.35)"/>
+          <text x="${padL+chartW-28}" y="${y+3}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#FFC72C" font-family="JetBrains Mono, monospace">TARGET</text>
+          <text x="${padL-8}" y="${y+3}" text-anchor="end" font-size="10" font-weight="700" fill="#FFC72C" font-family="JetBrains Mono, monospace">${v}</text>`;
+      }
+      return `<line x1="${padL}" y1="${y}" x2="${padL+chartW}" y2="${y}" stroke="#9AA0A8" stroke-width="1" opacity="0.22"/>
+        <text x="${padL-8}" y="${y+3.5}" text-anchor="end" font-size="10" font-weight="600" fill="#9AA0A8" font-family="JetBrains Mono, monospace">${v}</text>`;
+    }).join('');
+
+    // Area fills (subtle gradient under each line)
+    const areas = seriesPts.map((s,si)=>{
+      if(s.pts.length < 2) return '';
+      let line = '';
+      s.pts.forEach((p,i)=>{
+        if(i===0) line += `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+        else {
+          const prev = s.pts[i-1];
+          const cx = (prev.x+p.x)/2;
+          line += ` C ${cx.toFixed(1)} ${prev.y.toFixed(1)}, ${cx.toFixed(1)} ${p.y.toFixed(1)}, ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+        }
+      });
+      const last = s.pts[s.pts.length-1], first = s.pts[0];
+      const areaPath = `${line} L ${last.x.toFixed(1)} ${(padT+chartH).toFixed(1)} L ${first.x.toFixed(1)} ${(padT+chartH).toFixed(1)} Z`;
+      return `<path d="${areaPath}" fill="url(#${uid}-a${si})" opacity="0.55"/>`;
+    }).join('');
+
+    const lines = seriesPts.map((s,si)=>{
       let path = '';
       s.pts.forEach((p,i)=>{
         if(i===0) path += `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
@@ -11582,40 +11742,80 @@ function renderKPIChartDashboard(k, globalStats){
           path += ` C ${cx.toFixed(1)} ${prev.y.toFixed(1)}, ${cx.toFixed(1)} ${p.y.toFixed(1)}, ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
         }
       });
-      const dots = s.pts.map(p=>`
-        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="${s.color}" opacity="0.18"/>
-        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.8" fill="#0e1014" stroke="${s.color}" stroke-width="2"/>`).join('');
-      return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
+      const dots = s.pts.map((p,i)=>{
+        const isLast = i===s.pts.length-1;
+        const r = isLast ? 4.2 : 3.2;
+        return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r+2.5}" fill="${s.color}" opacity="0.12"/>
+          <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="#0b0e14" stroke="${s.color}" stroke-width="2.2"/>
+          <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="1.4" fill="${s.color}"/>`;
+      }).join('');
+      return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" filter="url(#${uid}-glow)" opacity="0.95"/>
+        <path d="${path}" fill="none" stroke="${s.color}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
+        ${dots}`;
     }).join('');
-    // End labels on the right — sorted by Y then nudged to avoid overlap
+
+    // End labels — sorted & de-overlapped, premium pill style
     const endLabels = seriesPts.map(s=>{
       const last = s.pts[s.pts.length-1];
       return { key:s.key, label:s.label, color:s.color, v:last.v, y:last.y, x:last.x };
     }).sort((a,b)=>a.y-b.y);
-    const minGap = 14;
+    const minGap = 16;
     for(let i=1;i<endLabels.length;i++){
-      if(endLabels[i].y - endLabels[i-1].y < minGap){
-        endLabels[i].y = endLabels[i-1].y + minGap;
-      }
+      if(endLabels[i].y - endLabels[i-1].y < minGap) endLabels[i].y = endLabels[i-1].y + minGap;
     }
-    // Keep within chart bounds
     for(let i=endLabels.length-2;i>=0;i--){
-      if(endLabels[i+1].y - endLabels[i].y < minGap){
-        endLabels[i].y = endLabels[i+1].y - minGap;
-      }
+      if(endLabels[i+1].y - endLabels[i].y < minGap) endLabels[i].y = endLabels[i+1].y - minGap;
     }
     const endLabelSvg = endLabels.map(e=>{
-      const lx = padL + chartW + 8;
-      return `<line x1="${e.x.toFixed(1)}" y1="${yAt(e.v).toFixed(1)}" x2="${lx}" y2="${e.y.toFixed(1)}" stroke="${e.color}" stroke-width="1" opacity="0.35"/>
-        <circle cx="${lx}" cy="${e.y.toFixed(1)}" r="3" fill="${e.color}"/>
-        <text x="${(lx+6).toFixed(1)}" y="${(e.y+3.5).toFixed(1)}" font-size="10" font-weight="700" fill="${e.color}" font-family="JetBrains Mono, monospace">${e.label} ${e.v.toFixed(0)}</text>`;
+      const lx = padL + chartW + 10;
+      const y0 = yAt(e.v);
+      return `<path d="M ${e.x.toFixed(1)} ${y0.toFixed(1)} L ${(lx-2).toFixed(1)} ${e.y.toFixed(1)}" stroke="${e.color}" stroke-width="1.1" opacity="0.4" fill="none"/>
+        <rect x="${lx}" y="${(e.y-8).toFixed(1)}" width="78" height="16" rx="4" fill="rgba(12,16,24,0.92)" stroke="${e.color}" stroke-width="1" opacity="0.95"/>
+        <circle cx="${(lx+8).toFixed(1)}" cy="${e.y.toFixed(1)}" r="2.6" fill="${e.color}"/>
+        <text x="${(lx+15).toFixed(1)}" y="${(e.y+3.5).toFixed(1)}" font-size="10" font-weight="700" fill="${e.color}" font-family="JetBrains Mono, monospace">${e.label} ${e.v.toFixed(0)}</text>`;
     }).join('');
-    const xLabels = trendMonths.map((m,i)=>`<text x="${xAt(i).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10" font-weight="600" fill="#a8aeb6" font-family="JetBrains Mono, monospace">${m.short}</text>`).join('');
-    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible">${grid}${lines}${endLabelSvg}${xLabels}</svg>`;
+
+    const xLabels = trendMonths.map((m,i)=>{
+      const x = xAt(i);
+      const isLast = i===n-1;
+      return `<text x="${x.toFixed(1)}" y="${H-14}" text-anchor="middle" font-size="10.5" font-weight="${isLast?'700':'600'}" fill="${isLast?'#EDEEF0':'#8B929A'}" font-family="JetBrains Mono, monospace">${m.short}</text>
+        ${isLast?`<circle cx="${x.toFixed(1)}" cy="${H-28}" r="2" fill="#FFC72C" opacity="0.7"/>`:''}`;
+    }).join('');
+
+    // Axis baseline
+    const baseline = `<line x1="${padL}" y1="${padT+chartH}" x2="${padL+chartW}" y2="${padT+chartH}" stroke="rgba(255,255,255,0.12)" stroke-width="1.2"/>
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" stroke="rgba(255,255,255,0.1)" stroke-width="1.2"/>`;
+
+    // Y-axis unit hint
+    const yHint = `<text x="12" y="${padT-10}" font-size="9" fill="#5C636B" font-family="JetBrains Mono, monospace" letter-spacing="0.5">% ACH</text>`;
+
+    const defs = seriesPts.map((s,si)=>`
+      <linearGradient id="${uid}-a${si}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${s.color}" stop-opacity="0.22"/>
+        <stop offset="55%" stop-color="${s.color}" stop-opacity="0.06"/>
+        <stop offset="100%" stop-color="${s.color}" stop-opacity="0"/>
+      </linearGradient>`).join('');
+
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible">
+      <defs>
+        <linearGradient id="${uid}-panel" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.035)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.01)"/>
+        </linearGradient>
+        <filter id="${uid}-glow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="2.2" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        ${defs}
+      </defs>
+      ${panelBg}${vGuides}${grid}${baseline}${areas}${lines}${endLabelSvg}${xLabels}${yHint}
+    </svg>`;
   }
+
 
   // --- Comparison bars vs target (% capaian) ---
   const barItems = monthlyKpiDefs.map(d=>({ label:d.label, pct:kpiAchievePct(d.key,d.value), color:d.color, value:d.value }));
+
   function comparisonBarsSVG(){
     const W=380, H=210, padL=28, padR=20, padT=32, padB=34, cap=130;
     const n=barItems.length, gap=16;
@@ -11992,14 +12192,29 @@ function renderKPIChartDashboard(k, globalStats){
       </div>
     </div>
     ${(() => {
-      const svc = collectService4DStats();
+      const yearOpts = getServiceYearOptions();
+      if(kpiServiceYearValue && !yearOpts.includes(kpiServiceYearValue)) kpiServiceYearValue = '';
+      const activeServiceYear = kpiServiceYearValue || '';
+      const serviceYearSelectHtml = `<select class="trend-quarter-select" onchange="onKpiServiceYearChange(this)" title="Filter tahun Plan Service">
+            <option value="" ${!activeServiceYear?'selected':''}>Semua Tahun</option>
+            ${yearOpts.map(y=>`<option value="${y}" ${y===activeServiceYear?'selected':''}>${y}</option>`).join('')}
+          </select>`;
+      const svc = collectService4DStats(activeServiceYear);
       const ach = buildServiceAchievementTableHTML(svc);
       const achPct = svc.total ? Math.round(svc.closed/svc.total*100) : 0;
       const typeChart = serviceTypeMiniBarsSVG(svc);
+      const periodLabel = activeServiceYear ? ('Tahun '+activeServiceYear) : 'Semua Tahun';
       return `
     <div class="dash-mid-grid">
       <div class="dash-panel">
-        <div class="dash-panel-title">DASHBOARD SERVICE</div>
+        <div class="chart-panel-title-row">
+          <div class="dash-panel-title" style="margin-bottom:0">DASHBOARD SERVICE</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;display:inline-flex;align-items:center;gap:4px"><span class="status-dot" style="margin-right:0"></span>Live Sync</span>
+            <span style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Year period</span>
+            ${serviceYearSelectHtml}
+          </div>
+        </div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
           <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--text-dim)">Total <b style="color:var(--text)">${svc.total}</b></div>
           <div style="font-family:JetBrains Mono,monospace;font-size:11px;color:#4CAF6D">Close <b>${svc.closed}</b></div>
