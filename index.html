@@ -115,6 +115,54 @@ body{
 .nav-item[data-view="planningsystem"] .num{ background:rgba(255,105,180,0.15); color:#ff9fcb; }
 .nav-item[data-view="summary"] .num{ background:rgba(120,144,255,0.15); color:#a3b3ff; }
 .nav-item[data-view="bdreport"] .num{ background:rgba(168,120,255,0.15); color:#c3a6ff; }
+.nav-item[data-view="cbm"] .num{ background:rgba(64,196,140,0.15); color:#6fe0b0; }
+.cbm-comp-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
+@media(max-width:1100px){.cbm-comp-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:700px){.cbm-comp-grid{grid-template-columns:repeat(2,1fr);}}
+.cbm-comp-card{background:linear-gradient(165deg,#161b22 0%,#10141a 100%);border:1px solid var(--line);border-radius:10px;padding:14px 12px;cursor:pointer;transition:border-color .15s,transform .12s;}
+.cbm-comp-card:hover,.cbm-comp-card.active{border-color:rgba(64,196,140,0.45);transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,0.3);}
+.cbm-comp-card .cc-name{font-family:Oswald,sans-serif;font-size:13px;letter-spacing:.4px;color:#6fe0b0;margin-bottom:8px;}
+.cbm-comp-card .cc-stat{font-family:JetBrains Mono,monospace;font-size:11px;color:var(--text-dim);display:flex;justify-content:space-between;margin-top:3px;}
+.cbm-comp-card .cc-stat b{color:var(--text);}
+.cbm-comp-card .cc-stat b.warn{color:var(--yellow);}
+.cbm-comp-card .cc-stat b.bad{color:var(--red);}
+.cbm-comp-card .cc-stat b.ok{color:var(--green);}
+.pdm-insight{background:rgba(64,196,140,0.08);border:1px solid rgba(64,196,140,0.2);border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.55;}
+.pdm-insight b{color:#6fe0b0;}
+.pill.ai-crit{background:rgba(229,72,77,0.18);color:var(--red);}
+.pill.ai-high{background:rgba(255,107,53,0.18);color:var(--orange);}
+.pill.ai-med{background:rgba(255,199,44,0.18);color:var(--yellow);}
+.pill.ai-low{background:rgba(76,175,109,0.18);color:var(--green);}
+.cbm-unit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:18px;}
+.cbm-asset-card{background:linear-gradient(165deg,#141a22 0%,#0c1016 100%);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .12s;}
+.cbm-asset-card:hover,.cbm-asset-card.active{border-color:rgba(64,196,140,0.5);box-shadow:0 8px 28px rgba(0,0,0,0.4),0 0 0 1px rgba(64,196,140,0.2);transform:translateY(-2px);}
+.cbm-asset-visual{height:140px;background:radial-gradient(ellipse at 40% 30%,rgba(64,196,140,0.12),transparent 55%),linear-gradient(180deg,#162433,#0a1018);display:flex;align-items:center;justify-content:center;position:relative;border-bottom:1px solid rgba(255,255,255,0.06);}
+.cbm-asset-visual img{max-height:120px;max-width:90%;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));}
+.cbm-asset-body{padding:12px 14px 14px;}
+.cbm-asset-code{font-family:Oswald,sans-serif;font-size:16px;letter-spacing:.5px;color:#6fe0b0;}
+.cbm-asset-meta{font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+.cbm-asset-hm{font-family:JetBrains Mono,monospace;font-size:12px;color:var(--yellow);margin-top:6px;}
+.cbm-health-row{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:10px;}
+.cbm-health-row .hn{flex:0 0 72px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cbm-health-bar{flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+.cbm-health-bar>i{display:block;height:100%;border-radius:3px;}
+.cbm-health-row .hp{flex:0 0 36px;text-align:right;font-family:JetBrains Mono,monospace;font-weight:700;font-size:10px;}
+.cbm-analysis{display:grid;grid-template-columns:1.1fr 0.9fr;gap:14px;margin-bottom:16px;}
+@media(max-width:960px){.cbm-analysis{grid-template-columns:1fr;}}
+.cbm-analysis-hero{background:linear-gradient(165deg,#121820 0%,#0a0e14 100%);border:1px solid rgba(64,196,140,0.2);border-radius:12px;padding:16px;position:relative;}
+.cbm-health-gauges{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.cbm-gauge-item{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:10px 12px;}
+.cbm-gauge-item .gl{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.cbm-gauge-item .gv{font-family:Oswald,sans-serif;font-size:22px;font-weight:700;line-height:1;}
+.cbm-gauge-track{height:8px;background:rgba(255,255,255,0.06);border-radius:4px;margin-top:8px;overflow:hidden;}
+.cbm-gauge-track>i{display:block;height:100%;border-radius:4px;transition:width .25s;}
+.cbm-target-table td,.cbm-target-table th{font-size:12px;}
+.cbm-reco-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;}
+.cbm-reco-list li{background:rgba(255,199,44,0.06);border:1px solid rgba(255,199,44,0.2);border-left:3px solid var(--yellow);border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.4;}
+.cbm-reco-list li.crit{border-left-color:var(--red);background:rgba(229,72,77,0.06);border-color:rgba(229,72,77,0.2);}
+.cbm-reco-list li.ok{border-left-color:var(--green);background:rgba(76,175,109,0.06);border-color:rgba(76,175,109,0.2);}
+
+
 .nav-item:hover{
   background:rgba(255,255,255,0.05);
   color:var(--text); border-color:rgba(255,255,255,0.08);
@@ -1337,6 +1385,7 @@ body.role-mechanic #history-filters{ display:none !important; }
       <div class="nav-item" data-view="daily"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></span><span class="label">Daily Maintenance</span></div>
       <div class="nav-item" data-view="plan"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span><span class="label">Plan Service</span></div>
       <div class="nav-item" data-view="planningsystem"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span><span class="label">Plan Schedule Maintenance</span><span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
+      <div class="nav-item" data-view="cbm"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></span><span class="label">CBM</span></div>
       <div class="nav-item" data-view="summary"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><span class="label">Mechanic Activity Report</span></div>
     </nav>
     <div class="sidebar-unit-photo">
@@ -1927,7 +1976,11 @@ body.role-mechanic #history-filters{ display:none !important; }
             <select id="plan-record-filter-unit" style="min-width:160px; background:var(--panel-2); border:1px solid var(--line); color:var(--yellow); font-weight:600; padding:8px 10px; border-radius:var(--radius);">
               <option value="">Semua Unit</option>
             </select>
-            <button type="button" class="btn small secondary" id="plan-record-clear-filter" title="Reset filter unit">Reset</button>
+            <label style="font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin:0;">Periode Bulan</label>
+            <select id="plan-record-filter-month" style="min-width:170px; background:var(--panel-2); border:1px solid var(--line); color:var(--yellow); font-weight:600; padding:8px 10px; border-radius:var(--radius);" title="Filter record service berdasarkan bulan eksekusi">
+              <option value="">Semua Bulan / Tahun</option>
+            </select>
+            <button type="button" class="btn small secondary" id="plan-record-clear-filter" title="Reset filter unit &amp; periode bulan">Reset</button>
           </div>
           <div class="scroll-top-track" id="plan-record-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="plan-record-scroll-top-inner"></div></div>
           <div class="table-wrap" id="plan-record-table-wrap">
@@ -2179,6 +2232,175 @@ body.role-mechanic #history-filters{ display:none !important; }
           </div>
         </div>
       </section>
+
+      <!-- CBM MONITORING ONLY -->
+      <section class="view" id="view-cbm">
+        <div class="banner"> Menu <b>CBM</b> bersifat <b>monitoring</b> (tanpa input). Life time &amp; performa komponen dihitung otomatis dari <b>HM</b> + histori <b>Breakdown / Unplan</b> pada Daily Maintenance.</div>
+        <div class="chip-tabs" id="cbm-tabs">
+          <button type="button" class="chip active" data-cbm-tab="overview">Overview Komponen</button>
+          <button type="button" class="chip" data-cbm-tab="lifetime">Life Time &amp; Performance</button>
+          <button type="button" class="chip" data-cbm-tab="unplan">Histori Unplan / Breakdown</button>
+          <button type="button" class="chip" data-cbm-tab="insight">Insight AI</button>
+        </div>
+
+        <div class="panel period-panel" style="margin-bottom:16px;">
+          <div class="panel-head" style="margin-bottom:10px;">
+            <h2>Filter Monitoring</h2>
+            <div class="toolbar">
+              <button type="button" class="btn secondary" id="cbm-refresh">⟲ Refresh Data</button>
+            </div>
+          </div>
+          <div class="filters" style="margin-bottom:0;">
+            <div class="field" style="margin:0;min-width:150px;">
+              <label>Unit</label>
+              <select id="cbm-filter-unit"><option value="">Semua Unit</option></select>
+            </div>
+            <div class="field" style="margin:0;min-width:150px;">
+              <label>Dari Tanggal</label>
+              <input type="date" id="cbm-filter-start">
+            </div>
+            <div class="field" style="margin:0;min-width:150px;">
+              <label>Sampai Tanggal</label>
+              <input type="date" id="cbm-filter-end">
+            </div>
+            <div class="field" style="margin:0;min-width:170px;">
+              <label>Komponen</label>
+              <select id="cbm-filter-comp"><option value="">Semua Komponen</option></select>
+            </div>
+            <div style="align-self:flex-end;">
+              <button type="button" class="btn small secondary" id="cbm-filter-clear">Clear Filter</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- OVERVIEW + ASSET CARDS -->
+        <div class="cbm-tab-panel" id="cbm-tab-overview">
+          <div class="grid grid-4" style="margin-bottom:16px;">
+            <div class="unit-card"><div class="cat-label">Total Breakdown</div><div class="type" id="cbm-ov-bd">0</div><div class="hint">Periode filter</div></div>
+            <div class="unit-card"><div class="cat-label">Unplan Event</div><div class="type" style="color:var(--orange)" id="cbm-ov-unplan">0</div><div class="hint">Breakdown Unplan</div></div>
+            <div class="unit-card"><div class="cat-label">Total Jam Repair</div><div class="type" style="color:var(--yellow)" id="cbm-ov-hours">0</div><div class="hint">Sum duration (jam)</div></div>
+            <div class="unit-card"><div class="cat-label">Komponen Kritis</div><div class="type" style="color:var(--red)" id="cbm-ov-crit">0</div><div class="hint">Frekuensi tinggi / MTBF rendah</div></div>
+          </div>
+
+          <div class="section-title">Asset Analysis — Pilih Unit</div>
+          <div class="cbm-unit-grid" id="cbm-unit-cards"></div>
+
+          <div id="cbm-asset-detail" style="display:none;">
+            <div class="panel-head" style="margin-bottom:10px;">
+              <h2 id="cbm-asset-title" style="font-family:Oswald,sans-serif;font-size:18px;letter-spacing:.5px;">Asset Analysis</h2>
+              <button type="button" class="btn small secondary" id="cbm-asset-close">Tutup Detail</button>
+            </div>
+            <div class="cbm-analysis">
+              <div class="cbm-analysis-hero">
+                <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px;">
+                  <div id="cbm-asset-visual" class="cbm-asset-visual" style="width:220px;height:150px;border-radius:10px;flex-shrink:0;"></div>
+                  <div style="flex:1;min-width:180px;">
+                    <div class="cbm-asset-code" id="cbm-asset-code">—</div>
+                    <div class="cbm-asset-meta" id="cbm-asset-meta">—</div>
+                    <div class="cbm-asset-hm" id="cbm-asset-hm">HM: —</div>
+                    <div class="hint" style="margin-top:8px;" id="cbm-asset-summary">—</div>
+                  </div>
+                </div>
+                <div class="section-title" style="margin-top:4px;">Component Health &amp; Life Time Target</div>
+                <div class="cbm-health-gauges" id="cbm-asset-gauges"></div>
+                <div class="table-wrap">
+                  <table class="cbm-target-table">
+                    <thead><tr>
+                      <th>Komponen</th><th>Health</th><th>Target Life (HM)</th><th>Est. Used HM*</th>
+                      <th>Sisa ke Target</th><th>Events</th><th>Unplan</th><th>Avg HM Gap</th>
+                    </tr></thead>
+                    <tbody id="cbm-asset-lt-tbody"></tbody>
+                  </table>
+                </div>
+                <p class="hint" style="margin-top:8px;">*Est. Used HM ≈ HM unit saat ini (proxy). Health menurun jika banyak unplan / HM gap pendek vs target life.</p>
+              </div>
+              <div class="cbm-analysis-hero">
+                <div class="section-title" style="margin-top:0;">Recommendations</div>
+                <ul class="cbm-reco-list" id="cbm-asset-reco"></ul>
+                <div class="section-title">Recent Breakdown / Unplan</div>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Tanggal</th><th>Komponen</th><th>P/U</th><th>HM</th><th>Durasi</th></tr></thead>
+                    <tbody id="cbm-asset-recent"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-title">Performance per Kelompok Komponen (Armada)</div>
+          <div class="cbm-comp-grid" id="cbm-comp-cards"></div>
+          <div class="panel">
+            <div class="panel-head"><h2>Ringkasan per Komponen</h2></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>Komponen</th><th>Target Life (HM)</th><th>Breakdown</th><th>Unplan</th><th>Plan BD</th>
+                  <th>Jam Repair</th><th>Unit Terdampak</th><th>Avg HM Gap</th><th>Status</th>
+                </tr></thead>
+                <tbody id="cbm-ov-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- LIFETIME PERFORMANCE -->
+        <div class="cbm-tab-panel" id="cbm-tab-lifetime" style="display:none;">
+          <div class="panel">
+            <div class="panel-head">
+              <h2><span class="tag">MONITOR</span> Life Time &amp; Performance (berdasarkan HM)</h2>
+            </div>
+            <p class="hint" style="margin-bottom:12px;">Estimasi interval antar failure dihitung dari selisih HM event breakdown pada unit &amp; komponen yang sama. Semakin pendek <b>Avg HM Gap</b>, semakin agresif keausan / risiko unplan.</p>
+            <div class="table-wrap">
+              <table id="cbm-lifetime-table">
+                <thead><tr>
+                  <th>Unit</th><th>Komponen</th><th>Events</th><th>Unplan</th>
+                  <th>HM First</th><th>HM Last</th><th>HM Span</th>
+                  <th>Avg HM Gap</th><th>Jam Repair</th><th>Last Event</th><th>Performance</th>
+                </tr></thead>
+                <tbody id="cbm-lt-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- UNPLAN HISTORY -->
+        <div class="cbm-tab-panel" id="cbm-tab-unplan" style="display:none;">
+          <div class="panel">
+            <div class="panel-head"><h2>Histori Breakdown / Event Unplan</h2></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>Tanggal</th><th>Unit</th><th>HM</th><th>Komponen</th>
+                  <th>Plan/Unplan</th><th>Durasi (jam)</th><th>Deskripsi</th><th>Mechanic</th><th>Status</th>
+                </tr></thead>
+                <tbody id="cbm-hist-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- INSIGHT -->
+        <div class="cbm-tab-panel" id="cbm-tab-insight" style="display:none;">
+          <div class="panel">
+            <div class="panel-head">
+              <h2><span class="tag" style="background:#40c48c;color:#0a1a12">AI</span> Insight Monitoring</h2>
+              <button type="button" class="btn secondary" id="cbm-insight-run">⚡ Hitung Ulang Insight</button>
+            </div>
+            <div class="pdm-insight" id="cbm-fleet-insight" style="margin-bottom:14px;">Insight dihitung dari pola breakdown &amp; unplan vs HM.</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>Unit</th><th>Komponen</th><th>Risk</th><th>Events</th><th>Unplan %</th>
+                  <th>Avg HM Gap</th><th>Rekomendasi Monitoring</th>
+                </tr></thead>
+                <tbody id="cbm-insight-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
 
     </div>
   </main>
@@ -4707,7 +4929,7 @@ const navItems = document.querySelectorAll('#main-nav .nav-item');
 const titleMap = {
   dashboard:'Dashboard', database:'Performance', accounts:'Database Akun', preinspection:'Pre Inspection', daily:'Daily Maintenance',
   plan:'Plan Service', planningsystem:'Plan Schedule Maintenance', summary:'Mechanic Activity Report',
-  bdreport:'Laporan Breakdown Unit'
+  bdreport:'Laporan Breakdown Unit', cbm:'CBM — Component Monitoring'
 };
 navItems.forEach(item=>{
   item.addEventListener('click', ()=>{
@@ -4745,6 +4967,7 @@ navItems.forEach(item=>{
 
     if(item.dataset.view==='accounts'){ loadRegisteredUsers().then(renderAccountsTable); }
     if(item.dataset.view==='preinspection'){ renderPreInspectionPlans(); renderPreInspectionMechanicNotify(); }
+    if(item.dataset.view==='cbm'){ renderCBM(); }
   });
 });
 
@@ -4923,6 +5146,7 @@ const PANEL_DEFS = [
   { key:'planningsystem', label:'Plan Schedule Maintenance' },
   { key:'summary',        label:'Mechanic Activity Report' },
   { key:'bdreport',       label:'Laporan Breakdown Unit' },
+  { key:'cbm',            label:'CBM Monitoring' },
 ];
 let userPanelAccess = {}; // username -> { panelKey: level }
 let accessModalUsername = null;
@@ -4977,9 +5201,10 @@ function defaultPanelAccessForUser(u){
   }
   // Mechanic (dan posisi lain): panel operasional view only,
   // kecuali Pre Inspection, Daily Maintenance, P2H & Plan Schedule Maintenance yang bisa diinput.
-  ['preinspection','daily','plan','planningsystem','bdreport'].forEach(k => { map[k] = 'view'; });
+  ['preinspection','daily','plan','planningsystem','bdreport','cbm'].forEach(k => { map[k] = 'view'; });
   if(pos === 'Mechanic' || u.role === 'Mechanic'){
     ['preinspection','daily','planningsystem'].forEach(k => { map[k] = 'full'; });
+    map.cbm = 'view';
   }
   return map;
 }
@@ -7784,8 +8009,22 @@ function getPerformancePeriodDays(){
  * service mundur ketika sheet performance hanya berisi periode historis.
  */
 function getDailyWorkingHours(unitCode){
-  const PLAN_WORKING_HOURS_PER_DAY = 18;
-  return PLAN_WORKING_HOURS_PER_DAY;
+  // Prioritas: WH/hari dari sheet performance (per unit), lalu default 18 jam/hari
+  try{
+    if(typeof getPerformanceWorkingHoursPerDay === 'function'){
+      const w = Number(getPerformanceWorkingHoursPerDay(unitCode));
+      if(w > 0) return w;
+    }
+  }catch(_e){}
+  try{
+    const code = String(unitCode||'').trim().toUpperCase();
+    const perf = (typeof getPerformanceWByUnit==='function') ? getPerformanceWByUnit()[code] : null;
+    if(perf){
+      const wpd = Number(perf.whPerDay);
+      if(wpd > 0) return Math.round(Math.min(24, wpd)*10)/10;
+    }
+  }catch(_e){}
+  return 18;
 }
 
 /** Record service Close terakhir untuk unit (HM + tanggal eksekusi). */
@@ -7873,8 +8112,10 @@ function getActualMonitoringHM(unitCode, periodStart, periodEnd){
 }
 
 /**
- * HM Sekarang = HM AKTUAL Monitoring sesuai filter periode.
- * Tidak menambah estimasi jam kerja harian.
+ * HM Sekarang = HM AKTUAL Monitoring (baseline) + proyeksi otomatis.
+ * Proyeksi: hari berlalu sejak pembacaan HM terakhir × Working Hours/hari
+ * dari sheet performance (fallback 18 jam/hari).
+ * Dipakai Plan Service (kolom HM Sekarang) dan CBM Monitoring.
  */
 function calcHmSekarang(unitCode, asOfDateStr){
   const dailyWh = getDailyWorkingHours(unitCode);
@@ -7910,13 +8151,29 @@ function calcHmSekarang(unitCode, asOfDateStr){
   }
 
   const asOfStr = periodEnd || periodStart || (new Date().toISOString().slice(0,10));
+
+  // Proyeksi otomatis: HM += hari × WH/hari (sheet performance)
+  let daysElapsed = 0;
+  if(hmNow!=null && lastDate && String(lastDate).length>=10){
+    try{
+      const d0 = new Date(String(lastDate).slice(0,10)+'T00:00:00');
+      const d1 = new Date(String(asOfStr).slice(0,10)+'T00:00:00');
+      const diff = Math.floor((d1 - d0) / 86400000);
+      daysElapsed = diff > 0 ? diff : 0;
+      if(daysElapsed > 0 && dailyWh > 0){
+        hmNow = Math.round((Number(hmNow) + daysElapsed * dailyWh) * 10) / 10;
+        source = (source || 'projected') + '+wh/day';
+      }
+    }catch(_e){}
+  }
+
   return {
     hmNow,
     dailyWh,
     source,
     lastHm,
     lastDate,
-    daysElapsed: 0,
+    daysElapsed,
     liveCalc,
     asOfDate: asOfStr
   };
@@ -8344,24 +8601,68 @@ function populatePlanRecordUnitFilter(){
   else sel.value = '';
 }
 
+/** Isi opsi filter Periode Bulan di Record Service (dari data Close + tahun berjalan). */
+function populatePlanRecordMonthFilter(){
+  const sel = document.getElementById('plan-record-filter-month');
+  if(!sel) return;
+  const prev = sel.value || '';
+  const keys = new Set();
+  const now = new Date();
+  const yNow = now.getFullYear();
+  for(let y = yNow - 1; y <= yNow + 1; y++){
+    for(let m = 1; m <= 12; m++){
+      keys.add(y + '-' + String(m).padStart(2,'0'));
+    }
+  }
+  (planRecords||[]).forEach(r=>{
+    if(!isPlanClosed(r)) return;
+    const k = planYearMonthKey(r.execDate || r.planDate || '');
+    if(k) keys.add(k);
+  });
+  const sorted = Array.from(keys).sort().reverse(); // terbaru dulu
+  sel.innerHTML = '<option value="">Semua Bulan / Tahun</option>' +
+    sorted.map(k=>{
+      const [yy, mm] = k.split('-');
+      const mi = Number(mm);
+      const label = (mi>=1 && mi<=12) ? ((typeof BULAN_NAMA!=='undefined'?BULAN_NAMA[mi]:mm) + ' ' + yy) : k;
+      return '<option value="'+k+'">'+label+'</option>';
+    }).join('');
+  if(prev && sorted.includes(prev)) sel.value = prev;
+  else if(prev && keys.has(prev)) sel.value = prev;
+}
+
 /** Record Service Unit: otomatis dari Plan Service yang sudah Close. */
 function renderRecordServiceTable(){
   const tbody = document.getElementById('plan-record-tbody');
   if(!tbody) return;
 
   populatePlanRecordUnitFilter();
+  populatePlanRecordMonthFilter();
 
   const unitFilter = (document.getElementById('plan-record-filter-unit')||{}).value || '';
+  const monthFilter = (document.getElementById('plan-record-filter-month')||{}).value || '';
   const closed = planRecords.filter(r=>{
     if(!isPlanClosed(r)) return false;
     if(unitFilter && String(r.unitCode||'').trim() !== unitFilter) return false;
+    if(monthFilter){
+      const ym = planYearMonthKey(r.execDate || r.planDate || '');
+      if(ym !== monthFilter) return false;
+    }
     return true;
   });
 
   if(!closed.length){
-    const emptyMsg = unitFilter
-      ? `Tidak ada record service untuk unit <b>${escUH(unitFilter)}</b>.`
-      : 'Belum ada record service. Unit yang di-Close di Plan Service akan muncul di sini otomatis.';
+    let emptyMsg = 'Belum ada record service. Unit yang di-Close di Plan Service akan muncul di sini otomatis.';
+    if(unitFilter && monthFilter){
+      emptyMsg = `Tidak ada record service untuk unit <b>${escUH(unitFilter)}</b> pada periode <b>${escUH(monthFilter)}</b>.`;
+    } else if(unitFilter){
+      emptyMsg = `Tidak ada record service untuk unit <b>${escUH(unitFilter)}</b>.`;
+    } else if(monthFilter){
+      const [yy, mm] = monthFilter.split('-');
+      const mi = Number(mm);
+      const label = (mi>=1 && mi<=12) ? ((BULAN_NAMA[mi]||mm) + ' ' + yy) : monthFilter;
+      emptyMsg = `Tidak ada record service pada periode <b>${escUH(label)}</b>.`;
+    }
     tbody.innerHTML = `<tr class="empty-row"><td colspan="8">${emptyMsg}</td></tr>`;
     try{ attachTopScroll('plan-record'); }catch(_e){}
     return;
@@ -8390,13 +8691,18 @@ function renderRecordServiceTable(){
   try{ attachTopScroll('plan-record'); }catch(_e){}
 }
 
-// Filter Unit Code di Record Service Unit
+// Filter Unit Code & Periode Bulan di Record Service Unit
 document.getElementById('plan-record-filter-unit')?.addEventListener('change', ()=>{
+  renderRecordServiceTable();
+});
+document.getElementById('plan-record-filter-month')?.addEventListener('change', ()=>{
   renderRecordServiceTable();
 });
 document.getElementById('plan-record-clear-filter')?.addEventListener('click', ()=>{
   const sel = document.getElementById('plan-record-filter-unit');
   if(sel) sel.value = '';
+  const msel = document.getElementById('plan-record-filter-month');
+  if(msel) msel.value = '';
   renderRecordServiceTable();
 });
 
@@ -12712,6 +13018,12 @@ function startPerformanceLiveSync(){
       } else if(perfChanged || dayChanged){
         try{ await rebuildPlanServiceAuto({ silent:true }); }catch(_e){}
       }
+
+      // CBM: HM live = Monitoring + (hari × WH/hari performance) — refresh otomatis
+      const cbmView = document.getElementById('view-cbm');
+      if(cbmView && cbmView.classList.contains('active') && (perfChanged || dayChanged)){
+        try{ if(typeof renderCBM==='function') renderCBM(); }catch(_e){}
+      }
     }catch(e){ /* silent */ }
   }, 45000);
 }
@@ -13196,6 +13508,679 @@ window.deleteBreakdownReport = async function(id){
   renderBreakdownReportTable();
 };
 
+
+/* ================= CBM MONITORING (read-only) =================
+   Sumber data: Daily Maintenance (Breakdown) — HM, plan/unplan, kategori komponen.
+   Tidak ada form input di menu ini. */
+const CBM_COMPONENTS = [
+  { key:'Engine',              match:['engine'], targetLife:12000, color:'#FF6B35' },
+  { key:'Transmission',        match:['powertrain','power train','transmission','transmisi'], targetLife:10000, color:'#4A90D9' },
+  { key:'Hydraulic',           match:['hydraulic','hidraulik','hidrolik'], targetLife:8000, color:'#4CAF6D' },
+  { key:'Final Drive',         match:['final drive','finaldrive'], targetLife:8000, color:'#E5484D' },
+  { key:'Axle / Differential', match:['differential','exel','axle','axel','diff '], targetLife:10000, color:'#A878FF', loaderOnly:true },
+  { key:'Electrical',          match:['electrical','electric','elektrik','kelistrikan'], targetLife:15000, color:'#FFC72C' },
+  { key:'Cabin',               match:['cabin','kabin'], targetLife:20000, color:'#9AA0A8' },
+  { key:'Undercarriage',       match:['undercarriage','under carriage','track'], targetLife:6000, color:'#FF8C42' },
+  { key:'Attachment',          match:['attachment','bucket','blade','boom','arm'], targetLife:5000, color:'#40c48c' },
+];
+/** Komponen Axle/Differential hanya relevan untuk Wheel Loader (bukan Excavator/Dozer). */
+function cbmIsLoaderUnit(unit){
+  if(!unit) return false;
+  const cat = String(unit.category||'').toLowerCase();
+  const type = String(unit.type||'').toLowerCase();
+  return /loader|wheel/.test(cat) || /^wa\d/.test(type);
+}
+function cbmComponentsForUnit(unit){
+  return CBM_COMPONENTS.filter(c=>{
+    if(c.loaderOnly && !cbmIsLoaderUnit(unit)) return false;
+    return true;
+  });
+}
+function cbmUnitByCode(code){
+  return (UNITS||[]).find(u=>u.code===code) || null;
+}
+/** Daftar komponen yang ditampilkan di UI (sembunyikan Axle/Diff jika unit filter/selected = Dozer/Exca). */
+function cbmVisibleComponents(){
+  const f = (typeof cbmGetFilters==='function') ? cbmGetFilters() : {};
+  const code = (f && f.unit) || (typeof cbmSelectedUnit!=='undefined' ? cbmSelectedUnit : '') || '';
+  if(code){
+    const u = cbmUnitByCode(code);
+    if(u && !cbmIsLoaderUnit(u)) return CBM_COMPONENTS.filter(c=>!c.loaderOnly);
+  }
+  // Tanpa filter unit: tetap tampilkan semua (data Axle hanya dari Loader)
+  // Tapi jika SEMUA unit di armada bukan loader, hide juga
+  const units = UNITS||[];
+  if(units.length && units.every(u=>!cbmIsLoaderUnit(u))) return CBM_COMPONENTS.filter(c=>!c.loaderOnly);
+  return CBM_COMPONENTS.slice();
+}
+let cbmActiveTab = 'overview';
+let cbmSelectedComp = '';
+let cbmSelectedUnit = '';
+
+function normalizeCBMComponent(bdCat, jobDesc){
+  const raw = `${bdCat||''} ${jobDesc||''}`.toLowerCase();
+  // exact-ish from bd category first
+  const bd = String(bdCat||'').trim();
+  // Support/Consumable & kategori plan daily maintenance tidak masuk CBM komponen
+  if(/support|consumable/i.test(bd) || /support|consumable/.test(raw)) return null;
+  if(bd){
+    if(/^engine$/i.test(bd)) return 'Engine';
+    if(/power\s*train|transmission/i.test(bd)) return 'Transmission';
+    if(/hydraulic/i.test(bd)) return 'Hydraulic';
+    if(/final\s*drive/i.test(bd)) return 'Final Drive';
+    if(/differential|exel|axle/i.test(bd)) return 'Axle / Differential';
+    if(/electrical/i.test(bd)) return 'Electrical';
+    if(/cabin/i.test(bd)) return 'Cabin';
+    if(/undercarriage/i.test(bd)) return 'Undercarriage';
+    if(/attachment/i.test(bd)) return 'Attachment';
+  }
+  for(const c of CBM_COMPONENTS){
+    if(c.match.some(m => raw.includes(m))) return c.key;
+  }
+  // Tidak dikenali → diabaikan dari CBM (bukan "Other")
+  return null;
+}
+
+function cbmGetFilters(){
+  return {
+    unit: (document.getElementById('cbm-filter-unit')||{}).value || '',
+    start: (document.getElementById('cbm-filter-start')||{}).value || '',
+    end: (document.getElementById('cbm-filter-end')||{}).value || '',
+    comp: (document.getElementById('cbm-filter-comp')||{}).value || cbmSelectedComp || '',
+  };
+}
+
+function cbmBreakdownRecords(){
+  const f = cbmGetFilters();
+  const list = (typeof dailyRecords!=='undefined' && Array.isArray(dailyRecords)) ? dailyRecords : [];
+  return list.filter(r=>{
+    if(r.category !== 'Breakdown') return false;
+    // tampilkan Approved + Pending agar monitoring lengkap; prioritaskan approved di metrik terpisah bila perlu
+    if(f.unit && r.unitCode !== f.unit) return false;
+    if(f.start && r.tanggal && r.tanggal < f.start) return false;
+    if(f.end && r.tanggal && r.tanggal > f.end) return false;
+    const comp = normalizeCBMComponent(r.bdCategory || r.bdcategory, r.jobDesc);
+    if(!comp) return false; // skip Other / plan-daily / unmapped
+    // Axle/Differential hanya untuk unit Loader
+    if(comp === 'Axle / Differential'){
+      const u = cbmUnitByCode(r.unitCode);
+      if(!cbmIsLoaderUnit(u)) return false;
+    }
+    if(f.comp && comp !== f.comp) return false;
+    r._cbmComp = comp;
+    return true;
+  });
+}
+
+function cbmHmValue(r){
+  const n = Number(r.hm);
+  return isNaN(n) ? null : n;
+}
+
+function cbmBuildStats(rows){
+  // per component
+  const byComp = {};
+  CBM_COMPONENTS.forEach(c => { byComp[c.key] = { key:c.key, total:0, unplan:0, plan:0, hours:0, units:new Set(), gaps:[] }; });
+  // per unit+component for lifetime
+  const byUC = {};
+  rows.forEach(r=>{
+    const comp = r._cbmComp;
+    if(!comp) return;
+    if(!byComp[comp]) byComp[comp] = { key:comp, total:0, unplan:0, plan:0, hours:0, units:new Set(), gaps:[] };
+    const st = byComp[comp];
+    st.total++;
+    if((r.planUnplan||'')==='Unplan') st.unplan++; else if((r.planUnplan||'')==='Plan') st.plan++;
+    st.hours += Number(r.duration)||0;
+    if(r.unitCode) st.units.add(r.unitCode);
+
+    const uk = (r.unitCode||'-') + '||' + comp;
+    if(!byUC[uk]) byUC[uk] = { unitCode:r.unitCode||'-', component:comp, events:[], unplan:0, hours:0 };
+    byUC[uk].events.push(r);
+    if((r.planUnplan||'')==='Unplan') byUC[uk].unplan++;
+    byUC[uk].hours += Number(r.duration)||0;
+  });
+
+  // HM gaps per unit-component
+  Object.values(byUC).forEach(g=>{
+    const hms = g.events.map(cbmHmValue).filter(v=>v!=null).sort((a,b)=>a-b);
+    g.hmFirst = hms.length ? hms[0] : null;
+    g.hmLast = hms.length ? hms[hms.length-1] : null;
+    g.hmSpan = (g.hmFirst!=null && g.hmLast!=null) ? (g.hmLast - g.hmFirst) : null;
+    const gaps = [];
+    for(let i=1;i<hms.length;i++) gaps.push(hms[i]-hms[i-1]);
+    g.avgGap = gaps.length ? gaps.reduce((a,b)=>a+b,0)/gaps.length : null;
+    g.count = g.events.length;
+    const dates = g.events.map(e=>e.tanggal).filter(Boolean).sort();
+    g.lastDate = dates.length ? dates[dates.length-1] : '';
+    // performance score: more unplan + short gap = worse
+    let score = 100;
+    if(g.count>=3 && g.avgGap!=null){
+      if(g.avgGap < 200) score -= 40;
+      else if(g.avgGap < 500) score -= 25;
+      else if(g.avgGap < 1000) score -= 12;
+    }
+    const unplanRatio = g.count ? g.unplan/g.count : 0;
+    score -= unplanRatio * 35;
+    if(g.count >= 5) score -= 10;
+    g.perfScore = Math.max(0, Math.min(100, Math.round(score)));
+    if(g.perfScore < 40) g.perfLabel = 'CRITICAL';
+    else if(g.perfScore < 60) g.perfLabel = 'WATCH';
+    else if(g.perfScore < 80) g.perfLabel = 'FAIR';
+    else g.perfLabel = 'GOOD';
+    if(g.avgGap!=null && byComp[g.component]) byComp[g.component].gaps.push(g.avgGap);
+  });
+
+  Object.values(byComp).forEach(st=>{
+    st.unitCount = st.units.size;
+    st.avgGap = st.gaps.length ? st.gaps.reduce((a,b)=>a+b,0)/st.gaps.length : null;
+    // status
+    const unplanRatio = st.total ? st.unplan/st.total : 0;
+    if(st.total>=4 && (unplanRatio>=0.6 || (st.avgGap!=null && st.avgGap<300))) st.status = 'CRITICAL';
+    else if(st.total>=2 && (unplanRatio>=0.4 || (st.avgGap!=null && st.avgGap<600))) st.status = 'WATCH';
+    else if(st.total>0) st.status = 'OK';
+    else st.status = '—';
+  });
+
+  return { byComp, byUC: Object.values(byUC) };
+}
+
+function cbmStatusPill(status){
+  if(status==='CRITICAL') return '<span class="pill ai-crit">CRITICAL</span>';
+  if(status==='WATCH') return '<span class="pill ai-high">WATCH</span>';
+  if(status==='FAIR') return '<span class="pill ai-med">FAIR</span>';
+  if(status==='GOOD' || status==='OK') return '<span class="pill ai-low">'+status+'</span>';
+  return '<span class="pill">—</span>';
+}
+
+function initCBMFilters(){
+  const uEl = document.getElementById('cbm-filter-unit');
+  if(uEl){
+    const cur = uEl.value;
+    uEl.innerHTML = '<option value="">Semua Unit</option>' + (UNITS||[]).map(u=>`<option value="${u.code}">${u.code}</option>`).join('');
+    if(cur) uEl.value = cur;
+  }
+  const cEl = document.getElementById('cbm-filter-comp');
+  if(cEl){
+    const cur = cEl.value;
+    const comps = cbmVisibleComponents();
+    cEl.innerHTML = '<option value="">Semua Komponen</option>' + comps.map(c=>`<option value="${c.key}">${c.key}</option>`).join('');
+    if(cur && comps.some(c=>c.key===cur)) cEl.value = cur;
+    else if(cur && !comps.some(c=>c.key===cur)){
+      cEl.value = '';
+      if(typeof cbmSelectedComp!=='undefined') cbmSelectedComp = '';
+    }
+  }
+}
+
+function switchCBMTab(tab){
+  cbmActiveTab = tab || 'overview';
+  document.querySelectorAll('#cbm-tabs .chip').forEach(c=> c.classList.toggle('active', c.dataset.cbmTab===cbmActiveTab));
+  ['overview','lifetime','unplan','insight'].forEach(t=>{
+    const p = document.getElementById('cbm-tab-'+t);
+    if(p) p.style.display = t===cbmActiveTab ? '' : 'none';
+  });
+  renderCBMActiveTab();
+}
+
+function renderCBMActiveTab(){
+  const rows = cbmBreakdownRecords();
+  const stats = cbmBuildStats(rows);
+  if(cbmActiveTab==='overview') renderCBMOverview(rows, stats);
+  else if(cbmActiveTab==='lifetime') renderCBMLifetime(stats);
+  else if(cbmActiveTab==='unplan') renderCBMHistory(rows);
+  else if(cbmActiveTab==='insight') renderCBMInsight(stats);
+}
+
+/** HM unit di CBM = sama dengan kolom "HM Sekarang" di Plan Service
+ *  (Monitoring HM aktual via calcHmSekarang / getActualMonitoringHM).
+ *  Fallback: HM service Close terakhir → max HM di Daily Maintenance. */
+function cbmUnitCurrentHM(unitCode){
+  const code = String(unitCode||'').trim();
+  if(!code) return null;
+
+  // 1) Sumber utama: sama dengan Plan Service (Monitoring HM)
+  try{
+    if(typeof calcHmSekarang === 'function'){
+      const cur = calcHmSekarang(code);
+      if(cur && cur.hmNow!=null && !isNaN(Number(cur.hmNow)) && Number(cur.hmNow)>0){
+        return Math.round(Number(cur.hmNow)*10)/10;
+      }
+    }
+  }catch(_e){}
+
+  try{
+    if(typeof getActualMonitoringHM === 'function'){
+      const actual = getActualMonitoringHM(code, '', '');
+      if(actual && actual.hm!=null && !isNaN(Number(actual.hm)) && Number(actual.hm)>0){
+        return Math.round(Number(actual.hm)*10)/10;
+      }
+    }
+  }catch(_e){}
+
+  // 2) Fallback: HM aktual service Close terakhir
+  try{
+    if(typeof getLastServiceForUnit === 'function'){
+      const lastSvc = getLastServiceForUnit(code);
+      if(lastSvc && lastSvc.hmAktual!=null){
+        const h = Number(lastSvc.hmAktual);
+        if(!isNaN(h) && h>0) return Math.round(h*10)/10;
+      }
+    }
+  }catch(_e){}
+
+  // 3) Fallback akhir: max HM dari Daily Maintenance (field hm)
+  const list = (typeof dailyRecords!=='undefined' && Array.isArray(dailyRecords)) ? dailyRecords : [];
+  let max = 0;
+  const codeU = code.toUpperCase();
+  list.forEach(r=>{
+    if(String(r.unitCode||'').trim().toUpperCase()!==codeU) return;
+    const h = Number(r.hm);
+    if(!isNaN(h) && h>max) max = h;
+  });
+  return max || null;
+}
+
+function cbmHealthColor(pct){
+  if(pct>=80) return '#4CAF6D';
+  if(pct>=60) return '#FFC72C';
+  if(pct>=40) return '#FF6B35';
+  return '#E5484D';
+}
+
+/** Health 0–100: mulai dari 100, turun oleh unplan, event count, dan gap pendek vs target */
+function cbmComponentHealth(g, targetLife){
+  let score = 100;
+  const unplanRatio = g.count ? g.unplan/g.count : 0;
+  score -= unplanRatio * 40;
+  if(g.count >= 5) score -= 15;
+  else if(g.count >= 3) score -= 8;
+  else if(g.count >= 1) score -= 3;
+  if(g.avgGap!=null && targetLife>0){
+    const ratio = g.avgGap / targetLife;
+    if(ratio < 0.05) score -= 35;
+    else if(ratio < 0.1) score -= 25;
+    else if(ratio < 0.2) score -= 15;
+    else if(ratio < 0.35) score -= 8;
+  }
+  // proxy wear if unit HM high vs target
+  if(g._unitHm!=null && targetLife>0){
+    const wear = g._unitHm / targetLife;
+    if(wear >= 1) score -= 20;
+    else if(wear >= 0.85) score -= 12;
+    else if(wear >= 0.7) score -= 6;
+  }
+  return Math.max(5, Math.min(100, Math.round(score)));
+}
+
+function cbmBuildUnitCardModel(unit, allRows, stats){
+  const unitRows = allRows.filter(r=>r.unitCode===unit.code && r._cbmComp);
+  // rebuild per-component for this unit only (komponen relevan per jenis unit)
+  const comps = cbmComponentsForUnit(unit);
+  const byC = {};
+  comps.forEach(c=>{ byC[c.key] = { count:0, unplan:0, hours:0, hms:[], gaps:null, avgGap:null }; });
+  unitRows.forEach(r=>{
+    const comp = r._cbmComp;
+    if(!comp || !byC[comp]) return;
+    byC[comp].count++;
+    if((r.planUnplan||'')==='Unplan') byC[comp].unplan++;
+    byC[comp].hours += Number(r.duration)||0;
+    const hm = cbmHmValue(r);
+    if(hm!=null) byC[comp].hms.push(hm);
+  });
+  const unitHm = cbmUnitCurrentHM(unit.code);
+  const healths = comps.map(c=>{
+    const g = byC[c.key];
+    const hms = (g.hms||[]).slice().sort((a,b)=>a-b);
+    const gaps = [];
+    for(let i=1;i<hms.length;i++) gaps.push(hms[i]-hms[i-1]);
+    g.avgGap = gaps.length ? gaps.reduce((a,b)=>a+b,0)/gaps.length : null;
+    g._unitHm = unitHm;
+    const health = cbmComponentHealth({ count:g.count, unplan:g.unplan, avgGap:g.avgGap, _unitHm:unitHm }, c.targetLife);
+    return { ...c, health, count:g.count, unplan:g.unplan, hours:g.hours, avgGap:g.avgGap, unitHm };
+  });
+  const overall = healths.length ? Math.round(healths.reduce((s,h)=>s+h.health,0)/healths.length) : 100;
+  return { unit, unitHm, healths, overall, eventCount: unitRows.length, unplanCount: unitRows.filter(r=>(r.planUnplan||'')==='Unplan').length };
+}
+
+function renderCBMUnitCards(rows, stats){
+  const wrap = document.getElementById('cbm-unit-cards');
+  if(!wrap) return;
+  const f = cbmGetFilters();
+  const units = (UNITS||[]).filter(u => !f.unit || u.code===f.unit);
+  // use unfiltered-by-comp rows for unit cards so health reflects full unit picture under date/unit filter
+  const baseRows = (()=>{
+    const list = (typeof dailyRecords!=='undefined' && Array.isArray(dailyRecords)) ? dailyRecords : [];
+    return list.filter(r=>{
+      if(r.category!=='Breakdown') return false;
+      if(f.unit && r.unitCode!==f.unit) return false;
+      if(f.start && r.tanggal && r.tanggal < f.start) return false;
+      if(f.end && r.tanggal && r.tanggal > f.end) return false;
+      const comp = normalizeCBMComponent(r.bdCategory||r.bdcategory, r.jobDesc);
+      if(!comp) return false;
+      if(comp === 'Axle / Differential' && !cbmIsLoaderUnit(cbmUnitByCode(r.unitCode))) return false;
+      r._cbmComp = comp;
+      return true;
+    });
+  })();
+
+  if(!units.length){ wrap.innerHTML = '<div class="hint">Tidak ada unit.</div>'; return; }
+
+  wrap.innerHTML = units.map(u=>{
+    const model = cbmBuildUnitCardModel(u, baseRows, stats);
+    const active = cbmSelectedUnit===u.code ? ' active' : '';
+    const photo = (typeof getUnitPhoto==='function') ? getUnitPhoto(u.category, u.type) : null;
+    const topHealth = model.healths.slice(0,4);
+    const bars = topHealth.map(h=>`
+      <div class="cbm-health-row">
+        <span class="hn" title="${h.key}">${h.key}</span>
+        <div class="cbm-health-bar"><i style="width:${h.health}%;background:${cbmHealthColor(h.health)}"></i></div>
+        <span class="hp" style="color:${cbmHealthColor(h.health)}">${h.health}%</span>
+      </div>`).join('');
+    return `<div class="cbm-asset-card${active}" onclick="cbmSelectUnit('${u.code}')">
+      <div class="cbm-asset-visual">${photo?`<img src="${photo}" alt="${u.type}">`:(typeof unitIconSVG==='function'?unitIconSVG(u.category):'')}</div>
+      <div class="cbm-asset-body">
+        <div class="cbm-asset-code">${escUH(u.code)}</div>
+        <div class="cbm-asset-meta">${escUH(u.type)} · ${escUH(u.category||'')}</div>
+        <div class="cbm-asset-hm">HM ${model.unitHm!=null?model.unitHm.toLocaleString('id-ID'):'—'} · Health <b style="color:${cbmHealthColor(model.overall)}">${model.overall}%</b></div>
+        ${bars}
+        <div class="hint" style="margin-top:8px;">BD ${model.eventCount} · Unplan ${model.unplanCount}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.cbmSelectUnit = function(code){
+  cbmSelectedUnit = (cbmSelectedUnit===code) ? '' : code;
+  // Jangan paksa filter unit agar kartu lain tetap terlihat; detail pakai cbmSelectedUnit
+  // Refresh filter komponen + overview agar Axle/Diff hilang saat Dozer/Exca dipilih
+  if(typeof initCBMFilters==='function') initCBMFilters();
+  renderCBMActiveTab();
+};
+
+function renderCBMAssetDetail(){
+  const box = document.getElementById('cbm-asset-detail');
+  if(!box) return;
+  if(!cbmSelectedUnit){ box.style.display='none'; return; }
+  const u = (UNITS||[]).find(x=>x.code===cbmSelectedUnit);
+  if(!u){ box.style.display='none'; return; }
+  box.style.display = '';
+
+  const f = cbmGetFilters();
+  const list = (typeof dailyRecords!=='undefined' && Array.isArray(dailyRecords)) ? dailyRecords : [];
+  const unitRows = list.filter(r=>{
+    if(r.category!=='Breakdown' || r.unitCode!==u.code) return false;
+    if(f.start && r.tanggal && r.tanggal < f.start) return false;
+    if(f.end && r.tanggal && r.tanggal > f.end) return false;
+    const comp = normalizeCBMComponent(r.bdCategory||r.bdcategory, r.jobDesc);
+    if(!comp) return false;
+    if(comp === 'Axle / Differential' && !cbmIsLoaderUnit(u)) return false;
+    r._cbmComp = comp;
+    return true;
+  });
+  const model = cbmBuildUnitCardModel(u, unitRows, null);
+  const photo = (typeof getUnitPhoto==='function') ? getUnitPhoto(u.category, u.type) : null;
+
+  document.getElementById('cbm-asset-title').textContent = 'Asset Analysis — '+u.code;
+  document.getElementById('cbm-asset-code').textContent = u.code;
+  document.getElementById('cbm-asset-meta').textContent = `${u.type} · ${u.category||''} · ${u.serial||''}`;
+  document.getElementById('cbm-asset-hm').textContent = `HM Saat Ini: ${model.unitHm!=null?model.unitHm.toLocaleString('id-ID'):'—'} · Overall Health ${model.overall}%`;
+  document.getElementById('cbm-asset-summary').textContent = `${model.eventCount} breakdown pada periode filter · ${model.unplanCount} unplan`;
+  document.getElementById('cbm-asset-visual').innerHTML = photo?`<img src="${photo}" alt="${u.type}">`:(typeof unitIconSVG==='function'?unitIconSVG(u.category):'');
+
+  // gauges — main systems (Axle/Differential hanya untuk Loader)
+  const mainKeys = cbmIsLoaderUnit(u)
+    ? ['Engine','Transmission','Hydraulic','Final Drive','Axle / Differential','Undercarriage']
+    : ['Engine','Transmission','Hydraulic','Final Drive','Undercarriage','Attachment'];
+  const gauges = document.getElementById('cbm-asset-gauges');
+  if(gauges){
+    gauges.innerHTML = model.healths.filter(h=>mainKeys.includes(h.key)).map(h=>`
+      <div class="cbm-gauge-item">
+        <div class="gl">${h.key} Health</div>
+        <div class="gv" style="color:${cbmHealthColor(h.health)}">${h.health}%</div>
+        <div class="hint" style="margin:2px 0 0;">Target life ${h.targetLife.toLocaleString('id-ID')} HM</div>
+        <div class="cbm-gauge-track"><i style="width:${h.health}%;background:${cbmHealthColor(h.health)}"></i></div>
+      </div>`).join('');
+  }
+
+  // full lifetime target table
+  const tbody = document.getElementById('cbm-asset-lt-tbody');
+  if(tbody){
+    tbody.innerHTML = model.healths.map(h=>{
+      const used = model.unitHm!=null ? model.unitHm : null;
+      const sisa = (used!=null) ? (h.targetLife - used) : null;
+      return `<tr>
+        <td><b>${h.key}</b></td>
+        <td><span style="color:${cbmHealthColor(h.health)};font-weight:700">${h.health}%</span></td>
+        <td><b style="color:var(--yellow)">${h.targetLife.toLocaleString('id-ID')}</b></td>
+        <td>${used!=null?used.toLocaleString('id-ID'):'—'}</td>
+        <td style="color:${sisa!=null&&sisa<0?'var(--red)':sisa!=null&&sisa<h.targetLife*0.15?'var(--yellow)':'var(--green)'}">${sisa!=null?sisa.toLocaleString('id-ID'):'—'}</td>
+        <td>${h.count}</td>
+        <td style="color:${h.unplan?'var(--orange)':'inherit'}">${h.unplan}</td>
+        <td>${h.avgGap!=null?Math.round(h.avgGap):'—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // recommendations
+  const reco = document.getElementById('cbm-asset-reco');
+  if(reco){
+    const items = [];
+    model.healths.filter(h=>h.health<60).sort((a,b)=>a.health-b.health).forEach(h=>{
+      items.push({ cls:'crit', text:`${h.key}: health ${h.health}% — target life ${h.targetLife.toLocaleString('id-ID')} HM. Tingkatkan inspeksi CBM & siapkan part.` });
+    });
+    model.healths.filter(h=>h.health>=60 && h.health<80).forEach(h=>{
+      items.push({ cls:'', text:`${h.key}: pantau gejala (getar/suhu/bocor). Avg HM gap ${h.avgGap!=null?Math.round(h.avgGap):'n/a'}.` });
+    });
+    if(!items.length) items.push({ cls:'ok', text:'Semua komponen utama dalam rentang health baik terhadap target life. Lanjutkan monitoring rutin.' });
+    reco.innerHTML = items.slice(0,6).map(i=>`<li class="${i.cls}">${escUH(i.text)}</li>`).join('');
+  }
+
+  // recent events
+  const recent = document.getElementById('cbm-asset-recent');
+  if(recent){
+    const sorted = unitRows.slice().sort((a,b)=>String(b.tanggal||'').localeCompare(String(a.tanggal||''))).slice(0,8);
+    if(!sorted.length) recent.innerHTML = `<tr class="empty-row"><td colspan="5">Belum ada breakdown pada filter.</td></tr>`;
+    else recent.innerHTML = sorted.map(r=>{
+      const pu = r.planUnplan||'—';
+      return `<tr>
+        <td>${formatDateDMY(r.tanggal)}</td>
+        <td>${escUH(r._cbmComp)}</td>
+        <td><span class="pill ${pu==='Unplan'?'open':'close'}">${escUH(pu)}</span></td>
+        <td>${r.hm??'—'}</td>
+        <td>${r.duration!=null?Number(r.duration).toFixed(1):'—'}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function renderCBMOverview(rows, stats){
+  const totalBd = rows.length;
+  const unplan = rows.filter(r=>(r.planUnplan||'')==='Unplan').length;
+  const hours = rows.reduce((s,r)=>s+(Number(r.duration)||0),0);
+  const crit = Object.values(stats.byComp).filter(c=>c.status==='CRITICAL').length;
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('cbm-ov-bd', totalBd);
+  set('cbm-ov-unplan', unplan);
+  set('cbm-ov-hours', hours.toFixed(1));
+  set('cbm-ov-crit', crit);
+
+  renderCBMUnitCards(rows, stats);
+  renderCBMAssetDetail();
+
+  const visibleComps = cbmVisibleComponents();
+  const cards = document.getElementById('cbm-comp-cards');
+  if(cards){
+    cards.innerHTML = visibleComps.map(c=>{
+      const st = stats.byComp[c.key] || { total:0, unplan:0, plan:0, hours:0, status:'—' };
+      const active = cbmSelectedComp===c.key ? ' active' : '';
+      const unplanB = st.unplan>0 ? 'bad' : 'ok';
+      return `<div class="cbm-comp-card${active}" data-comp="${c.key}" onclick="cbmSelectComp('${c.key}')">
+        <div class="cc-name">${c.key}</div>
+        <div class="cc-stat"><span>Target Life</span><b style="color:var(--yellow)">${(c.targetLife||0).toLocaleString('id-ID')} HM</b></div>
+        <div class="cc-stat"><span>Breakdown</span><b>${st.total}</b></div>
+        <div class="cc-stat"><span>Unplan</span><b class="${unplanB}">${st.unplan}</b></div>
+        <div class="cc-stat"><span>Jam Repair</span><b class="${st.hours>20?'warn':''}">${(st.hours||0).toFixed(1)}</b></div>
+        <div style="margin-top:8px">${cbmStatusPill(st.status)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const tbody = document.getElementById('cbm-ov-tbody');
+  if(tbody){
+    tbody.innerHTML = visibleComps.map(c=>{
+      const st = stats.byComp[c.key] || { total:0, unplan:0, plan:0, hours:0, unitCount:0, avgGap:null, status:'—' };
+      return `<tr>
+        <td><b>${c.key}</b></td>
+        <td><b style="color:var(--yellow)">${(c.targetLife||0).toLocaleString('id-ID')}</b></td>
+        <td>${st.total||0}</td>
+        <td style="color:${st.unplan?'var(--orange)':'inherit'}">${st.unplan||0}</td>
+        <td>${st.plan||0}</td>
+        <td>${(st.hours||0).toFixed(1)}</td>
+        <td>${st.unitCount||0}</td>
+        <td>${st.avgGap!=null ? Math.round(st.avgGap) : '—'}</td>
+        <td>${cbmStatusPill(st.status)}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+window.cbmSelectComp = function(key){
+  cbmSelectedComp = (cbmSelectedComp===key) ? '' : key;
+  const cEl = document.getElementById('cbm-filter-comp');
+  if(cEl) cEl.value = cbmSelectedComp;
+  renderCBMActiveTab();
+};
+
+function renderCBMLifetime(stats){
+  const tbody = document.getElementById('cbm-lt-tbody');
+  if(!tbody) return;
+  const list = stats.byUC.slice().sort((a,b)=> (a.perfScore||0) - (b.perfScore||0));
+  if(!list.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="11">Belum ada data breakdown pada filter ini. Data diambil dari Daily Maintenance.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(g=>`<tr>
+    <td>${escUH(g.unitCode)}</td>
+    <td>${escUH(g.component)}</td>
+    <td>${g.count}</td>
+    <td style="color:${g.unplan?'var(--orange)':'inherit'}">${g.unplan}</td>
+    <td>${g.hmFirst!=null?g.hmFirst:'—'}</td>
+    <td>${g.hmLast!=null?g.hmLast:'—'}</td>
+    <td>${g.hmSpan!=null?g.hmSpan:'—'}</td>
+    <td><b style="color:${g.avgGap!=null&&g.avgGap<400?'var(--red)':g.avgGap!=null&&g.avgGap<800?'var(--yellow)':'var(--green)'}">${g.avgGap!=null?Math.round(g.avgGap):'—'}</b></td>
+    <td>${g.hours.toFixed(1)}</td>
+    <td>${formatDateDMY(g.lastDate)}</td>
+    <td>${cbmStatusPill(g.perfLabel)} <span class="hint" style="margin:0">${g.perfScore}</span></td>
+  </tr>`).join('');
+}
+
+function renderCBMHistory(rows){
+  const tbody = document.getElementById('cbm-hist-tbody');
+  if(!tbody) return;
+  const sorted = rows.slice().sort((a,b)=> String(b.tanggal||'').localeCompare(String(a.tanggal||'')));
+  if(!sorted.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Tidak ada histori breakdown pada filter ini.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = sorted.map(r=>{
+    const pu = r.planUnplan||'—';
+    const puCls = pu==='Unplan'?'open':(pu==='Plan'?'close':'progress');
+    return `<tr>
+      <td>${formatDateDMY(r.tanggal)}</td>
+      <td>${escUH(r.unitCode)}</td>
+      <td>${r.hm??'—'}</td>
+      <td><span class="cat ${escUH(r._cbmComp)}">${escUH(r._cbmComp)}</span></td>
+      <td><span class="pill ${puCls}">${escUH(pu)}</span></td>
+      <td>${r.duration!=null?Number(r.duration).toFixed(1):'—'}</td>
+      <td style="white-space:normal;text-align:left;min-width:200px">${escUH(r.jobDesc||'')}</td>
+      <td>${escUH(r.mechanic||'')}</td>
+      <td>${escUH(r.status||'')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCBMInsight(stats){
+  const list = stats.byUC.slice().sort((a,b)=> (a.perfScore||100) - (b.perfScore||100));
+  const fleet = document.getElementById('cbm-fleet-insight');
+  if(fleet){
+    if(!list.length) fleet.innerHTML = 'Belum ada data breakdown untuk dianalisis. Pastikan Daily Maintenance sudah berisi record Breakdown dengan kategori komponen & HM.';
+    else {
+      const crit = list.filter(g=>g.perfLabel==='CRITICAL');
+      const watch = list.filter(g=>g.perfLabel==='WATCH');
+      const top = list[0];
+      fleet.innerHTML = `Monitoring armada: <b>${list.length}</b> kombinasi unit×komponen · <b>${crit.length}</b> CRITICAL · <b>${watch.length}</b> WATCH. ` +
+        (top ? `Prioritas pantauan: <b>${escUH(top.unitCode)} — ${escUH(top.component)}</b> (${top.count} event, unplan ${top.unplan}, avg HM gap ${top.avgGap!=null?Math.round(top.avgGap):'n/a'}).` : '');
+    }
+  }
+  const tbody = document.getElementById('cbm-insight-tbody');
+  if(!tbody) return;
+  if(!list.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Tidak ada insight — data breakdown kosong.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(g=>{
+    const unplanPct = g.count ? Math.round(g.unplan/g.count*100) : 0;
+    let reco = 'Pertahankan interval inspeksi rutin.';
+    if(g.perfLabel==='CRITICAL') reco = 'Naikkan frekuensi CBM inspeksi; siapkan part & rencana downtime terencana.';
+    else if(g.perfLabel==='WATCH') reco = 'Pantau gejala tiap shift; review root cause unplan terakhir.';
+    else if(g.perfLabel==='FAIR') reco = 'Lanjutkan monitoring; bandingkan HM gap dengan baseline pabrik.';
+    return `<tr>
+      <td>${escUH(g.unitCode)}</td>
+      <td>${escUH(g.component)}</td>
+      <td>${cbmStatusPill(g.perfLabel)}</td>
+      <td>${g.count}</td>
+      <td>${unplanPct}%</td>
+      <td>${g.avgGap!=null?Math.round(g.avgGap):'—'}</td>
+      <td style="white-space:normal;text-align:left">${reco}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCBM(){
+  initCBMFilters();
+  switchCBMTab(cbmActiveTab);
+}
+
+(function initCBMHandlers(){
+  document.getElementById('cbm-tabs')?.addEventListener('click', (e)=>{
+    const chip = e.target.closest('.chip');
+    if(!chip || !chip.dataset.cbmTab) return;
+    switchCBMTab(chip.dataset.cbmTab);
+  });
+  ['cbm-filter-unit','cbm-filter-start','cbm-filter-end','cbm-filter-comp'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('change', ()=>{
+      if(id==='cbm-filter-unit'){
+        // Sinkron selected unit & opsi komponen (hide Axle untuk Dozer/Exca)
+        const uv = (document.getElementById('cbm-filter-unit')||{}).value || '';
+        cbmSelectedUnit = uv || cbmSelectedUnit;
+        if(typeof initCBMFilters==='function') initCBMFilters();
+      }
+      if(id==='cbm-filter-comp') cbmSelectedComp = (document.getElementById('cbm-filter-comp')||{}).value || '';
+      renderCBMActiveTab();
+    });
+  });
+  document.getElementById('cbm-filter-clear')?.addEventListener('click', ()=>{
+    cbmSelectedComp = '';
+    cbmSelectedUnit = '';
+    const u=document.getElementById('cbm-filter-unit'); if(u) u.value='';
+    const s=document.getElementById('cbm-filter-start'); if(s) s.value='';
+    const e=document.getElementById('cbm-filter-end'); if(e) e.value='';
+    const c=document.getElementById('cbm-filter-comp'); if(c) c.value='';
+    renderCBMActiveTab();
+  });
+  document.getElementById('cbm-refresh')?.addEventListener('click', async ()=>{
+    try{ if(typeof refreshDailyRecords==='function') await refreshDailyRecords(); }catch(e){}
+    renderCBM();
+  });
+  document.getElementById('cbm-insight-run')?.addEventListener('click', ()=> renderCBMActiveTab());
+  document.getElementById('cbm-asset-close')?.addEventListener('click', ()=>{
+    cbmSelectedUnit = '';
+    renderCBMAssetDetail();
+    renderCBMUnitCards(cbmBreakdownRecords(), cbmBuildStats(cbmBreakdownRecords()));
+  });
+})();
+
+
 /* ================= RENDER ALL ================= */
 function renderAll(){
   sanitizePlanServiceUnits();
@@ -13213,6 +14198,7 @@ function renderAll(){
   renderSummary();
   renderDashboard();
   renderNotificationCenter();
+  renderCBM();
   applyPanelAccessLocks();
 }
 
