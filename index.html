@@ -116,12 +116,36 @@ body{
 .nav-item[data-view="summary"] .num{ background:rgba(120,144,255,0.15); color:#a3b3ff; }
 .nav-item[data-view="bdreport"] .num{ background:rgba(168,120,255,0.15); color:#c3a6ff; }
 .nav-item[data-view="cbm"] .num{ background:rgba(64,196,140,0.15); color:#6fe0b0; }
-.cbm-comp-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
+.cbm-comp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
 @media(max-width:1100px){.cbm-comp-grid{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:700px){.cbm-comp-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:420px){.cbm-comp-grid{grid-template-columns:1fr;}}
 .cbm-comp-card{background:linear-gradient(165deg,#161b22 0%,#10141a 100%);border:1px solid var(--line);border-radius:10px;padding:14px 12px;cursor:pointer;transition:border-color .15s,transform .12s;}
 .cbm-comp-card:hover,.cbm-comp-card.active{border-color:rgba(64,196,140,0.45);transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,0.3);}
-.cbm-comp-card .cc-name{font-family:Oswald,sans-serif;font-size:13px;letter-spacing:.4px;color:#6fe0b0;margin-bottom:8px;}
+.cbm-comp-card .cc-name{font-family:Oswald,sans-serif;font-size:13px;letter-spacing:.4px;color:#6fe0b0;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+ .cbm-comp-card .cc-name{min-height:44px;}
+.cbm-comp-card .cc-name .cbm-comp-icon{color:#6fe0b0;}
+.cbm-comp-icon[title="Engine"]{color:#FF6B35;}
+.cbm-comp-icon[title="Transmission"]{color:#4A90D9;}
+.cbm-comp-icon[title="Hydraulic"]{color:#FF8A1F;}
+.cbm-comp-icon[title="Final Drive"]{color:#4CAF6D;}
+.cbm-comp-icon[title="Axle / Differential"]{color:#E5484D;}
+.cbm-comp-icon[title="Electrical"]{color:#4A90D9;}
+.cbm-comp-icon[title="Cabin"]{color:#00D9FF;}
+.cbm-comp-icon[title="AC System"]{color:#16D9E8;}
+.cbm-comp-icon[title="Undercarriage"]{color:#FFC72C;}
+.cbm-comp-icon[title="Attachment"]{color:#A6A6A6;}
+.cbm-comp-icon[title="Wheel"]{color:#B44CFF;}
+
+.cbm-comp-icon{display:inline-flex;flex-shrink:0;width:42px;height:42px;align-items:center;justify-content:center;border-radius:8px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);padding:2px;}
+.cbm-comp-icon svg{width:40px;height:40px;display:block;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;}
+.cbm-gauge-item .gl{display:flex;align-items:center;gap:5px;}
+.cbm-gauge-item .gl .cbm-comp-icon svg{width:12px;height:12px;}
+.cbm-health-row .hn{display:flex;align-items:center;gap:5px;}
+.cbm-health-row .hn .cbm-comp-icon svg{width:11px;height:11px;}
+
+.cbm-comp-card .cbm-comp-icon{width:48px;height:48px;padding:1px;border-radius:9px;}
+.cbm-comp-card .cbm-comp-icon svg{width:46px;height:46px;}
 .cbm-comp-card .cc-stat{font-family:JetBrains Mono,monospace;font-size:11px;color:var(--text-dim);display:flex;justify-content:space-between;margin-top:3px;}
 .cbm-comp-card .cc-stat b{color:var(--text);}
 .cbm-comp-card .cc-stat b.warn{color:var(--yellow);}
@@ -150,7 +174,9 @@ body{
 .cbm-analysis{display:grid;grid-template-columns:1.1fr 0.9fr;gap:14px;margin-bottom:16px;}
 @media(max-width:960px){.cbm-analysis{grid-template-columns:1fr;}}
 .cbm-analysis-hero{background:linear-gradient(165deg,#121820 0%,#0a0e14 100%);border:1px solid rgba(64,196,140,0.2);border-radius:12px;padding:16px;position:relative;}
-.cbm-health-gauges{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.cbm-health-gauges{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+@media(max-width:640px){.cbm-health-gauges{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:420px){.cbm-health-gauges{grid-template-columns:1fr;}}
 .cbm-gauge-item{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:10px 12px;}
 .cbm-gauge-item .gl{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
 .cbm-gauge-item .gv{font-family:Oswald,sans-serif;font-size:22px;font-weight:700;line-height:1;}
@@ -1213,6 +1239,7 @@ body.role-mechanic #history-filters{ display:none !important; }
     </div>
     <div class="detail-modal-foot">
       <button type="button" class="btn secondary" id="daily-detail-close-2">Close</button>
+      <button type="button" class="btn" id="daily-detail-edit">✎ Edit</button>
     </div>
   </div>
 </div>
@@ -1385,7 +1412,7 @@ body.role-mechanic #history-filters{ display:none !important; }
       <div class="nav-item" data-view="daily"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></span><span class="label">Daily Maintenance</span></div>
       <div class="nav-item" data-view="plan"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span><span class="label">Plan Service</span></div>
       <div class="nav-item" data-view="planningsystem"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span><span class="label">Plan Schedule Maintenance</span><span id="nav-planning-badge" class="nav-badge" style="display:none;"></span></div>
-      <div class="nav-item" data-view="cbm"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></span><span class="label">CBM</span></div>
+      <div class="nav-item" data-view="cbm"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></span><span class="label">CBM (Condition-Based Monitoring)</span></div>
       <div class="nav-item" data-view="summary"><span class="nav-drag-handle" title="Geser untuk mengubah urutan menu"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span><span class="num"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><span class="label">Mechanic Activity Report</span></div>
     </nav>
     <div class="sidebar-unit-photo">
@@ -2235,17 +2262,17 @@ body.role-mechanic #history-filters{ display:none !important; }
 
       <!-- CBM MONITORING ONLY -->
       <section class="view" id="view-cbm">
-        <div class="banner"> Menu <b>CBM</b> bersifat <b>monitoring</b> (tanpa input). Life time &amp; performa komponen dihitung otomatis dari <b>HM</b> + histori <b>Breakdown / Unplan</b> pada Daily Maintenance.</div>
+        <div class="banner"> The <b>CBM (Condition-Based Monitoring)</b> panel is <b>monitoring only</b> (no manual input). Component life time &amp; performance are calculated automatically from <b>HM</b> and <b>Breakdown / Unplan</b> history in Daily Maintenance.</div>
         <div class="chip-tabs" id="cbm-tabs">
           <button type="button" class="chip active" data-cbm-tab="overview">Overview Komponen</button>
           <button type="button" class="chip" data-cbm-tab="lifetime">Life Time &amp; Performance</button>
-          <button type="button" class="chip" data-cbm-tab="unplan">Histori Unplan / Breakdown</button>
+          <button type="button" class="chip" data-cbm-tab="unplan">Histori Breakdown / Unplan</button>
           <button type="button" class="chip" data-cbm-tab="insight">Insight AI</button>
         </div>
 
         <div class="panel period-panel" style="margin-bottom:16px;">
           <div class="panel-head" style="margin-bottom:10px;">
-            <h2>Filter Monitoring</h2>
+            <h2>Monitoring Filter</h2>
             <div class="toolbar">
               <button type="button" class="btn secondary" id="cbm-refresh">⟲ Refresh Data</button>
             </div>
@@ -2253,19 +2280,19 @@ body.role-mechanic #history-filters{ display:none !important; }
           <div class="filters" style="margin-bottom:0;">
             <div class="field" style="margin:0;min-width:150px;">
               <label>Unit</label>
-              <select id="cbm-filter-unit"><option value="">Semua Unit</option></select>
+              <select id="cbm-filter-unit"><option value="">All Units</option></select>
             </div>
             <div class="field" style="margin:0;min-width:150px;">
-              <label>Dari Tanggal</label>
+              <label>From Date</label>
               <input type="date" id="cbm-filter-start">
             </div>
             <div class="field" style="margin:0;min-width:150px;">
-              <label>Sampai Tanggal</label>
+              <label>To Date</label>
               <input type="date" id="cbm-filter-end">
             </div>
             <div class="field" style="margin:0;min-width:170px;">
-              <label>Komponen</label>
-              <select id="cbm-filter-comp"><option value="">Semua Komponen</option></select>
+              <label>Component</label>
+              <select id="cbm-filter-comp"><option value="">All Components</option></select>
             </div>
             <div style="align-self:flex-end;">
               <button type="button" class="btn small secondary" id="cbm-filter-clear">Clear Filter</button>
@@ -2276,19 +2303,19 @@ body.role-mechanic #history-filters{ display:none !important; }
         <!-- OVERVIEW + ASSET CARDS -->
         <div class="cbm-tab-panel" id="cbm-tab-overview">
           <div class="grid grid-4" style="margin-bottom:16px;">
-            <div class="unit-card"><div class="cat-label">Total Breakdown</div><div class="type" id="cbm-ov-bd">0</div><div class="hint">Periode filter</div></div>
+            <div class="unit-card"><div class="cat-label">Total Breakdown</div><div class="type" id="cbm-ov-bd">0</div><div class="hint">Filter period</div></div>
             <div class="unit-card"><div class="cat-label">Unplan Event</div><div class="type" style="color:var(--orange)" id="cbm-ov-unplan">0</div><div class="hint">Breakdown Unplan</div></div>
-            <div class="unit-card"><div class="cat-label">Total Jam Repair</div><div class="type" style="color:var(--yellow)" id="cbm-ov-hours">0</div><div class="hint">Sum duration (jam)</div></div>
-            <div class="unit-card"><div class="cat-label">Komponen Kritis</div><div class="type" style="color:var(--red)" id="cbm-ov-crit">0</div><div class="hint">Frekuensi tinggi / MTBF rendah</div></div>
+            <div class="unit-card"><div class="cat-label">Total Repair Hours</div><div class="type" style="color:var(--yellow)" id="cbm-ov-hours">0</div><div class="hint">Sum duration (hours)</div></div>
+            <div class="unit-card"><div class="cat-label">Critical Components</div><div class="type" style="color:var(--red)" id="cbm-ov-crit">0</div><div class="hint">High frequency / low MTBF</div></div>
           </div>
 
-          <div class="section-title">Asset Analysis — Pilih Unit</div>
+          <div class="section-title">Asset Analysis — Select Unit</div>
           <div class="cbm-unit-grid" id="cbm-unit-cards"></div>
 
           <div id="cbm-asset-detail" style="display:none;">
             <div class="panel-head" style="margin-bottom:10px;">
               <h2 id="cbm-asset-title" style="font-family:Oswald,sans-serif;font-size:18px;letter-spacing:.5px;">Asset Analysis</h2>
-              <button type="button" class="btn small secondary" id="cbm-asset-close">Tutup Detail</button>
+              <button type="button" class="btn small secondary" id="cbm-asset-close">Close Detail</button>
             </div>
             <div class="cbm-analysis">
               <div class="cbm-analysis-hero">
@@ -2306,13 +2333,13 @@ body.role-mechanic #history-filters{ display:none !important; }
                 <div class="table-wrap">
                   <table class="cbm-target-table">
                     <thead><tr>
-                      <th>Komponen</th><th>Health</th><th>Target Life (HM)</th><th>Est. Used HM*</th>
-                      <th>Sisa ke Target</th><th>Events</th><th>Unplan</th><th>Avg HM Gap</th>
+                      <th>Component</th><th>Health</th><th>Target Life (HM)</th><th>Est. Used HM*</th>
+                      <th>Remaining to Target</th><th>Events</th><th>Unplan</th><th>Avg HM Gap</th>
                     </tr></thead>
                     <tbody id="cbm-asset-lt-tbody"></tbody>
                   </table>
                 </div>
-                <p class="hint" style="margin-top:8px;">*Est. Used HM ≈ HM unit saat ini (proxy). Health menurun jika banyak unplan / HM gap pendek vs target life.</p>
+                <p class="hint" style="margin-top:8px;">*Est. Used HM ≈ current unit HM (proxy). Health decreases with more unplan events / shorter HM gaps vs target life.</p>
               </div>
               <div class="cbm-analysis-hero">
                 <div class="section-title" style="margin-top:0;">Recommendations</div>
@@ -2320,7 +2347,7 @@ body.role-mechanic #history-filters{ display:none !important; }
                 <div class="section-title">Recent Breakdown / Unplan</div>
                 <div class="table-wrap">
                   <table>
-                    <thead><tr><th>Tanggal</th><th>Komponen</th><th>P/U</th><th>HM</th><th>Durasi</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Component</th><th>Plan/Unplan</th><th>HM</th><th>Duration</th></tr></thead>
                     <tbody id="cbm-asset-recent"></tbody>
                   </table>
                 </div>
@@ -2328,15 +2355,15 @@ body.role-mechanic #history-filters{ display:none !important; }
             </div>
           </div>
 
-          <div class="section-title">Performance per Kelompok Komponen (Armada)</div>
+          <div class="section-title">Performance per Component Group (Fleet)</div>
           <div class="cbm-comp-grid" id="cbm-comp-cards"></div>
           <div class="panel">
-            <div class="panel-head"><h2>Ringkasan per Komponen</h2></div>
+            <div class="panel-head"><h2>Summary per Component</h2></div>
             <div class="table-wrap">
               <table>
                 <thead><tr>
-                  <th>Komponen</th><th>Target Life (HM)</th><th>Breakdown</th><th>Unplan</th><th>Plan BD</th>
-                  <th>Jam Repair</th><th>Unit Terdampak</th><th>Avg HM Gap</th><th>Status</th>
+                  <th>Component</th><th>Target Life (HM)</th><th>Breakdown</th><th>Unplan</th><th>Plan BD</th>
+                  <th>Repair Hours</th><th>Affected Units</th><th>Avg HM Gap</th><th>Status</th>
                 </tr></thead>
                 <tbody id="cbm-ov-tbody"></tbody>
               </table>
@@ -2348,15 +2375,15 @@ body.role-mechanic #history-filters{ display:none !important; }
         <div class="cbm-tab-panel" id="cbm-tab-lifetime" style="display:none;">
           <div class="panel">
             <div class="panel-head">
-              <h2><span class="tag">MONITOR</span> Life Time &amp; Performance (berdasarkan HM)</h2>
+              <h2><span class="tag">MONITOR</span> Life Time &amp; Performance (Based on HM)</h2>
             </div>
-            <p class="hint" style="margin-bottom:12px;">Estimasi interval antar failure dihitung dari selisih HM event breakdown pada unit &amp; komponen yang sama. Semakin pendek <b>Avg HM Gap</b>, semakin agresif keausan / risiko unplan.</p>
+            <p class="hint" style="margin-bottom:12px;">Estimated interval between failures is calculated from the HM difference of breakdown events on the same unit &amp; component. The shorter the <b>Avg HM Gap</b>, the more aggressive the wear / unplan risk.</p>
             <div class="table-wrap">
               <table id="cbm-lifetime-table">
                 <thead><tr>
-                  <th>Unit</th><th>Komponen</th><th>Events</th><th>Unplan</th>
+                  <th>Unit</th><th>Component</th><th>Events</th><th>Unplan</th>
                   <th>HM First</th><th>HM Last</th><th>HM Span</th>
-                  <th>Avg HM Gap</th><th>Jam Repair</th><th>Last Event</th><th>Performance</th>
+                  <th>Avg HM Gap</th><th>Repair Hours</th><th>Last Event</th><th>Performance</th>
                 </tr></thead>
                 <tbody id="cbm-lt-tbody"></tbody>
               </table>
@@ -2367,12 +2394,12 @@ body.role-mechanic #history-filters{ display:none !important; }
         <!-- UNPLAN HISTORY -->
         <div class="cbm-tab-panel" id="cbm-tab-unplan" style="display:none;">
           <div class="panel">
-            <div class="panel-head"><h2>Histori Breakdown / Event Unplan</h2></div>
+            <div class="panel-head"><h2>Breakdown / Unplan History</h2></div>
             <div class="table-wrap">
               <table>
                 <thead><tr>
-                  <th>Tanggal</th><th>Unit</th><th>HM</th><th>Komponen</th>
-                  <th>Plan/Unplan</th><th>Durasi (jam)</th><th>Deskripsi</th><th>Mechanic</th><th>Status</th>
+                  <th>Date</th><th>Unit</th><th>HM</th><th>Component</th>
+                  <th>Plan/Unplan</th><th>Duration (hours)</th><th>Description</th><th>Mechanic</th><th>Status</th>
                 </tr></thead>
                 <tbody id="cbm-hist-tbody"></tbody>
               </table>
@@ -2385,14 +2412,14 @@ body.role-mechanic #history-filters{ display:none !important; }
           <div class="panel">
             <div class="panel-head">
               <h2><span class="tag" style="background:#40c48c;color:#0a1a12">AI</span> Insight Monitoring</h2>
-              <button type="button" class="btn secondary" id="cbm-insight-run">⚡ Hitung Ulang Insight</button>
+              <button type="button" class="btn secondary" id="cbm-insight-run">⚡ Recalculate Insight</button>
             </div>
-            <div class="pdm-insight" id="cbm-fleet-insight" style="margin-bottom:14px;">Insight dihitung dari pola breakdown &amp; unplan vs HM.</div>
+            <div class="pdm-insight" id="cbm-fleet-insight" style="margin-bottom:14px;">Insight is calculated from breakdown &amp; unplan patterns vs HM.</div>
             <div class="table-wrap">
               <table>
                 <thead><tr>
-                  <th>Unit</th><th>Komponen</th><th>Risk</th><th>Events</th><th>Unplan %</th>
-                  <th>Avg HM Gap</th><th>Rekomendasi Monitoring</th>
+                  <th>Unit</th><th>Component</th><th>Risk</th><th>Events</th><th>Unplan %</th>
+                  <th>Avg HM Gap</th><th>Monitoring Recommendation</th>
                 </tr></thead>
                 <tbody id="cbm-insight-tbody"></tbody>
               </table>
@@ -5146,7 +5173,7 @@ const PANEL_DEFS = [
   { key:'planningsystem', label:'Plan Schedule Maintenance' },
   { key:'summary',        label:'Mechanic Activity Report' },
   { key:'bdreport',       label:'Laporan Breakdown Unit' },
-  { key:'cbm',            label:'CBM Monitoring' },
+  { key:'cbm',            label:'CBM (Condition-Based Monitoring)' },
 ];
 let userPanelAccess = {}; // username -> { panelKey: level }
 let accessModalUsername = null;
@@ -5170,10 +5197,7 @@ async function saveUserPanelAccess(){
   catch(e){ console.error('save user panel access failed', e); }
 }
 
-/* Default akses berdasarkan posisi — dipakai kalau belum ada override manual.
-   USER BARU / selain Fahmi Fanani: VIEW ONLY, menu terbatas:
-   Dashboard + Performance + Plan Service saja (boleh filter, tidak bisa input).
-   Full access / panel lain hanya lewat "Atur Akses" di Database Akun. */
+/* Default akses berdasarkan posisi — dipakai kalau belum ada override manual. */
 function defaultPanelAccessForUser(u){
   const map = {};
   const pos = (u.position || u.role || '').trim();
@@ -5189,10 +5213,26 @@ function defaultPanelAccessForUser(u){
     return map;
   }
 
-  // User baru / non-Fahmi: hanya 3 menu (view only) — Dashboard, Performance, Plan Service
-  map.dashboard = 'view';
-  map.database  = 'view';  // Performance
-  map.plan      = 'view';  // Plan Service
+  // Selain Fahmi Fanani → otomatis View Only (pantau) pada panel sesuai posisi.
+  // Full access hanya bisa diberikan manual lewat "Atur Akses" di Database Akun.
+  // Posisi manajemen / support: pantau semua panel (view), tanpa Database Akun
+  const staffViewAll = ['PJO','Supervisor','Deputy','HRGA','Inventory','Master Loading'];
+  if(staffViewAll.includes(pos) || u.role === 'Supervisor'){
+    PANEL_DEFS.forEach(p => { map[p.key] = (p.key === 'accounts') ? 'none' : 'view'; });
+    return map;
+  }
+  if(pos === 'Operator'){
+    map.p2h = 'full';
+    map.bdreport = 'full';
+    return map;
+  }
+  // Mechanic (dan posisi lain): panel operasional view only,
+  // kecuali Pre Inspection, Daily Maintenance, P2H & Plan Schedule Maintenance yang bisa diinput.
+  ['preinspection','daily','plan','planningsystem','bdreport','cbm'].forEach(k => { map[k] = 'view'; });
+  if(pos === 'Mechanic' || u.role === 'Mechanic'){
+    ['preinspection','daily','planningsystem'].forEach(k => { map[k] = 'full'; });
+    map.cbm = 'view';
+  }
   return map;
 }
 
@@ -5300,8 +5340,7 @@ document.getElementById('access-modal-reset')?.addEventListener('click', async (
   alert('Akses direset ke default posisi.');
 });
 
-/* Kunci form/input pada panel ber-level view (pantau saja).
-   Input filter, periode, chip tab, refresh data, dan navigasi tetap aktif. */
+/* Kunci form/input pada panel ber-level view (pantau saja). Filter KPI & Master Unit tetap aktif. */
 function applyPanelAccessLocks(){
   document.querySelectorAll('.view').forEach(viewEl => {
     const viewKey = (viewEl.id || '').replace(/^view-/, '');
@@ -5316,15 +5355,14 @@ function applyPanelAccessLocks(){
     if(ban) ban.remove();
 
     viewEl.querySelectorAll('input, select, textarea, button').forEach(el => {
-      // Selalu izinkan navigasi / filter / periode / logout / notif / chip tab
-      if(el.closest('.filters') || el.closest('.period-panel') || el.closest('.topbar') || el.closest('.sidebar') || el.closest('.notif-wrap') || el.closest('.chip-tabs') || el.closest('#cbm-tabs')){
+      // Selalu izinkan navigasi/filter/logout/notif
+      if(el.closest('.filters') || el.closest('.period-panel') || el.closest('.topbar') || el.closest('.sidebar') || el.closest('.notif-wrap')){
         return;
       }
-      if(el.classList.contains('trend-quarter-select') || el.classList.contains('period-input-caret') || el.classList.contains('chip')) return;
-      const eid = el.id || '';
-      if(eid && (eid.includes('filter') || eid.includes('period') || eid.includes('week-period') || eid.includes('month') || eid.includes('refresh') || eid.endsWith('-clear') || eid.includes('clear-filter'))) return;
+      if(el.classList.contains('trend-quarter-select') || el.classList.contains('period-input-caret')) return;
+      if(el.id && (el.id.includes('filter') || el.id.includes('period') || el.id.includes('week-period') || el.id.includes('month'))) return;
       // Type unit disabled fields stay disabled
-      if(el.disabled && el.hasAttribute('disabled') && eid.includes('typeunit')) return;
+      if(el.disabled && el.hasAttribute('disabled') && (el.id||'').includes('typeunit')) return;
 
       if(readonly){
         if(el.tagName === 'BUTTON' || el.type === 'submit' || el.type === 'button' || el.type === 'reset'){
@@ -5632,20 +5670,10 @@ registerForm.addEventListener('submit', async (e)=>{
   registeredUsers.push(newUser);
   await saveRegisteredUsers();
 
-  // User baru: View Only — hanya menu Dashboard, Performance, Plan Service.
-  // Panel lain none (menu disembunyikan). Full/panel lain hanya lewat "Atur Akses" (Fahmi).
-  const viewOnlyMap = {};
-  PANEL_DEFS.forEach(p => { viewOnlyMap[p.key] = 'none'; });
-  viewOnlyMap.dashboard = 'view';
-  viewOnlyMap.database  = 'view'; // Performance
-  viewOnlyMap.plan      = 'view'; // Plan Service
-  userPanelAccess[uVal] = viewOnlyMap;
-  await saveUserPanelAccess();
-
   registerForm.reset();
   showLoginPanel();
   document.getElementById('login-username').value = uVal;
-  loginSuccess.textContent = 'Akun berhasil dibuat! Menu: Dashboard, Performance & Plan Service (View Only). Silakan login.';
+  loginSuccess.textContent = 'Akun berhasil dibuat! Silakan login dengan username & password baru Anda.';
   loginSuccess.style.display = 'block';
 });
 
@@ -7168,10 +7196,12 @@ function attachTopScroll(prefix){
 function escDailyDetail(v){
   return String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+let currentDailyDetailId = null;
 window.openDailyDetail = function(id, ev){
   if(ev && ev.target && ev.target.closest('button, select, a, .edit-text-btn, .approval-actions')) return;
   const r = dailyRecords.find(x=>x.id===id);
   if(!r) return;
+  currentDailyDetailId = id;
   const manPower = [r.mechanic, r.mechanic2, r.mechanic3].filter(Boolean).join(', ') || '—';
   const approvalInfo = (()=>{
     const status = r.approvalStatus || 'Pending';
@@ -7220,6 +7250,12 @@ document.getElementById('daily-detail-close').addEventListener('click', closeDai
 document.getElementById('daily-detail-close-2').addEventListener('click', closeDailyDetail);
 document.getElementById('daily-detail-overlay').addEventListener('click', (e)=>{
   if(e.target.id==='daily-detail-overlay') closeDailyDetail();
+});
+document.getElementById('daily-detail-edit').addEventListener('click', ()=>{
+  if(!currentDailyDetailId) return;
+  const id = currentDailyDetailId;
+  closeDailyDetail();
+  if(typeof editDaily==='function') editDaily(id);
 });
 document.addEventListener('keydown', (e)=>{
   if(e.key==='Escape') closeDailyDetail();
@@ -11515,25 +11551,7 @@ let kpiInspectionMonthValue = ''; // '' = bulan berjalan — filter chart Pre In
 
 function onKpiMonthlyChartPeriodChange(selectEl){
   kpiMonthlyChartPeriodValue = selectEl.value;
-  // Sinkronkan juga input tanggal Performance (unit-period) agar UI satu sumber
-  try{
-    const r = monthKeyToDateRange(kpiMonthlyChartPeriodValue);
-    const sEl = document.getElementById('unit-period-start');
-    const eEl = document.getElementById('unit-period-end');
-    if(r){
-      if(sEl) sEl.value = r.start;
-      if(eEl) eEl.value = r.end;
-      window._unitPeriodTouched = true;
-      if(typeof persistUnitPeriodFilter==='function') persistUnitPeriodFilter();
-    } else if(sEl && eEl && !kpiMonthlyChartPeriodValue){
-      // All Periods → kosongkan tanggal Performance
-      sEl.value = '';
-      eEl.value = '';
-      window._unitPeriodTouched = true;
-      if(typeof persistUnitPeriodFilter==='function') persistUnitPeriodFilter();
-    }
-  }catch(_e){}
-  // Push periode ke sheet performance + ambil ulang data, lalu render KPI Report
+  // Auto-sync live dari sheet performance, lalu render KPI Report (tanpa klik tombol)
   autoSyncPerformanceAndRefresh('dashboard');
 }
 /** Klik baris KPI di tabel Report Monthly → tampilkan/sembunyikan keterangan + breakdown per unit (periode = filter aktif). */
@@ -11577,21 +11595,9 @@ function quarterOptionLabel(val){
 
 function onKpiTrendQuarterChange(selectEl){
   kpiTrendQuarterValue = selectEl.value;
-  // Sinkronkan input tanggal Performance ke rentang triwulan (jika filter bulan kosong)
-  try{
-    if(!kpiMonthlyChartPeriodValue){
-      const r = quarterKeyToDateRange(kpiTrendQuarterValue);
-      const sEl = document.getElementById('unit-period-start');
-      const eEl = document.getElementById('unit-period-end');
-      if(r && sEl && eEl){
-        sEl.value = r.start;
-        eEl.value = r.end;
-        window._unitPeriodTouched = true;
-        if(typeof persistUnitPeriodFilter==='function') persistUnitPeriodFilter();
-      }
-    }
-  }catch(_e){}
-  // Push periode ke sheet performance & record Daily Maintenance saat quarter diganti
+  // Auto-sync live dari sheet performance & record Daily Maintenance saat quarter diganti,
+  // supaya periode filter Quarter (termasuk quarter baru yang otomatis muncul seiring waktu
+  // berjalan) selalu terisi dengan data terkini — sama seperti filter bulanan KPI Report Monthly.
   autoSyncPerformanceAndRefresh('dashboard');
 }
 
@@ -12881,160 +12887,6 @@ let _perfSyncInFlight = null;
 let _perfLastFetchAt = 0;
 let _perfAutoTimer = null;
 
-/** Konversi kunci bulan "YYYY-MM" → { start, end } (awal–akhir bulan). */
-function monthKeyToDateRange(ym){
-  if(!ym || !/^\d{4}-\d{2}$/.test(ym)) return null;
-  const [y,m] = ym.split('-').map(Number);
-  const start = ym + '-01';
-  const last = new Date(y, m, 0).getDate();
-  const end = ym + '-' + String(last).padStart(2,'0');
-  return { start, end };
-}
-/** Konversi kunci triwulan "YYYY-Qn" → { start, end }. */
-function quarterKeyToDateRange(yq){
-  if(!yq || !/^\d{4}-Q[1-4]$/.test(yq)) return null;
-  const [ys, qs] = yq.split('-Q');
-  const y = Number(ys), q = Number(qs);
-  const startM = (q-1)*3 + 1;
-  const endM = startM + 2;
-  const start = ys + '-' + String(startM).padStart(2,'0') + '-01';
-  const last = new Date(y, endM, 0).getDate();
-  const end = ys + '-' + String(endM).padStart(2,'0') + '-' + String(last).padStart(2,'0');
-  return { start, end };
-}
-
-/**
- * Tulis periode filter web ke sheet "performance" (sel periode D2–G2 / setara)
- * lewat Apps Script action=setPerformancePeriod.
- * Setelah sukses, periodStart/periodEnd lokal ikut di-update agar MA/PA cocok.
- */
-async function pushPerformancePeriodToSheets(periodStart, periodEnd, opts){
-  opts = opts || {};
-  const ps = (periodStart || '').trim().slice(0,10);
-  const pe = (periodEnd || '').trim().slice(0,10);
-  if(!ps || !pe){
-    return { ok:false, skipped:true, reason:'empty_period' };
-  }
-  if(ps > pe){
-    return { ok:false, error:'start_after_end' };
-  }
-  // Hindari spam: jangan push ulang periode yang sama
-  if(mapaData && mapaData.periodStart===ps && mapaData.periodEnd===pe && !opts.force){
-    return { ok:true, cached:true, periodStart:ps, periodEnd:pe };
-  }
-  if(!BACKEND_CONFIG.sheetsWebAppUrl){
-    // Offline / belum deploy: tetap update lokal supaya filter web konsisten
-    if(mapaData){
-      mapaData.periodStart = ps;
-      mapaData.periodEnd = pe;
-      mapaData.fileName = 'performance-sheet (' + ps + ' s/d ' + pe + ')';
-      try{ await saveMapaData(); }catch(_e){}
-    }
-    return { ok:false, error:'no_url', localUpdated:true, periodStart:ps, periodEnd:pe };
-  }
-  try{
-    const payload = {
-      action: 'setPerformancePeriod',
-      periodStart: ps,
-      periodEnd: pe,
-      start: ps,
-      end: pe
-    };
-    const res = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-      cache: 'no-store',
-      redirect: 'follow'
-    });
-    let data = null;
-    try{ data = await res.json(); }catch(_e){ data = null; }
-
-    // Fallback GET query (beberapa deployment hanya expose doGet)
-    if(!data || data.ok!==true){
-      const q = BACKEND_CONFIG.sheetsWebAppUrl +
-        (BACKEND_CONFIG.sheetsWebAppUrl.indexOf('?')>=0 ? '&' : '?') +
-        'action=setPerformancePeriod&periodStart=' + encodeURIComponent(ps) +
-        '&periodEnd=' + encodeURIComponent(pe);
-      try{
-        const res2 = await fetch(q, { method:'GET', redirect:'follow', cache:'no-store' });
-        try{ data = await res2.json(); }catch(_e){ data = null; }
-      }catch(_e2){ /* ignore */ }
-    }
-
-    // Update lokal selalu (agar web & sheet period label sinkron meski Apps Script
-    // belum di-upgrade — user tinggal deploy handler setPerformancePeriod).
-    if(mapaData){
-      mapaData.periodStart = ps;
-      mapaData.periodEnd = pe;
-      mapaData.fileName = (data && data.label) || ('performance-sheet (' + ps + ' s/d ' + pe + ')');
-      mapaData.updatedAt = (data && data.syncedAt) || new Date().toISOString();
-      try{ await saveMapaData(); }catch(_e){}
-    } else {
-      mapaData = {
-        rows: [], totalW:0, totalS:0, totalR:0, totalT:0,
-        fileName: 'performance-sheet (' + ps + ' s/d ' + pe + ')',
-        updatedAt: new Date().toISOString(),
-        fromPerformance: true,
-        periodStart: ps,
-        periodEnd: pe
-      };
-      try{ await saveMapaData(); }catch(_e){}
-    }
-
-    if(data && data.ok===true){
-      return { ok:true, periodStart:ps, periodEnd:pe, remote:true };
-    }
-    // Apps Script belum kenal action — lokal sudah di-update; anggap partial success
-    console.warn('setPerformancePeriod: respons tidak ok (mungkin Apps Script belum di-update). Periode lokal tetap disinkronkan.', data);
-    return { ok:true, periodStart:ps, periodEnd:pe, remote:false, warn: (data && data.error) || 'no_remote_ack' };
-  }catch(e){
-    console.error('pushPerformancePeriodToSheets gagal', e);
-    if(mapaData){
-      mapaData.periodStart = ps;
-      mapaData.periodEnd = pe;
-      try{ await saveMapaData(); }catch(_e){}
-    }
-    return { ok:false, error:String(e), periodStart:ps, periodEnd:pe, localUpdated:true };
-  }
-}
-
-/**
- * Ambil periode aktif dari filter web (Performance unit-period ATAU Dashboard bulan/triwulan)
- * lalu push ke sheet performance. Dipanggil saat filter berubah.
- */
-async function syncWebPeriodFilterToSheet(source){
-  let ps = '', pe = '';
-  try{
-    if(source === 'units' || source === 'performance' || source === 'all'){
-      const sEl = document.getElementById('unit-period-start');
-      const eEl = document.getElementById('unit-period-end');
-      const s = (sEl && sEl.value) || '';
-      const e = (eEl && eEl.value) || '';
-      if(s && e){ ps = s; pe = e; }
-      else if(s && !e){ ps = s; pe = s; }
-      else if(!s && e){ ps = e; pe = e; }
-    }
-    if((!ps || !pe) && (source === 'dashboard' || source === 'all')){
-      // Prioritas: filter bulan KPI Report Monthly
-      if(kpiMonthlyChartPeriodValue){
-        const r = monthKeyToDateRange(kpiMonthlyChartPeriodValue);
-        if(r){ ps = r.start; pe = r.end; }
-      }
-      // Fallback: filter triwulan
-      if((!ps || !pe) && kpiTrendQuarterValue){
-        const r = quarterKeyToDateRange(kpiTrendQuarterValue);
-        if(r){ ps = r.start; pe = r.end; }
-      }
-    }
-    if(!ps || !pe) return { ok:false, skipped:true, reason:'no_active_period' };
-    return await pushPerformancePeriodToSheets(ps, pe);
-  }catch(e){
-    console.warn('syncWebPeriodFilterToSheet', e);
-    return { ok:false, error:String(e) };
-  }
-}
-
 /**
  * Ambil data W/S/R/T dari sheet "performance" lewat Apps Script (action=getPerformance).
  * Dipakai manual (tombol) maupun otomatis (filter periode / interval live).
@@ -13149,18 +13001,12 @@ async function ensurePerformanceSynced(opts){
   return _perfSyncInFlight;
 }
 
-/** Auto-sync lalu render Master Unit + Dashboard (dipakai filter periode).
- *  Juga push periode filter web → sheet performance agar periode di spreadsheet ikut terupdate. */
+/** Auto-sync lalu render Master Unit + Dashboard (dipakai filter periode). */
 async function autoSyncPerformanceAndRefresh(which){
   try{
-    // 1) Tulis periode filter web ke sheet (Dashboard / Performance)
-    if(which==='units' || which==='dashboard' || which==='all' || which==='performance'){
-      try{ await syncWebPeriodFilterToSheet(which==='all' ? 'all' : which); }catch(_e){}
-    }
-    // 2) Ambil ulang W/S/R dari sheet (setelah periode di-update)
     await ensurePerformanceSynced({ force:true });
   }catch(e){ console.warn('auto sync performance', e); }
-  if(which==='units' || which==='all' || which==='performance') renderUnitCards();
+  if(which==='units' || which==='all') renderUnitCards();
   if(which==='dashboard' || which==='all'){
     renderDashboard();
   }
@@ -13702,45 +13548,153 @@ window.deleteBreakdownReport = async function(id){
    Sumber data: Daily Maintenance (Breakdown) — HM, plan/unplan, kategori komponen.
    Tidak ada form input di menu ini. */
 const CBM_COMPONENTS = [
+  /* Komponen Loader: Engine → Transmission → Hydraulic → Final Drive → Axle/Differential
+     → Electrical → Cabin → AC System → Attachment → Wheel. */
   { key:'Engine',              match:['engine'], targetLife:12000, color:'#FF6B35' },
-  { key:'Transmission',        match:['powertrain','power train','transmission','transmisi'], targetLife:10000, color:'#4A90D9' },
-  { key:'Hydraulic',           match:['hydraulic','hidraulik','hidrolik'], targetLife:8000, color:'#4CAF6D' },
-  { key:'Final Drive',         match:['final drive','finaldrive'], targetLife:8000, color:'#E5484D' },
-  { key:'Axle / Differential', match:['differential','exel','axle','axel','diff '], targetLife:10000, color:'#A878FF', loaderOnly:true },
-  { key:'Electrical',          match:['electrical','electric','elektrik','kelistrikan'], targetLife:15000, color:'#FFC72C' },
-  { key:'Cabin',               match:['cabin','kabin'], targetLife:20000, color:'#9AA0A8' },
-  { key:'Undercarriage',       match:['undercarriage','under carriage','track'], targetLife:6000, color:'#FF8C42' },
-  { key:'Attachment',          match:['attachment','bucket','blade','boom','arm'], targetLife:5000, color:'#40c48c' },
+  { key:'Transmission',        match:['powertrain','power train','transmission','transmisi'], targetLife:10000, color:'#4A90D9', loaderOrDozer:true },
+  { key:'Hydraulic',           match:['hydraulic','hidraulik','hidrolik'], targetLife:8000, color:'#FF8A1F' },
+  { key:'Final Drive',         match:['final drive','finaldrive'], targetLife:8000, color:'#4CAF6D' },
+  { key:'Axle / Differential', match:['differential','exel','axle','axel','diff '], targetLife:10000, color:'#E5484D', loaderOnly:true },
+  { key:'Electrical',          match:['electrical','electric','elektrik','kelistrikan'], targetLife:15000, color:'#4A90D9' },
+  { key:'Cabin',               match:['cabin','kabin'], targetLife:20000, color:'#00D9FF' },
+  { key:'AC System',           match:['ac system','air conditioning','air conditioner','aircon','a/c'], targetLife:10000, color:'#16D9E8' },
+  { key:'Undercarriage',       match:['undercarriage','under carriage','track','track frame','track roller','idler','carrier'], targetLife:6000, color:'#FFC72C', trackedOnly:true },
+  { key:'Attachment',          match:['attachment','bucket','blade','boom','arm'], targetLife:5000, color:'#A6A6A6' },
+  { key:'Wheel',               match:['wheel','tire','tyre','ban'], targetLife:6000, color:'#B44CFF', loaderOnly:true },
 ];
-/** Komponen Axle/Differential hanya relevan untuk Wheel Loader (bukan Excavator/Dozer). */
+
 function cbmIsLoaderUnit(unit){
   if(!unit) return false;
   const cat = String(unit.category||'').toLowerCase();
   const type = String(unit.type||'').toLowerCase();
   return /loader|wheel/.test(cat) || /^wa\d/.test(type);
 }
+function cbmIsTrackedUnit(unit){
+  if(!unit) return false;
+  const cat = String(unit.category||'').toLowerCase();
+  const type = String(unit.type||'').toLowerCase();
+  return /bulldozer|dozer|excavator|exca|crawler/.test(cat) || /d85|pc210/.test(type);
+}
+function cbmComponentAllowedForUnit(component, unit){
+  if(!component || !unit) return false;
+  if(component.loaderOnly && !cbmIsLoaderUnit(unit)) return false;
+  if(component.loaderOrDozer && !(cbmIsLoaderUnit(unit) || /bulldozer|dozer/.test(String(unit.category||'').toLowerCase()) || /d85/.test(String(unit.type||'').toLowerCase()))) return false;
+  if(component.trackedOnly && !cbmIsTrackedUnit(unit)) return false;
+  return true;
+}
 function cbmComponentsForUnit(unit){
-  return CBM_COMPONENTS.filter(c=>{
-    if(c.loaderOnly && !cbmIsLoaderUnit(unit)) return false;
-    return true;
-  });
+  return CBM_COMPONENTS.filter(c=>cbmComponentAllowedForUnit(c, unit));
 }
 function cbmUnitByCode(code){
   return (UNITS||[]).find(u=>u.code===code) || null;
 }
-/** Daftar komponen yang ditampilkan di UI (sembunyikan Axle/Diff jika unit filter/selected = Dozer/Exca). */
+/** Komponen yang tampil mengikuti jenis unit:
+ *  Loader = Wheel + Transmission + Axle/Differential
+ *  Dozer = Transmission + Undercarriage
+ *  Excavator = Undercarriage (tanpa Transmission)
+ *  AC System = semua unit
+ */
 function cbmVisibleComponents(){
   const f = (typeof cbmGetFilters==='function') ? cbmGetFilters() : {};
   const code = (f && f.unit) || (typeof cbmSelectedUnit!=='undefined' ? cbmSelectedUnit : '') || '';
   if(code){
     const u = cbmUnitByCode(code);
-    if(u && !cbmIsLoaderUnit(u)) return CBM_COMPONENTS.filter(c=>!c.loaderOnly);
+    if(u) return cbmComponentsForUnit(u);
   }
-  // Tanpa filter unit: tetap tampilkan semua (data Axle hanya dari Loader)
-  // Tapi jika SEMUA unit di armada bukan loader, hide juga
-  const units = UNITS||[];
-  if(units.length && units.every(u=>!cbmIsLoaderUnit(u))) return CBM_COMPONENTS.filter(c=>!c.loaderOnly);
   return CBM_COMPONENTS.slice();
+}
+/** Icon komponen mengikuti bentuk visual referensi yang diberikan. */
+const CBM_COMPONENT_ICONS = {
+  /* Icon dibuat sebagai ilustrasi komponen heavy equipment, mengikuti referensi visual:
+     kuning = komponen utama, hitam/abu = metal, biru = hydraulic/AC, hitam = rubber. */
+  'Engine': `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="13" y="19" width="34" height="29" rx="4" fill="#F5A900" stroke="#FFD54A" stroke-width="2"/>
+    <rect x="19" y="12" width="18" height="9" rx="2" fill="#252525" stroke="#777" stroke-width="1.5"/>
+    <rect x="9" y="28" width="8" height="14" rx="2" fill="#303030"/>
+    <rect x="43" y="27" width="10" height="7" rx="2" fill="#303030"/>
+    <circle cx="23" cy="31" r="4" fill="#292929" stroke="#BDBDBD" stroke-width="1.2"/>
+    <circle cx="37" cy="31" r="4" fill="#292929" stroke="#BDBDBD" stroke-width="1.2"/>
+    <circle cx="23" cy="31" r="1.5" fill="#F5A900"/><circle cx="37" cy="31" r="1.5" fill="#F5A900"/>
+    <path d="M17 44h28M21 48v5M42 48v5" stroke="#171717" stroke-width="3" stroke-linecap="round"/>
+    <path d="M48 17c6 2 9 6 10 11" fill="none" stroke="#E7E7E7" stroke-width="2"/>
+  </svg>`,
+  'Transmission': `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M10 22c0-6 4-9 10-9h25c6 0 9 4 9 9v20c0 6-3 9-9 9H20c-6 0-10-3-10-9z" fill="#D89400" stroke="#FFD34D" stroke-width="2"/>
+    <circle cx="23" cy="32" r="10" fill="#7A7A7A" stroke="#D9D9D9" stroke-width="2"/>
+    <circle cx="43" cy="32" r="8" fill="#6B6B6B" stroke="#D9D9D9" stroke-width="2"/>
+    <circle cx="23" cy="32" r="3" fill="#202020"/><circle cx="43" cy="32" r="3" fill="#202020"/>
+    <path d="M23 14v6M43 14v6M23 44v7M43 44v7" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+    <path d="M12 25h7M45 25h7" stroke="#F4B400" stroke-width="3"/>
+  </svg>`,
+  'Hydraulic': `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="10" y="24" width="31" height="15" rx="7" fill="#E5A400" stroke="#FFD54A" stroke-width="2"/>
+    <rect x="38" y="27" width="15" height="9" rx="3" fill="#777" stroke="#D8D8D8" stroke-width="1.5"/>
+    <rect x="51" y="29" width="8" height="5" rx="2" fill="#BFC4C8"/>
+    <circle cx="13" cy="31.5" r="7" fill="#303030" stroke="#999" stroke-width="2"/>
+    <path d="M18 40l-6 8M38 40l6 8" stroke="#303030" stroke-width="4" stroke-linecap="round"/>
+    <path d="M22 19h20" stroke="#1BB8E6" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="29" cy="31.5" r="3" fill="#6B6B6B"/>
+  </svg>`,
+  'Final Drive': `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="22" fill="#D99A00" stroke="#FFD34D" stroke-width="2"/>
+    <circle cx="32" cy="32" r="15" fill="#555" stroke="#C8C8C8" stroke-width="2"/>
+    <circle cx="32" cy="32" r="6" fill="#242424" stroke="#E4A500" stroke-width="3"/>
+    <path d="M32 10v8M32 46v8M10 32h8M46 32h8M16 16l6 6M42 42l6 6M48 16l-6 6M22 42l-6 6" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+  </svg>`,
+  'Axle / Differential': `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="12" cy="32" r="9" fill="#242424" stroke="#BDBDBD" stroke-width="2"/>
+    <circle cx="52" cy="32" r="9" fill="#242424" stroke="#BDBDBD" stroke-width="2"/>
+    <path d="M20 32h24" stroke="#E0A000" stroke-width="7"/>
+    <circle cx="32" cy="32" r="11" fill="#D99A00" stroke="#FFD34D" stroke-width="2"/>
+    <circle cx="32" cy="32" r="4" fill="#252525"/>
+    <path d="M27 25l10 14M37 25L27 39" stroke="#777" stroke-width="2"/>
+  </svg>`,
+  'Electrical': `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="8" y="17" width="34" height="30" rx="4" fill="#242424" stroke="#B7B7B7" stroke-width="2"/>
+    <rect x="17" y="11" width="8" height="7" rx="2" fill="#D72828"/>
+    <rect x="31" y="11" width="8" height="7" rx="2" fill="#222"/>
+    <path d="M13 26h8M13 33h8M13 40h8" stroke="#666" stroke-width="2"/>
+    <path d="M48 12l-10 19h9l-5 21 15-25h-9z" fill="#2F8FFF" stroke="#8FD0FF" stroke-width="1.5"/>
+  </svg>`,
+  'Cabin': `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M10 52V20l9-10h26l9 10v32z" fill="#E0A000" stroke="#FFD34D" stroke-width="2"/>
+    <path d="M18 22l5-7h18l5 7v20H18z" fill="#1D4053" stroke="#76D9F4" stroke-width="2"/>
+    <path d="M32 15v27M18 31h28" stroke="#6DAFC6" stroke-width="2"/>
+    <path d="M13 52h38" stroke="#202020" stroke-width="4"/>
+    <rect x="25" y="42" width="14" height="8" rx="2" fill="#202020"/>
+  </svg>`,
+  'AC System': `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="12" y="16" width="40" height="34" rx="4" fill="#222" stroke="#AEB6BC" stroke-width="2"/>
+    <rect x="17" y="21" width="30" height="18" rx="2" fill="#444" stroke="#BFC6CB"/>
+    <path d="M20 25h24M20 29h24M20 33h24" stroke="#D7D7D7" stroke-width="2"/>
+    <circle cx="32" cy="45" r="5" fill="#222" stroke="#16D9E8" stroke-width="2"/>
+    <path d="M32 41v8M28.5 43l7 4M35.5 43l-7 4" stroke="#16D9E8" stroke-width="1.5"/>
+    <path d="M9 11l3 3M55 11l-3 3" stroke="#16D9E8" stroke-width="3" stroke-linecap="round"/>
+  </svg>`,
+  'Undercarriage': `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M8 18c0-6 5-10 11-10h27c7 0 11 5 10 12l-3 24c-1 7-6 11-13 11H20C12 55 7 50 8 43z" fill="#202020" stroke="#A8A8A8" stroke-width="2"/>
+    <circle cx="20" cy="34" r="8" fill="#D99A00" stroke="#FFD34D" stroke-width="2"/>
+    <circle cx="44" cy="34" r="8" fill="#D99A00" stroke="#FFD34D" stroke-width="2"/>
+    <circle cx="20" cy="34" r="3" fill="#333"/><circle cx="44" cy="34" r="3" fill="#333"/>
+    <path d="M26 17h12M26 51h12" stroke="#777" stroke-width="4" stroke-linecap="round"/>
+  </svg>`,
+  'Attachment': `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M10 14v29l10 11h26c6 0 10-4 10-10V29" fill="#E0A000" stroke="#FFD34D" stroke-width="2"/>
+    <path d="M10 43h28l13-14" fill="none" stroke="#252525" stroke-width="4"/>
+    <path d="M20 54l-4 6M35 54v7M49 54l4 6" stroke="#222" stroke-width="3"/>
+    <path d="M17 17h27" stroke="#A0A0A0" stroke-width="3"/>
+  </svg>`,
+  'Wheel': `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="24" fill="#1D1D1D" stroke="#555" stroke-width="2"/>
+    <circle cx="32" cy="32" r="14" fill="#D99A00" stroke="#FFD34D" stroke-width="2"/>
+    <circle cx="32" cy="32" r="6" fill="#333" stroke="#BDBDBD" stroke-width="2"/>
+    <path d="M32 18v8M32 38v8M18 32h8M38 32h8M22 22l6 6M42 42l-6-6M42 22l-6 6M22 42l6-6" stroke="#444" stroke-width="3" stroke-linecap="round"/>
+  </svg>`,
+};
+
+function cbmComponentIcon(key){
+  // Kembali ke tampilan semula: kartu/label komponen tanpa icon.
+  return '';
 }
 let cbmActiveTab = 'overview';
 let cbmSelectedComp = '';
@@ -13790,11 +13744,12 @@ function cbmBreakdownRecords(){
     if(f.end && r.tanggal && r.tanggal > f.end) return false;
     const comp = normalizeCBMComponent(r.bdCategory || r.bdcategory, r.jobDesc);
     if(!comp) return false; // skip Other / plan-daily / unmapped
-    // Axle/Differential hanya untuk unit Loader
-    if(comp === 'Axle / Differential'){
-      const u = cbmUnitByCode(r.unitCode);
-      if(!cbmIsLoaderUnit(u)) return false;
-    }
+    // Terapkan aturan komponen sesuai jenis unit:
+    // Transmission = Loader + Dozer; Axle/Differential + Wheel = Loader only
+    // Undercarriage = Dozer/Excavator only
+    const unit = cbmUnitByCode(r.unitCode);
+    const compDef = CBM_COMPONENTS.find(c=>c.key===comp);
+    if(!cbmComponentAllowedForUnit(compDef, unit)) return false;
     if(f.comp && comp !== f.comp) return false;
     r._cbmComp = comp;
     return true;
@@ -13885,14 +13840,14 @@ function initCBMFilters(){
   const uEl = document.getElementById('cbm-filter-unit');
   if(uEl){
     const cur = uEl.value;
-    uEl.innerHTML = '<option value="">Semua Unit</option>' + (UNITS||[]).map(u=>`<option value="${u.code}">${u.code}</option>`).join('');
+    uEl.innerHTML = '<option value="">All Units</option>' + (UNITS||[]).map(u=>`<option value="${u.code}">${u.code}</option>`).join('');
     if(cur) uEl.value = cur;
   }
   const cEl = document.getElementById('cbm-filter-comp');
   if(cEl){
     const cur = cEl.value;
     const comps = cbmVisibleComponents();
-    cEl.innerHTML = '<option value="">Semua Komponen</option>' + comps.map(c=>`<option value="${c.key}">${c.key}</option>`).join('');
+    cEl.innerHTML = '<option value="">All Components</option>' + comps.map(c=>`<option value="${c.key}">${c.key}</option>`).join('');
     if(cur && comps.some(c=>c.key===cur)) cEl.value = cur;
     else if(cur && !comps.some(c=>c.key===cur)){
       cEl.value = '';
@@ -14046,13 +14001,15 @@ function renderCBMUnitCards(rows, stats){
       if(f.end && r.tanggal && r.tanggal > f.end) return false;
       const comp = normalizeCBMComponent(r.bdCategory||r.bdcategory, r.jobDesc);
       if(!comp) return false;
-      if(comp === 'Axle / Differential' && !cbmIsLoaderUnit(cbmUnitByCode(r.unitCode))) return false;
-      r._cbmComp = comp;
+       const unit = cbmUnitByCode(r.unitCode);
+       const compDef = CBM_COMPONENTS.find(c=>c.key===comp);
+       if(!cbmComponentAllowedForUnit(compDef, unit)) return false;
+       r._cbmComp = comp;
       return true;
     });
   })();
 
-  if(!units.length){ wrap.innerHTML = '<div class="hint">Tidak ada unit.</div>'; return; }
+  if(!units.length){ wrap.innerHTML = '<div class="hint">No units available.</div>'; return; }
 
   wrap.innerHTML = units.map(u=>{
     const model = cbmBuildUnitCardModel(u, baseRows, stats);
@@ -14061,7 +14018,7 @@ function renderCBMUnitCards(rows, stats){
     const topHealth = model.healths.slice(0,4);
     const bars = topHealth.map(h=>`
       <div class="cbm-health-row">
-        <span class="hn" title="${h.key}">${h.key}</span>
+        <span class="hn" title="${h.key}">${cbmComponentIcon(h.key)}${h.key}</span>
         <div class="cbm-health-bar"><i style="width:${h.health}%;background:${cbmHealthColor(h.health)}"></i></div>
         <span class="hp" style="color:${cbmHealthColor(h.health)}">${h.health}%</span>
       </div>`).join('');
@@ -14102,8 +14059,9 @@ function renderCBMAssetDetail(){
     if(f.end && r.tanggal && r.tanggal > f.end) return false;
     const comp = normalizeCBMComponent(r.bdCategory||r.bdcategory, r.jobDesc);
     if(!comp) return false;
-    if(comp === 'Axle / Differential' && !cbmIsLoaderUnit(u)) return false;
-    r._cbmComp = comp;
+     const compDef = CBM_COMPONENTS.find(c=>c.key===comp);
+     if(!cbmComponentAllowedForUnit(compDef, u)) return false;
+     r._cbmComp = comp;
     return true;
   });
   const model = cbmBuildUnitCardModel(u, unitRows, null);
@@ -14112,19 +14070,20 @@ function renderCBMAssetDetail(){
   document.getElementById('cbm-asset-title').textContent = 'Asset Analysis — '+u.code;
   document.getElementById('cbm-asset-code').textContent = u.code;
   document.getElementById('cbm-asset-meta').textContent = `${u.type} · ${u.category||''} · ${u.serial||''}`;
-  document.getElementById('cbm-asset-hm').textContent = `HM Saat Ini: ${model.unitHm!=null?model.unitHm.toLocaleString('id-ID'):'—'} · Overall Health ${model.overall}%`;
-  document.getElementById('cbm-asset-summary').textContent = `${model.eventCount} breakdown pada periode filter · ${model.unplanCount} unplan`;
+  document.getElementById('cbm-asset-hm').textContent = `Current HM: ${model.unitHm!=null?model.unitHm.toLocaleString('id-ID'):'—'} · Overall Health ${model.overall}%`;
+  document.getElementById('cbm-asset-summary').textContent = `${model.eventCount} breakdown in filter period · ${model.unplanCount} unplan`;
   document.getElementById('cbm-asset-visual').innerHTML = photo?`<img src="${photo}" alt="${u.type}">`:(typeof unitIconSVG==='function'?unitIconSVG(u.category):'');
 
-  // gauges — main systems (Axle/Differential hanya untuk Loader)
-  const mainKeys = cbmIsLoaderUnit(u)
-    ? ['Engine','Transmission','Hydraulic','Final Drive','Axle / Differential','Undercarriage']
-    : ['Engine','Transmission','Hydraulic','Final Drive','Undercarriage','Attachment'];
+  // Gauges mengikuti komponen yang benar-benar relevan untuk jenis unit.
+  // Loader menampilkan Wheel + Transmission + Axle/Differential.
+  // Dozer/Excavator menampilkan Undercarriage dan tidak menampilkan Transmission/Axle/Differential.
+  // AC System selalu tersedia di semua unit.
+  const mainKeys = cbmComponentsForUnit(u).map(c=>c.key);
   const gauges = document.getElementById('cbm-asset-gauges');
   if(gauges){
     gauges.innerHTML = model.healths.filter(h=>mainKeys.includes(h.key)).map(h=>`
       <div class="cbm-gauge-item">
-        <div class="gl">${h.key} Health</div>
+        <div class="gl">${cbmComponentIcon(h.key)}${h.key} Health</div>
         <div class="gv" style="color:${cbmHealthColor(h.health)}">${h.health}%</div>
         <div class="hint" style="margin:2px 0 0;">Target life ${h.targetLife.toLocaleString('id-ID')} HM</div>
         <div class="cbm-gauge-track"><i style="width:${h.health}%;background:${cbmHealthColor(h.health)}"></i></div>
@@ -14138,7 +14097,7 @@ function renderCBMAssetDetail(){
       const used = model.unitHm!=null ? model.unitHm : null;
       const sisa = (used!=null) ? (h.targetLife - used) : null;
       return `<tr>
-        <td><b>${h.key}</b></td>
+        <td style="display:flex;align-items:center;gap:6px;"><b>${cbmComponentIcon(h.key)}${h.key}</b></td>
         <td><span style="color:${cbmHealthColor(h.health)};font-weight:700">${h.health}%</span></td>
         <td><b style="color:var(--yellow)">${h.targetLife.toLocaleString('id-ID')}</b></td>
         <td>${used!=null?used.toLocaleString('id-ID'):'—'}</td>
@@ -14155,12 +14114,12 @@ function renderCBMAssetDetail(){
   if(reco){
     const items = [];
     model.healths.filter(h=>h.health<60).sort((a,b)=>a.health-b.health).forEach(h=>{
-      items.push({ cls:'crit', text:`${h.key}: health ${h.health}% — target life ${h.targetLife.toLocaleString('id-ID')} HM. Tingkatkan inspeksi CBM & siapkan part.` });
+      items.push({ cls:'crit', text:`${h.key}: health ${h.health}% — target life ${h.targetLife.toLocaleString('id-ID')} HM. Increase CBM inspection frequency & prepare spare parts.` });
     });
     model.healths.filter(h=>h.health>=60 && h.health<80).forEach(h=>{
-      items.push({ cls:'', text:`${h.key}: pantau gejala (getar/suhu/bocor). Avg HM gap ${h.avgGap!=null?Math.round(h.avgGap):'n/a'}.` });
+      items.push({ cls:'', text:`${h.key}: monitor symptoms (vibration/temperature/leaks). Avg HM gap ${h.avgGap!=null?Math.round(h.avgGap):'n/a'}.` });
     });
-    if(!items.length) items.push({ cls:'ok', text:'Semua komponen utama dalam rentang health baik terhadap target life. Lanjutkan monitoring rutin.' });
+    if(!items.length) items.push({ cls:'ok', text:'All major components are within a healthy range relative to target life. Continue routine monitoring.' });
     reco.innerHTML = items.slice(0,6).map(i=>`<li class="${i.cls}">${escUH(i.text)}</li>`).join('');
   }
 
@@ -14168,12 +14127,12 @@ function renderCBMAssetDetail(){
   const recent = document.getElementById('cbm-asset-recent');
   if(recent){
     const sorted = unitRows.slice().sort((a,b)=>String(b.tanggal||'').localeCompare(String(a.tanggal||''))).slice(0,8);
-    if(!sorted.length) recent.innerHTML = `<tr class="empty-row"><td colspan="5">Belum ada breakdown pada filter.</td></tr>`;
+    if(!sorted.length) recent.innerHTML = `<tr class="empty-row"><td colspan="5">No breakdown recorded for this filter.</td></tr>`;
     else recent.innerHTML = sorted.map(r=>{
       const pu = r.planUnplan||'—';
       return `<tr>
         <td>${formatDateDMY(r.tanggal)}</td>
-        <td>${escUH(r._cbmComp)}</td>
+        <td>${cbmComponentIcon(r._cbmComp)}${escUH(r._cbmComp)}</td>
         <td><span class="pill ${pu==='Unplan'?'open':'close'}">${escUH(pu)}</span></td>
         <td>${r.hm??'—'}</td>
         <td>${r.duration!=null?Number(r.duration).toFixed(1):'—'}</td>
@@ -14204,7 +14163,7 @@ function renderCBMOverview(rows, stats){
       const active = cbmSelectedComp===c.key ? ' active' : '';
       const unplanB = st.unplan>0 ? 'bad' : 'ok';
       return `<div class="cbm-comp-card${active}" data-comp="${c.key}" onclick="cbmSelectComp('${c.key}')">
-        <div class="cc-name">${c.key}</div>
+        <div class="cc-name">${cbmComponentIcon(c.key)}${c.key}</div>
         <div class="cc-stat"><span>Target Life</span><b style="color:var(--yellow)">${(c.targetLife||0).toLocaleString('id-ID')} HM</b></div>
         <div class="cc-stat"><span>Breakdown</span><b>${st.total}</b></div>
         <div class="cc-stat"><span>Unplan</span><b class="${unplanB}">${st.unplan}</b></div>
@@ -14219,7 +14178,7 @@ function renderCBMOverview(rows, stats){
     tbody.innerHTML = visibleComps.map(c=>{
       const st = stats.byComp[c.key] || { total:0, unplan:0, plan:0, hours:0, unitCount:0, avgGap:null, status:'—' };
       return `<tr>
-        <td><b>${c.key}</b></td>
+        <td style="display:flex;align-items:center;gap:6px;"><b>${cbmComponentIcon(c.key)}${c.key}</b></td>
         <td><b style="color:var(--yellow)">${(c.targetLife||0).toLocaleString('id-ID')}</b></td>
         <td>${st.total||0}</td>
         <td style="color:${st.unplan?'var(--orange)':'inherit'}">${st.unplan||0}</td>
@@ -14245,12 +14204,12 @@ function renderCBMLifetime(stats){
   if(!tbody) return;
   const list = stats.byUC.slice().sort((a,b)=> (a.perfScore||0) - (b.perfScore||0));
   if(!list.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="11">Belum ada data breakdown pada filter ini. Data diambil dari Daily Maintenance.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="11">No breakdown data for this filter yet. Data is sourced from Daily Maintenance.</td></tr>`;
     return;
   }
   tbody.innerHTML = list.map(g=>`<tr>
     <td>${escUH(g.unitCode)}</td>
-    <td>${escUH(g.component)}</td>
+    <td>${cbmComponentIcon(g.component)}${escUH(g.component)}</td>
     <td>${g.count}</td>
     <td style="color:${g.unplan?'var(--orange)':'inherit'}">${g.unplan}</td>
     <td>${g.hmFirst!=null?g.hmFirst:'—'}</td>
@@ -14268,7 +14227,7 @@ function renderCBMHistory(rows){
   if(!tbody) return;
   const sorted = rows.slice().sort((a,b)=> String(b.tanggal||'').localeCompare(String(a.tanggal||'')));
   if(!sorted.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Tidak ada histori breakdown pada filter ini.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">No breakdown history for this filter.</td></tr>`;
     return;
   }
   tbody.innerHTML = sorted.map(r=>{
@@ -14292,30 +14251,30 @@ function renderCBMInsight(stats){
   const list = stats.byUC.slice().sort((a,b)=> (a.perfScore||100) - (b.perfScore||100));
   const fleet = document.getElementById('cbm-fleet-insight');
   if(fleet){
-    if(!list.length) fleet.innerHTML = 'Belum ada data breakdown untuk dianalisis. Pastikan Daily Maintenance sudah berisi record Breakdown dengan kategori komponen & HM.';
+    if(!list.length) fleet.innerHTML = 'No breakdown data to analyze yet. Make sure Daily Maintenance contains Breakdown records with component category & HM.';
     else {
       const crit = list.filter(g=>g.perfLabel==='CRITICAL');
       const watch = list.filter(g=>g.perfLabel==='WATCH');
       const top = list[0];
-      fleet.innerHTML = `Monitoring armada: <b>${list.length}</b> kombinasi unit×komponen · <b>${crit.length}</b> CRITICAL · <b>${watch.length}</b> WATCH. ` +
-        (top ? `Prioritas pantauan: <b>${escUH(top.unitCode)} — ${escUH(top.component)}</b> (${top.count} event, unplan ${top.unplan}, avg HM gap ${top.avgGap!=null?Math.round(top.avgGap):'n/a'}).` : '');
+      fleet.innerHTML = `Fleet monitoring: <b>${list.length}</b> unit×component combinations · <b>${crit.length}</b> CRITICAL · <b>${watch.length}</b> WATCH. ` +
+        (top ? `Priority to monitor: <b>${escUH(top.unitCode)} — ${escUH(top.component)}</b> (${top.count} events, unplan ${top.unplan}, avg HM gap ${top.avgGap!=null?Math.round(top.avgGap):'n/a'}).` : '');
     }
   }
   const tbody = document.getElementById('cbm-insight-tbody');
   if(!tbody) return;
   if(!list.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Tidak ada insight — data breakdown kosong.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">No insight available — breakdown data is empty.</td></tr>`;
     return;
   }
   tbody.innerHTML = list.map(g=>{
     const unplanPct = g.count ? Math.round(g.unplan/g.count*100) : 0;
-    let reco = 'Pertahankan interval inspeksi rutin.';
-    if(g.perfLabel==='CRITICAL') reco = 'Naikkan frekuensi CBM inspeksi; siapkan part & rencana downtime terencana.';
-    else if(g.perfLabel==='WATCH') reco = 'Pantau gejala tiap shift; review root cause unplan terakhir.';
-    else if(g.perfLabel==='FAIR') reco = 'Lanjutkan monitoring; bandingkan HM gap dengan baseline pabrik.';
+    let reco = 'Maintain routine inspection interval.';
+    if(g.perfLabel==='CRITICAL') reco = 'Increase CBM inspection frequency; prepare parts & plan scheduled downtime.';
+    else if(g.perfLabel==='WATCH') reco = 'Monitor symptoms every shift; review root cause of the latest unplan event.';
+    else if(g.perfLabel==='FAIR') reco = 'Continue monitoring; compare HM gap with factory baseline.';
     return `<tr>
       <td>${escUH(g.unitCode)}</td>
-      <td>${escUH(g.component)}</td>
+      <td>${cbmComponentIcon(g.component)}${escUH(g.component)}</td>
       <td>${cbmStatusPill(g.perfLabel)}</td>
       <td>${g.count}</td>
       <td>${unplanPct}%</td>
