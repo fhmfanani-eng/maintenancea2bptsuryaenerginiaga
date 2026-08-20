@@ -11515,26 +11515,13 @@ let kpiInspectionMonthValue = ''; // '' = bulan berjalan — filter chart Pre In
 
 function onKpiMonthlyChartPeriodChange(selectEl){
   kpiMonthlyChartPeriodValue = selectEl.value;
-  // Sinkronkan juga input tanggal Performance (unit-period) agar UI satu sumber
+  // Hanya tulis periode ke SEL PERIODE sheet (tidak menyentuh filter menu Performance,
+  // tidak auto-fetch W/S/R). Data performance tetap pakai tombol Sync manual.
   try{
     const r = monthKeyToDateRange(kpiMonthlyChartPeriodValue);
-    const sEl = document.getElementById('unit-period-start');
-    const eEl = document.getElementById('unit-period-end');
-    if(r){
-      if(sEl) sEl.value = r.start;
-      if(eEl) eEl.value = r.end;
-      window._unitPeriodTouched = true;
-      if(typeof persistUnitPeriodFilter==='function') persistUnitPeriodFilter();
-    } else if(sEl && eEl && !kpiMonthlyChartPeriodValue){
-      // All Periods → kosongkan tanggal Performance
-      sEl.value = '';
-      eEl.value = '';
-      window._unitPeriodTouched = true;
-      if(typeof persistUnitPeriodFilter==='function') persistUnitPeriodFilter();
-    }
+    if(r) pushPerformancePeriodToSheets(r.start, r.end);
   }catch(_e){}
-  // Push periode ke sheet performance + ambil ulang data, lalu render KPI Report
-  autoSyncPerformanceAndRefresh('dashboard');
+  renderDashboard();
 }
 /** Klik baris KPI di tabel Report Monthly → tampilkan/sembunyikan keterangan + breakdown per unit (periode = filter aktif). */
 window.onKpiMonthlyRowClick = function(key){
@@ -11577,22 +11564,12 @@ function quarterOptionLabel(val){
 
 function onKpiTrendQuarterChange(selectEl){
   kpiTrendQuarterValue = selectEl.value;
-  // Sinkronkan input tanggal Performance ke rentang triwulan (jika filter bulan kosong)
+  // Hanya tulis periode triwulan ke SEL PERIODE sheet — tidak mengubah filter menu Performance
   try{
-    if(!kpiMonthlyChartPeriodValue){
-      const r = quarterKeyToDateRange(kpiTrendQuarterValue);
-      const sEl = document.getElementById('unit-period-start');
-      const eEl = document.getElementById('unit-period-end');
-      if(r && sEl && eEl){
-        sEl.value = r.start;
-        eEl.value = r.end;
-        window._unitPeriodTouched = true;
-        if(typeof persistUnitPeriodFilter==='function') persistUnitPeriodFilter();
-      }
-    }
+    const r = quarterKeyToDateRange(kpiTrendQuarterValue);
+    if(r) pushPerformancePeriodToSheets(r.start, r.end);
   }catch(_e){}
-  // Push periode ke sheet performance & record Daily Maintenance saat quarter diganti
-  autoSyncPerformanceAndRefresh('dashboard');
+  renderDashboard();
 }
 
 /* ================= SERVICE CHART 4D + TABEL PENCAPAIAN (Dashboard KPI) =================
@@ -13149,15 +13126,11 @@ async function ensurePerformanceSynced(opts){
   return _perfSyncInFlight;
 }
 
-/** Auto-sync lalu render Master Unit + Dashboard (dipakai filter periode).
- *  Juga push periode filter web → sheet performance agar periode di spreadsheet ikut terupdate. */
+/** Ambil ulang data W/S/R dari sheet performance, lalu render.
+ *  TIDAK menulis periode ke sheet, TIDAK menyalin filter antar menu Dashboard ↔ Performance.
+ *  Penulisan periode sheet hanya lewat pushPerformancePeriodToSheets / syncWebPeriodFilterToSheet. */
 async function autoSyncPerformanceAndRefresh(which){
   try{
-    // 1) Tulis periode filter web ke sheet (Dashboard / Performance)
-    if(which==='units' || which==='dashboard' || which==='all' || which==='performance'){
-      try{ await syncWebPeriodFilterToSheet(which==='all' ? 'all' : which); }catch(_e){}
-    }
-    // 2) Ambil ulang W/S/R dari sheet (setelah periode di-update)
     await ensurePerformanceSynced({ force:true });
   }catch(e){ console.warn('auto sync performance', e); }
   if(which==='units' || which==='all' || which==='performance') renderUnitCards();
@@ -13376,8 +13349,14 @@ document.getElementById('unit-sync-perf-btn')?.addEventListener('click', functio
 function onUnitPeriodDateChange(){
   window._unitPeriodTouched = true;
   if(typeof persistUnitPeriodFilter==='function') persistUnitPeriodFilter();
-  // Auto-sync live dari sheet performance saat filter periode Master Unit berubah
-  autoSyncPerformanceAndRefresh('units');
+  // Hanya update SEL PERIODE di sheet performance — tidak mengubah filter Dashboard,
+  // tidak auto-fetch ulang data W/S/R (pakai tombol Sync manual).
+  try{
+    const s = (document.getElementById('unit-period-start')||{}).value || '';
+    const e = (document.getElementById('unit-period-end')||{}).value || '';
+    if(s && e) pushPerformancePeriodToSheets(s, e);
+  }catch(_e){}
+  renderUnitCards();
 }
 document.getElementById('unit-period-start')?.addEventListener('change', onUnitPeriodDateChange);
 document.getElementById('unit-period-end')?.addEventListener('change', onUnitPeriodDateChange);
@@ -13388,7 +13367,8 @@ document.getElementById('unit-period-reset-btn')?.addEventListener('click', func
   if(s) s.value = '';
   if(e) e.value = '';
   if(typeof persistUnitPeriodFilter==='function') persistUnitPeriodFilter();
-  autoSyncPerformanceAndRefresh('units');
+  // Reset filter lokal saja — tidak menulis periode kosong ke sheet
+  renderUnitCards();
 });
 
 /* ================= NOTIFICATION CENTER (Mekanik & Supervisor) ================= */
