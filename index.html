@@ -11515,7 +11515,25 @@ let kpiInspectionMonthValue = ''; // '' = bulan berjalan — filter chart Pre In
 
 function onKpiMonthlyChartPeriodChange(selectEl){
   kpiMonthlyChartPeriodValue = selectEl.value;
-  // Auto-sync live dari sheet performance, lalu render KPI Report (tanpa klik tombol)
+  // Sinkronkan juga input tanggal Performance (unit-period) agar UI satu sumber
+  try{
+    const r = monthKeyToDateRange(kpiMonthlyChartPeriodValue);
+    const sEl = document.getElementById('unit-period-start');
+    const eEl = document.getElementById('unit-period-end');
+    if(r){
+      if(sEl) sEl.value = r.start;
+      if(eEl) eEl.value = r.end;
+      window._unitPeriodTouched = true;
+      if(typeof persistUnitPeriodFilter==='function') persistUnitPeriodFilter();
+    } else if(sEl && eEl && !kpiMonthlyChartPeriodValue){
+      // All Periods → kosongkan tanggal Performance
+      sEl.value = '';
+      eEl.value = '';
+      window._unitPeriodTouched = true;
+      if(typeof persistUnitPeriodFilter==='function') persistUnitPeriodFilter();
+    }
+  }catch(_e){}
+  // Push periode ke sheet performance + ambil ulang data, lalu render KPI Report
   autoSyncPerformanceAndRefresh('dashboard');
 }
 /** Klik baris KPI di tabel Report Monthly → tampilkan/sembunyikan keterangan + breakdown per unit (periode = filter aktif). */
@@ -11559,9 +11577,21 @@ function quarterOptionLabel(val){
 
 function onKpiTrendQuarterChange(selectEl){
   kpiTrendQuarterValue = selectEl.value;
-  // Auto-sync live dari sheet performance & record Daily Maintenance saat quarter diganti,
-  // supaya periode filter Quarter (termasuk quarter baru yang otomatis muncul seiring waktu
-  // berjalan) selalu terisi dengan data terkini — sama seperti filter bulanan KPI Report Monthly.
+  // Sinkronkan input tanggal Performance ke rentang triwulan (jika filter bulan kosong)
+  try{
+    if(!kpiMonthlyChartPeriodValue){
+      const r = quarterKeyToDateRange(kpiTrendQuarterValue);
+      const sEl = document.getElementById('unit-period-start');
+      const eEl = document.getElementById('unit-period-end');
+      if(r && sEl && eEl){
+        sEl.value = r.start;
+        eEl.value = r.end;
+        window._unitPeriodTouched = true;
+        if(typeof persistUnitPeriodFilter==='function') persistUnitPeriodFilter();
+      }
+    }
+  }catch(_e){}
+  // Push periode ke sheet performance & record Daily Maintenance saat quarter diganti
   autoSyncPerformanceAndRefresh('dashboard');
 }
 
@@ -12851,6 +12881,160 @@ let _perfSyncInFlight = null;
 let _perfLastFetchAt = 0;
 let _perfAutoTimer = null;
 
+/** Konversi kunci bulan "YYYY-MM" → { start, end } (awal–akhir bulan). */
+function monthKeyToDateRange(ym){
+  if(!ym || !/^\d{4}-\d{2}$/.test(ym)) return null;
+  const [y,m] = ym.split('-').map(Number);
+  const start = ym + '-01';
+  const last = new Date(y, m, 0).getDate();
+  const end = ym + '-' + String(last).padStart(2,'0');
+  return { start, end };
+}
+/** Konversi kunci triwulan "YYYY-Qn" → { start, end }. */
+function quarterKeyToDateRange(yq){
+  if(!yq || !/^\d{4}-Q[1-4]$/.test(yq)) return null;
+  const [ys, qs] = yq.split('-Q');
+  const y = Number(ys), q = Number(qs);
+  const startM = (q-1)*3 + 1;
+  const endM = startM + 2;
+  const start = ys + '-' + String(startM).padStart(2,'0') + '-01';
+  const last = new Date(y, endM, 0).getDate();
+  const end = ys + '-' + String(endM).padStart(2,'0') + '-' + String(last).padStart(2,'0');
+  return { start, end };
+}
+
+/**
+ * Tulis periode filter web ke sheet "performance" (sel periode D2–G2 / setara)
+ * lewat Apps Script action=setPerformancePeriod.
+ * Setelah sukses, periodStart/periodEnd lokal ikut di-update agar MA/PA cocok.
+ */
+async function pushPerformancePeriodToSheets(periodStart, periodEnd, opts){
+  opts = opts || {};
+  const ps = (periodStart || '').trim().slice(0,10);
+  const pe = (periodEnd || '').trim().slice(0,10);
+  if(!ps || !pe){
+    return { ok:false, skipped:true, reason:'empty_period' };
+  }
+  if(ps > pe){
+    return { ok:false, error:'start_after_end' };
+  }
+  // Hindari spam: jangan push ulang periode yang sama
+  if(mapaData && mapaData.periodStart===ps && mapaData.periodEnd===pe && !opts.force){
+    return { ok:true, cached:true, periodStart:ps, periodEnd:pe };
+  }
+  if(!BACKEND_CONFIG.sheetsWebAppUrl){
+    // Offline / belum deploy: tetap update lokal supaya filter web konsisten
+    if(mapaData){
+      mapaData.periodStart = ps;
+      mapaData.periodEnd = pe;
+      mapaData.fileName = 'performance-sheet (' + ps + ' s/d ' + pe + ')';
+      try{ await saveMapaData(); }catch(_e){}
+    }
+    return { ok:false, error:'no_url', localUpdated:true, periodStart:ps, periodEnd:pe };
+  }
+  try{
+    const payload = {
+      action: 'setPerformancePeriod',
+      periodStart: ps,
+      periodEnd: pe,
+      start: ps,
+      end: pe
+    };
+    const res = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+      cache: 'no-store',
+      redirect: 'follow'
+    });
+    let data = null;
+    try{ data = await res.json(); }catch(_e){ data = null; }
+
+    // Fallback GET query (beberapa deployment hanya expose doGet)
+    if(!data || data.ok!==true){
+      const q = BACKEND_CONFIG.sheetsWebAppUrl +
+        (BACKEND_CONFIG.sheetsWebAppUrl.indexOf('?')>=0 ? '&' : '?') +
+        'action=setPerformancePeriod&periodStart=' + encodeURIComponent(ps) +
+        '&periodEnd=' + encodeURIComponent(pe);
+      try{
+        const res2 = await fetch(q, { method:'GET', redirect:'follow', cache:'no-store' });
+        try{ data = await res2.json(); }catch(_e){ data = null; }
+      }catch(_e2){ /* ignore */ }
+    }
+
+    // Update lokal selalu (agar web & sheet period label sinkron meski Apps Script
+    // belum di-upgrade — user tinggal deploy handler setPerformancePeriod).
+    if(mapaData){
+      mapaData.periodStart = ps;
+      mapaData.periodEnd = pe;
+      mapaData.fileName = (data && data.label) || ('performance-sheet (' + ps + ' s/d ' + pe + ')');
+      mapaData.updatedAt = (data && data.syncedAt) || new Date().toISOString();
+      try{ await saveMapaData(); }catch(_e){}
+    } else {
+      mapaData = {
+        rows: [], totalW:0, totalS:0, totalR:0, totalT:0,
+        fileName: 'performance-sheet (' + ps + ' s/d ' + pe + ')',
+        updatedAt: new Date().toISOString(),
+        fromPerformance: true,
+        periodStart: ps,
+        periodEnd: pe
+      };
+      try{ await saveMapaData(); }catch(_e){}
+    }
+
+    if(data && data.ok===true){
+      return { ok:true, periodStart:ps, periodEnd:pe, remote:true };
+    }
+    // Apps Script belum kenal action — lokal sudah di-update; anggap partial success
+    console.warn('setPerformancePeriod: respons tidak ok (mungkin Apps Script belum di-update). Periode lokal tetap disinkronkan.', data);
+    return { ok:true, periodStart:ps, periodEnd:pe, remote:false, warn: (data && data.error) || 'no_remote_ack' };
+  }catch(e){
+    console.error('pushPerformancePeriodToSheets gagal', e);
+    if(mapaData){
+      mapaData.periodStart = ps;
+      mapaData.periodEnd = pe;
+      try{ await saveMapaData(); }catch(_e){}
+    }
+    return { ok:false, error:String(e), periodStart:ps, periodEnd:pe, localUpdated:true };
+  }
+}
+
+/**
+ * Ambil periode aktif dari filter web (Performance unit-period ATAU Dashboard bulan/triwulan)
+ * lalu push ke sheet performance. Dipanggil saat filter berubah.
+ */
+async function syncWebPeriodFilterToSheet(source){
+  let ps = '', pe = '';
+  try{
+    if(source === 'units' || source === 'performance' || source === 'all'){
+      const sEl = document.getElementById('unit-period-start');
+      const eEl = document.getElementById('unit-period-end');
+      const s = (sEl && sEl.value) || '';
+      const e = (eEl && eEl.value) || '';
+      if(s && e){ ps = s; pe = e; }
+      else if(s && !e){ ps = s; pe = s; }
+      else if(!s && e){ ps = e; pe = e; }
+    }
+    if((!ps || !pe) && (source === 'dashboard' || source === 'all')){
+      // Prioritas: filter bulan KPI Report Monthly
+      if(kpiMonthlyChartPeriodValue){
+        const r = monthKeyToDateRange(kpiMonthlyChartPeriodValue);
+        if(r){ ps = r.start; pe = r.end; }
+      }
+      // Fallback: filter triwulan
+      if((!ps || !pe) && kpiTrendQuarterValue){
+        const r = quarterKeyToDateRange(kpiTrendQuarterValue);
+        if(r){ ps = r.start; pe = r.end; }
+      }
+    }
+    if(!ps || !pe) return { ok:false, skipped:true, reason:'no_active_period' };
+    return await pushPerformancePeriodToSheets(ps, pe);
+  }catch(e){
+    console.warn('syncWebPeriodFilterToSheet', e);
+    return { ok:false, error:String(e) };
+  }
+}
+
 /**
  * Ambil data W/S/R/T dari sheet "performance" lewat Apps Script (action=getPerformance).
  * Dipakai manual (tombol) maupun otomatis (filter periode / interval live).
@@ -12965,12 +13149,18 @@ async function ensurePerformanceSynced(opts){
   return _perfSyncInFlight;
 }
 
-/** Auto-sync lalu render Master Unit + Dashboard (dipakai filter periode). */
+/** Auto-sync lalu render Master Unit + Dashboard (dipakai filter periode).
+ *  Juga push periode filter web → sheet performance agar periode di spreadsheet ikut terupdate. */
 async function autoSyncPerformanceAndRefresh(which){
   try{
+    // 1) Tulis periode filter web ke sheet (Dashboard / Performance)
+    if(which==='units' || which==='dashboard' || which==='all' || which==='performance'){
+      try{ await syncWebPeriodFilterToSheet(which==='all' ? 'all' : which); }catch(_e){}
+    }
+    // 2) Ambil ulang W/S/R dari sheet (setelah periode di-update)
     await ensurePerformanceSynced({ force:true });
   }catch(e){ console.warn('auto sync performance', e); }
-  if(which==='units' || which==='all') renderUnitCards();
+  if(which==='units' || which==='all' || which==='performance') renderUnitCards();
   if(which==='dashboard' || which==='all'){
     renderDashboard();
   }
