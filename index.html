@@ -5170,7 +5170,10 @@ async function saveUserPanelAccess(){
   catch(e){ console.error('save user panel access failed', e); }
 }
 
-/* Default akses berdasarkan posisi — dipakai kalau belum ada override manual. */
+/* Default akses berdasarkan posisi — dipakai kalau belum ada override manual.
+   USER BARU / selain Fahmi Fanani: VIEW ONLY, menu terbatas:
+   Dashboard + Performance + Plan Service saja (boleh filter, tidak bisa input).
+   Full access / panel lain hanya lewat "Atur Akses" di Database Akun. */
 function defaultPanelAccessForUser(u){
   const map = {};
   const pos = (u.position || u.role || '').trim();
@@ -5186,26 +5189,10 @@ function defaultPanelAccessForUser(u){
     return map;
   }
 
-  // Selain Fahmi Fanani → otomatis View Only (pantau) pada panel sesuai posisi.
-  // Full access hanya bisa diberikan manual lewat "Atur Akses" di Database Akun.
-  // Posisi manajemen / support: pantau semua panel (view), tanpa Database Akun
-  const staffViewAll = ['PJO','Supervisor','Deputy','HRGA','Inventory','Master Loading'];
-  if(staffViewAll.includes(pos) || u.role === 'Supervisor'){
-    PANEL_DEFS.forEach(p => { map[p.key] = (p.key === 'accounts') ? 'none' : 'view'; });
-    return map;
-  }
-  if(pos === 'Operator'){
-    map.p2h = 'full';
-    map.bdreport = 'full';
-    return map;
-  }
-  // Mechanic (dan posisi lain): panel operasional view only,
-  // kecuali Pre Inspection, Daily Maintenance, P2H & Plan Schedule Maintenance yang bisa diinput.
-  ['preinspection','daily','plan','planningsystem','bdreport','cbm'].forEach(k => { map[k] = 'view'; });
-  if(pos === 'Mechanic' || u.role === 'Mechanic'){
-    ['preinspection','daily','planningsystem'].forEach(k => { map[k] = 'full'; });
-    map.cbm = 'view';
-  }
+  // User baru / non-Fahmi: hanya 3 menu (view only) — Dashboard, Performance, Plan Service
+  map.dashboard = 'view';
+  map.database  = 'view';  // Performance
+  map.plan      = 'view';  // Plan Service
   return map;
 }
 
@@ -5313,7 +5300,8 @@ document.getElementById('access-modal-reset')?.addEventListener('click', async (
   alert('Akses direset ke default posisi.');
 });
 
-/* Kunci form/input pada panel ber-level view (pantau saja). Filter KPI & Master Unit tetap aktif. */
+/* Kunci form/input pada panel ber-level view (pantau saja).
+   Input filter, periode, chip tab, refresh data, dan navigasi tetap aktif. */
 function applyPanelAccessLocks(){
   document.querySelectorAll('.view').forEach(viewEl => {
     const viewKey = (viewEl.id || '').replace(/^view-/, '');
@@ -5328,14 +5316,15 @@ function applyPanelAccessLocks(){
     if(ban) ban.remove();
 
     viewEl.querySelectorAll('input, select, textarea, button').forEach(el => {
-      // Selalu izinkan navigasi/filter/logout/notif
-      if(el.closest('.filters') || el.closest('.period-panel') || el.closest('.topbar') || el.closest('.sidebar') || el.closest('.notif-wrap')){
+      // Selalu izinkan navigasi / filter / periode / logout / notif / chip tab
+      if(el.closest('.filters') || el.closest('.period-panel') || el.closest('.topbar') || el.closest('.sidebar') || el.closest('.notif-wrap') || el.closest('.chip-tabs') || el.closest('#cbm-tabs')){
         return;
       }
-      if(el.classList.contains('trend-quarter-select') || el.classList.contains('period-input-caret')) return;
-      if(el.id && (el.id.includes('filter') || el.id.includes('period') || el.id.includes('week-period') || el.id.includes('month'))) return;
+      if(el.classList.contains('trend-quarter-select') || el.classList.contains('period-input-caret') || el.classList.contains('chip')) return;
+      const eid = el.id || '';
+      if(eid && (eid.includes('filter') || eid.includes('period') || eid.includes('week-period') || eid.includes('month') || eid.includes('refresh') || eid.endsWith('-clear') || eid.includes('clear-filter'))) return;
       // Type unit disabled fields stay disabled
-      if(el.disabled && el.hasAttribute('disabled') && (el.id||'').includes('typeunit')) return;
+      if(el.disabled && el.hasAttribute('disabled') && eid.includes('typeunit')) return;
 
       if(readonly){
         if(el.tagName === 'BUTTON' || el.type === 'submit' || el.type === 'button' || el.type === 'reset'){
@@ -5643,10 +5632,20 @@ registerForm.addEventListener('submit', async (e)=>{
   registeredUsers.push(newUser);
   await saveRegisteredUsers();
 
+  // User baru: View Only — hanya menu Dashboard, Performance, Plan Service.
+  // Panel lain none (menu disembunyikan). Full/panel lain hanya lewat "Atur Akses" (Fahmi).
+  const viewOnlyMap = {};
+  PANEL_DEFS.forEach(p => { viewOnlyMap[p.key] = 'none'; });
+  viewOnlyMap.dashboard = 'view';
+  viewOnlyMap.database  = 'view'; // Performance
+  viewOnlyMap.plan      = 'view'; // Plan Service
+  userPanelAccess[uVal] = viewOnlyMap;
+  await saveUserPanelAccess();
+
   registerForm.reset();
   showLoginPanel();
   document.getElementById('login-username').value = uVal;
-  loginSuccess.textContent = 'Akun berhasil dibuat! Silakan login dengan username & password baru Anda.';
+  loginSuccess.textContent = 'Akun berhasil dibuat! Menu: Dashboard, Performance & Plan Service (View Only). Silakan login.';
   loginSuccess.style.display = 'block';
 });
 
