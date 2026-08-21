@@ -2052,13 +2052,13 @@ body.role-mechanic #history-filters{ display:none !important; }
           <div class="panel-head">
             <h2>Record Service Unit <span class="tag">CLOSE</span></h2>
             <div class="toolbar">
-              <button type="button" class="btn small" id="plan-record-sync-sheets-btn" title="Kirim semua record Service (Close) ke Google Sheets tab plan service">☁ Sync ke Sheet plan service</button>
+              <button type="button" class="btn small" id="plan-record-sync-sheets-btn" title="Kirim semua record Service (Close) ke Google Sheets tab Record Service">☁ Sync ke Sheet Record Service</button>
             </div>
           </div>
           <div class="hint" style="margin-top:-8px; margin-bottom:12px;">
             Data unit yang <b>Status Eksekusi = Close</b> di Schedule Plan Service masuk ke sini <b>otomatis</b>
             (hanya setelah service benar-benar dieksekusi). Tombol <b>↩ Open</b> mengembalikan ke jadwal plan.
-            Sync ke sheet <code>plan service</code> (setelah tab performance) lewat tombol di atas atau otomatis saat data Close berubah.
+            Sync ke sheet <code>Record Service</code> (setelah tab performance) lewat tombol di atas atau otomatis saat data Close berubah.
           </div>
           <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
             <label style="font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin:0;">Filter Unit Code</label>
@@ -4274,7 +4274,7 @@ const BACKEND_CONFIG = {
 
   // ---- Sinkron Google Sheets (Daily Maintenance + Performance + Plan Service + Monitoring HM) ----
   // Spreadsheet: https://docs.google.com/spreadsheets/d/1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4
-  // Apps Script actions: getPerformance, getHM, sync (sheet data / plan service)
+  // Apps Script actions: getPerformance, getHM, sync (sheet data / Record Service)
   sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
   sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbx31DQTu96c5pO_46P0mJHE2bBten4d5ynCThs-G_V03QFnq4v1Mknjujj7Ohd6up4/exec',
 };
@@ -5002,7 +5002,7 @@ async function savePlan(){
   try{
     sanitizePlanServiceUnits();
     await appStorage.set('plan-records', JSON.stringify(planRecords));
-    // Auto-sync Record Service (Close) ke sheet "plan service"
+    // Auto-sync Record Service (Close) ke sheet "Record Service"
     try{ syncPlanServiceToSheets({ manual:false }); }catch(_e){}
   }
   catch(e){ console.error('save plan failed', e); }
@@ -7260,7 +7260,7 @@ document.getElementById('daily-sync-sheets-btn')?.addEventListener('click', asyn
   finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet data'; } }
 });
 
-/* ---- Sinkron Record Service Unit (Plan Close) → Google Sheets tab "plan service" ----
+/* ---- Sinkron Record Service Unit (Plan Close) → Google Sheets tab "Record Service" ----
    Dipanggil otomatis tiap savePlan() dan manual lewat tombol di panel Record Service.
    Sheet dibuat otomatis di Apps Script tepat setelah tab "performance". */
 async function syncPlanServiceToSheets(opts){
@@ -7276,7 +7276,7 @@ async function syncPlanServiceToSheets(opts){
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         action: 'sync',
-        sheet: 'plan service',
+        sheet: 'Record Service',
         spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
         records: closed.map(r=>({
           id: r.id || '',
@@ -7307,11 +7307,11 @@ async function syncPlanServiceToSheets(opts){
     try{ data = await res.json(); }catch(_e){ data = null; }
     if(opts.manual){
       if(data && data.ok){
-        alert('✓ Berhasil sync '+ (data.written!=null?data.written:closed.length) +' record Close ke sheet "plan service".\nBuka spreadsheet dan refresh tab plan service.');
+        alert('✓ Berhasil sync '+ (data.written!=null?data.written:closed.length) +' record Close ke sheet "Record Service".\nBuka spreadsheet dan refresh tab Record Service.');
       } else if(data && data.error){
         alert('⚠ Sync Plan Service gagal: '+ data.error);
       } else {
-        alert('✓ Permintaan sync terkirim ('+ closed.length +' record Close).\nCek tab "plan service" di spreadsheet.');
+        alert('✓ Permintaan sync terkirim ('+ closed.length +' record Close).\nCek tab "Record Service" di spreadsheet.');
       }
     }
     return data || { ok:true };
@@ -7326,7 +7326,7 @@ document.getElementById('plan-record-sync-sheets-btn')?.addEventListener('click'
   const btn = document.getElementById('plan-record-sync-sheets-btn');
   if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
   try{ await syncPlanServiceToSheets({ manual:true }); }
-  finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet plan service'; } }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet Record Service'; } }
 });
 
 /**
@@ -8373,6 +8373,18 @@ function getPlanPeriodAsOfDate(){
  * - Tanpa filter: HM Akhir terakhir overall.
  * TANPA proyeksi +18 jam/hari — hanya nilai actual dari Monitoring HM.
  */
+function parseHmNumberLocal(v){
+  if(v===null || v===undefined || v==='') return NaN;
+  if(typeof v === 'number') return isNaN(v) ? NaN : v;
+  let s = String(v).trim().replace(/\s/g,'');
+  // Indonesia: 5.420,9 atau 5420,9 → 5420.9
+  if(/,\d{1,2}$/.test(s) && s.indexOf('.')>=0) s = s.replace(/\./g,'').replace(',','.');
+  else if(/,\d{1,2}$/.test(s)) s = s.replace(',','.');
+  else s = s.replace(/,/g,'');
+  const n = parseFloat(s);
+  return isNaN(n) ? NaN : n;
+}
+
 function getActualMonitoringHM(unitCode, periodStart, periodEnd){
   const code = String(unitCode||'').trim().toUpperCase();
   if(!code) return null;
@@ -8381,8 +8393,9 @@ function getActualMonitoringHM(unitCode, periodStart, periodEnd){
     if(u !== code) return false;
     const t = String(r.tanggal||'');
     if(!t) return false;
-    const hm = Number(r.hmAkhir);
-    if(!hm || isNaN(hm)) return false;
+    const hm = parseHmNumberLocal(r.hmAkhir != null ? r.hmAkhir : r.hm_akhir);
+    if(!(hm > 0)) return false;
+    r._hmAkhirNum = hm;
     return true;
   });
   if(!rows.length) return null;
@@ -8401,13 +8414,22 @@ function getActualMonitoringHM(unitCode, periodStart, periodEnd){
   }
   if(!candidates.length) return null;
 
+  // Urut: tanggal terbaru dulu, lalu HM Akhir tertinggi (shift malam biasanya lebih besar)
   candidates.sort((a,b)=>{
-    if(a.tanggal !== b.tanggal) return a.tanggal < b.tanggal ? 1 : -1;
-    return (Number(b.hmAkhir)||0) - (Number(a.hmAkhir)||0);
+    const ta = String(a.tanggal||'');
+    const tb = String(b.tanggal||'');
+    if(ta !== tb) return ta < tb ? 1 : -1;
+    return (Number(b._hmAkhirNum)||0) - (Number(a._hmAkhirNum)||0);
   });
   const best = candidates[0];
+  // Pastikan pakai max HM pada tanggal terbaik (jika ada beberapa shift)
+  const bestDate = String(best.tanggal||'');
+  const sameDay = candidates.filter(r=> String(r.tanggal||'') === bestDate);
+  let maxHm = Number(best._hmAkhirNum)||0;
+  sameDay.forEach(r=>{ const h = Number(r._hmAkhirNum)||0; if(h > maxHm) maxHm = h; });
+  best._hmAkhirNum = maxHm;
   return {
-    hm: Math.round(Number(best.hmAkhir)*10)/10,
+    hm: Math.round(Number(best._hmAkhirNum)*10)/10,
     tanggal: best.tanggal,
     source: 'monitoring-actual'
   };
@@ -8461,13 +8483,16 @@ function calcHmSekarang(unitCode, asOfDateStr){
 
   const asOfStr = periodEnd || periodStart || (new Date().toISOString().slice(0,10));
 
-  // Proyeksi otomatis: HM += hari × WH/hari (sheet performance)
+  // Proyeksi: HANYA hari PENUH setelah tanggal HM Akhir terakhir.
+  // Hari yang sama dengan lastDate → pakai HM aktual murni (tidak di-proyeksi).
+  // Contoh: HM Akhir 20-Agu = 5420.9, asOf 20-Agu → 5420.9; asOf 21-Agu → 5420.9 + 1×WH/hari.
   let daysElapsed = 0;
   if(hmNow!=null && lastDate && String(lastDate).length>=10){
     try{
       const d0 = new Date(String(lastDate).slice(0,10)+'T00:00:00');
       const d1 = new Date(String(asOfStr).slice(0,10)+'T00:00:00');
       const diff = Math.floor((d1 - d0) / 86400000);
+      // Proyeksi mulai H+1 setelah pembacaan HM (hari pembacaan sudah tercermin di HM Akhir)
       daysElapsed = diff > 0 ? diff : 0;
       if(daysElapsed > 0 && dailyWh > 0){
         hmNow = Math.round((Number(hmNow) + daysElapsed * dailyWh) * 10) / 10;
@@ -9201,17 +9226,39 @@ function getPlanGenerationMaxHm(unitCode, hmNow){
   return Math.ceil(projected / 250) * 250;
 }
 
+/** HM Plan terakhir yang sudah Close untuk unit (0 jika belum pernah). */
+function getLastClosedPlanHm(unitCode){
+  const code = String(unitCode||'').trim().toUpperCase();
+  let max = 0;
+  (planRecords||[]).forEach(r=>{
+    if(!r || !isPlanClosed(r)) return;
+    if(String(r.unitCode||'').trim().toUpperCase() !== code) return;
+    const h = Number(r.hmPlan)||0;
+    if(h > max) max = h;
+  });
+  return max;
+}
+
+/**
+ * Generate target HM ke depan.
+ * Titik awal = milestone SETELAH service Close terakhir (bukan setelah HM sekarang),
+ * supaya jadwal yang belum dieksekusi (OVERDUE) tetap muncul di Plan Service.
+ * Contoh: Close terakhir 5000, HM sekarang 5427 → target mulai 5500 (atau 5250 utk dozer).
+ */
 function buildFuturePlanTargets(hmNow, maxTarget, unitCode){
   const code = String(unitCode||'').trim().toUpperCase();
   const unit = (UNITS||[]).find(u=>String(u.code||'').trim().toUpperCase()===code);
   const type = String(unit?.type||'').toUpperCase();
   const isDozer = type.includes('D85ESS') || type.includes('D85') || code.startsWith('SBD-');
   const step = isDozer ? 250 : 500;
-  const first=nextPlanHmTarget(hmNow, unitCode);
-  const dynamicMax = getPlanGenerationMaxHm(unitCode, hmNow);
-  const max=Math.max(Number(maxTarget)||0, dynamicMax, first);
-  const targets=[];
-  for(let hm=first; hm<=max; hm+=step) targets.push(hm);
+  const lastClosed = getLastClosedPlanHm(code);
+  // Mulai dari Close terakhir jika ada; jika belum pernah Close, dari HM sekarang
+  const baseHm = lastClosed > 0 ? lastClosed : (Number(hmNow)||0);
+  const first = nextPlanHmTarget(baseHm, unitCode);
+  const dynamicMax = getPlanGenerationMaxHm(unitCode, Math.max(Number(hmNow)||0, first));
+  const max = Math.max(Number(maxTarget)||0, dynamicMax, first);
+  const targets = [];
+  for(let hm = first; hm <= max; hm += step) targets.push(hm);
   return targets;
 }
 
@@ -9337,8 +9384,14 @@ async function rebuildPlanServiceAuto(opts){
   unitCodes.forEach(code=>{
     const calc=calcHmTotalForUnit(code);
     const cur=calcHmSekarang(code);
-    const hmTotal=(cur.hmNow!=null) ? cur.hmNow : (calc ? calc.hmTotal : null);
-    if(hmTotal==null) return;
+    let hmTotal=(cur.hmNow!=null) ? cur.hmNow : (calc ? calc.hmTotal : null);
+    // Jangan drop unit (mis. SWA-102) hanya karena HM sync sementara kosong —
+    // fallback ke HM Close terakhir atau 0 agar jadwal tetap ter-generate.
+    if(hmTotal==null){
+      const lastClosedHm = getLastClosedPlanHm(code);
+      if(lastClosedHm > 0) hmTotal = lastClosedHm;
+      else hmTotal = 0;
+    }
 
     const u=(UNITS||[]).find(x=>String(x.code).toUpperCase()===String(code).toUpperCase());
     const typeUnit=u ? u.type : '';
