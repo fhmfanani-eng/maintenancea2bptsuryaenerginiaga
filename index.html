@@ -2051,10 +2051,14 @@ body.role-mechanic #history-filters{ display:none !important; }
         <div class="panel">
           <div class="panel-head">
             <h2>Record Service Unit <span class="tag">CLOSE</span></h2>
+            <div class="toolbar">
+              <button type="button" class="btn small" id="plan-record-sync-sheets-btn" title="Kirim semua record Service (Close) ke Google Sheets tab plan service">☁ Sync ke Sheet plan service</button>
+            </div>
           </div>
           <div class="hint" style="margin-top:-8px; margin-bottom:12px;">
             Data unit yang <b>Status Eksekusi = Close</b> di Schedule Plan Service masuk ke sini <b>otomatis</b>
             (hanya setelah service benar-benar dieksekusi). Tombol <b>↩ Open</b> mengembalikan ke jadwal plan.
+            Sync ke sheet <code>plan service</code> (setelah tab performance) lewat tombol di atas atau otomatis saat data Close berubah.
           </div>
           <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
             <label style="font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin:0;">Filter Unit Code</label>
@@ -4268,9 +4272,9 @@ const BACKEND_CONFIG = {
   supabaseUrl: 'https://boabocernsqrqklvasjm.supabase.co',
   supabaseAnonKey: 'sb_publishable_k6bgzzLNwk8_1QKxl_5uEg_EzAlkj5L',
 
-  // ---- Sinkron Google Sheets (Daily Maintenance + Performance + Monitoring HM) ----
+  // ---- Sinkron Google Sheets (Daily Maintenance + Performance + Plan Service + Monitoring HM) ----
   // Spreadsheet: https://docs.google.com/spreadsheets/d/1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4
-  // Apps Script actions: getPerformance, getHM (sheet View-SEN-HM: Tanggal, Kode Unit, HM Akhir, …), sync
+  // Apps Script actions: getPerformance, getHM, sync (sheet data / plan service)
   sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
   sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbx31DQTu96c5pO_46P0mJHE2bBten4d5ynCThs-G_V03QFnq4v1Mknjujj7Ohd6up4/exec',
 };
@@ -4998,6 +5002,8 @@ async function savePlan(){
   try{
     sanitizePlanServiceUnits();
     await appStorage.set('plan-records', JSON.stringify(planRecords));
+    // Auto-sync Record Service (Close) ke sheet "plan service"
+    try{ syncPlanServiceToSheets({ manual:false }); }catch(_e){}
   }
   catch(e){ console.error('save plan failed', e); }
 }
@@ -7252,6 +7258,75 @@ document.getElementById('daily-sync-sheets-btn')?.addEventListener('click', asyn
   if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
   try{ await syncDailyToSheets({ manual:true }); }
   finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet data'; } }
+});
+
+/* ---- Sinkron Record Service Unit (Plan Close) → Google Sheets tab "plan service" ----
+   Dipanggil otomatis tiap savePlan() dan manual lewat tombol di panel Record Service.
+   Sheet dibuat otomatis di Apps Script tepat setelah tab "performance". */
+async function syncPlanServiceToSheets(opts){
+  opts = opts || {};
+  if(!BACKEND_CONFIG.sheetsWebAppUrl){
+    if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG.');
+    return { ok:false, error:'no sheetsWebAppUrl' };
+  }
+  const closed = (planRecords||[]).filter(r=> typeof isPlanClosed==='function' ? isPlanClosed(r) : false);
+  try{
+    const res = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'sync',
+        sheet: 'plan service',
+        spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
+        records: closed.map(r=>({
+          id: r.id || '',
+          unit_code: r.unitCode || '',
+          unitCode: r.unitCode || '',
+          type_unit: r.typeUnit || '',
+          typeUnit: r.typeUnit || '',
+          service_type: r.serviceType || '',
+          serviceType: r.serviceType || '',
+          plan_date: r.planDate || '',
+          planDate: r.planDate || '',
+          exec_date: r.execDate || r.planDate || '',
+          execDate: r.execDate || r.planDate || '',
+          hm_plan: r.hmPlan != null ? r.hmPlan : '',
+          hmPlan: r.hmPlan != null ? r.hmPlan : '',
+          hm_aktual: r.hmAktual != null ? r.hmAktual : '',
+          hmAktual: r.hmAktual != null ? r.hmAktual : '',
+          mechanic: r.mechanic || '',
+          pic: r.mechanic || '',
+          status: 'Close',
+          exec_status: r.execStatus || 'Close',
+          execStatus: r.execStatus || 'Close'
+        })),
+        syncedAt: new Date().toISOString()
+      })
+    });
+    let data = null;
+    try{ data = await res.json(); }catch(_e){ data = null; }
+    if(opts.manual){
+      if(data && data.ok){
+        alert('✓ Berhasil sync '+ (data.written!=null?data.written:closed.length) +' record Close ke sheet "plan service".\nBuka spreadsheet dan refresh tab plan service.');
+      } else if(data && data.error){
+        alert('⚠ Sync Plan Service gagal: '+ data.error);
+      } else {
+        alert('✓ Permintaan sync terkirim ('+ closed.length +' record Close).\nCek tab "plan service" di spreadsheet.');
+      }
+    }
+    return data || { ok:true };
+  }catch(e){
+    console.error('Sync Plan Service ke Google Sheets gagal', e);
+    if(opts.manual) alert('⚠ Sync Plan Service gagal: '+ (e.message||e) +'\nPastikan Apps Script sudah di-deploy ulang (New version).');
+    return { ok:false, error:String(e) };
+  }
+}
+
+document.getElementById('plan-record-sync-sheets-btn')?.addEventListener('click', async ()=>{
+  const btn = document.getElementById('plan-record-sync-sheets-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
+  try{ await syncPlanServiceToSheets({ manual:true }); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet plan service'; } }
 });
 
 /**
