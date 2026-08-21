@@ -8898,8 +8898,13 @@ function renderPlanTable(){
       }
     }
 
+    // Working Hours = Waktu Operasi (W) live dari sheet performance (periode aktif)
     const workingHoursVal = perf ? Number(perf.w)||0 : (Number(hmW)||0);
-    const workingHoursLabel = (perf || hmW) ? workingHoursVal.toFixed(1) : '—';
+    const workingHoursLabel = perf ? workingHoursVal.toFixed(1) : (hmW ? Number(hmW).toFixed(1) : '—');
+    // Simpan ke record OPEN supaya sync/save ikut nilai sheet terbaru
+    if(!isPlanClosed(r) && perf){
+      r.hmW = workingHoursVal;
+    }
 
     // PIC otomatis: unit lain = SEN; SPC-104 = Team UT s/d HM Target 6000, setelahnya SEN
     const autoPic = resolvePlanPic(r.unitCode, hmPlanNum);
@@ -8914,7 +8919,7 @@ function renderPlanTable(){
       <td>${hmIntervalCell}</td>
       <td>${psTypeCell}</td>
       <td style="font-family:'JetBrains Mono',monospace;"><b style="color:#7fe0e0;">${workingHoursLabel}</b></td>
-      <td style="font-family:'JetBrains Mono',monospace;"><b style="color:var(--yellow);">18.0</b></td>
+      <td style="font-family:'JetBrains Mono',monospace;"><b style="color:var(--yellow);">${(dailyWh!=null && dailyWh!==undefined && !isNaN(Number(dailyWh))) ? Number(dailyWh).toFixed(1) : '—'}</b></td>
       <td style="font-family:'JetBrains Mono',monospace;"><b>${hmSekarang!==null&&hmSekarang!==undefined?Number(hmSekarang).toFixed(1):'—'}</b></td>
       <td>${sisaHmCell}</td>
       <td><span class="pill ${statusClass}">${statusLabel}</span></td>
