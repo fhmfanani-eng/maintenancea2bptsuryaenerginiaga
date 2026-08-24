@@ -13640,7 +13640,13 @@ async function syncMaintenanceKPIToSheet(opts){
             detail.push({ month:p.month, week:p.week, ok:true, updated:(data.updated||[]).length, skipped:(data.skipped||[]).length });
           } else {
             failCount++;
-            detail.push({ month:p.month, week:p.week, ok:false, error:(data && data.error) || ('HTTP '+res.status) });
+            let errMsg = (data && (data.error || data.message)) || ('HTTP '+res.status);
+            // Deteksi deployment lama yang belum punya action syncMaintenanceKPI
+            if(/unsupported action|tidak dikenal|unknown action/i.test(String(errMsg))){
+              errMsg = 'Apps Script BELUM di-deploy ulang (action syncMaintenanceKPI belum ada). '+
+                'Buka Extensions → Apps Script → tempel PATCH → Deploy → Manage deployments → New version.';
+            }
+            detail.push({ month:p.month, week:p.week, ok:false, error: errMsg });
           }
         }catch(e){
           failCount++;
