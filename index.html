@@ -4652,29 +4652,40 @@ const PERFORMANCE_SEED = {
 
 /**
  * Apakah rentang filter (startStr–endStr) cocok dengan periode sheet performance?
- * Sheet performance hanya menyimpan SATU periode (D2–G2). Data-nya hanya dipakai
- * jika filter dashboard/unit overlap dengan periode itu (toleransi: sama bulan, atau
- * filter di dalam rentang performance, atau performance di dalam filter).
- * Tanpa filter periode (null/null = All Periods) → performance tetap dipakai.
+ * Sheet performance hanya menyimpan SATU periode (D2–G2).
+ *
+ * Aturan KETAT (koreksi W4 / minggu belum berjalan):
+ * - Data MA/PA dari sheet performance HANYA dipakai jika filter berada DI DALAM
+ *   (atau sama dengan) periode sheet [periodStart, periodEnd].
+ * - Tidak boleh "melebar": data 1–10 Agts tidak boleh mengisi KPI bulan penuh
+ *   Agustus atau minggu W4 (24–31 Agts) yang belum/tidak tercakup periode sheet.
+ * - All Periods (null/null): pakai performance hanya jika hari ini masih di dalam
+ *   [ps, pe]; kalau periode sheet sudah lewat / belum mulai → jangan pakai
+ *   (biar fallback HM / 0, bukan angka usang yang seolah 100%).
  */
 function performancePeriodMatches(startStr, endStr){
   if(!mapaData || !mapaData.fromPerformance) return false;
-  const ps = mapaData.periodStart || '';
-  const pe = mapaData.periodEnd || '';
-  // Tidak ada info periode di data performance → anggap global, boleh dipakai
-  if(!ps && !pe) return true;
-  // Tidak ada filter (All Periods) → pakai performance
-  if(!startStr && !endStr) return true;
-  if(!ps || !pe) return true;
-  // Kedua sisi filter diisi → overlap ketat dengan periode sheet
-  if(startStr && endStr){
-    return startStr <= pe && endStr >= ps;
+  const ps = (mapaData.periodStart || '').trim();
+  const pe = (mapaData.periodEnd || '').trim();
+  // Tidak ada info periode di data performance → jangan pakai (hindari angka palsu)
+  if(!ps || !pe) return false;
+
+  const today = new Date();
+  const todayStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+
+  // All Periods: hanya pakai jika hari ini masih di dalam periode sheet
+  if(!startStr && !endStr){
+    return todayStr >= ps && todayStr <= pe;
   }
-  // Hanya start diisi: pakai performance hanya jika start jatuh di dalam [ps, pe]
+  // Kedua sisi filter diisi → filter harus subset periode performance (bukan sekadar overlap)
+  if(startStr && endStr){
+    return startStr >= ps && endStr <= pe;
+  }
+  // Hanya start diisi: start harus di dalam [ps, pe]
   if(startStr && !endStr){
     return startStr >= ps && startStr <= pe;
   }
-  // Hanya end diisi: pakai performance hanya jika end jatuh di dalam [ps, pe]
+  // Hanya end diisi: end harus di dalam [ps, pe]
   if(!startStr && endStr){
     return endStr >= ps && endStr <= pe;
   }
@@ -13265,9 +13276,8 @@ function computeKPIsForRange(startStr, endStr){
   const plannedServiceCountRange = periodicalRecordsRange.filter(r=>r.planUnplan==='Plan').length;
   const sa = periodicalRecordsRange.length ? (plannedServiceCountRange/periodicalRecordsRange.length*100) : 0;
 
-  // MA & PA: dari sheet performance (W/S/R) bila periode overlap, else Monitoring HM.
-  // Sheet performance biasanya 1 blok bulanan — dipakai untuk SEMUA minggu di dalam bulan itu
-  // (performancePeriodMatches memakai overlap, bukan exact match).
+  // MA & PA: dari sheet performance (W/S/R) HANYA jika filter subset periode sheet,
+  // else Monitoring HM / 0. (performancePeriodMatches: ketat, bukan overlap)
   let ma = 0, pa = 0;
   try{
     if(typeof resolveMaPa === 'function'){
