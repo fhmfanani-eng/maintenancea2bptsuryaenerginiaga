@@ -4403,11 +4403,19 @@ const BACKEND_CONFIG = {
   supabaseUrl: 'https://boabocernsqrqklvasjm.supabase.co',
   supabaseAnonKey: 'sb_publishable_k6bgzzLNwk8_1QKxl_5uEg_EzAlkj5L',
 
-  // ---- Sinkron Google Sheets (Daily Maintenance + Performance + Plan Service + Monitoring HM) ----
-  // Spreadsheet: https://docs.google.com/spreadsheets/d/1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4
-  // Apps Script actions: getPerformance, getHM, sync (sheet data / Record Service)
+  // ---- Sinkron Google Sheets ----
+  // (1) SEN Maintenance — tab: data, performance, Record Service, Monitoring HM
+  //     Spreadsheet: https://docs.google.com/spreadsheets/d/1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4
+  //     Apps Script di spreadsheet INI (satu Web App URL untuk semua action).
   sheetsSpreadsheetId: '1oi1FtXnhR7E4Emf4LIL9yrK1ntl59qsdv6qGWM35AV4',
   sheetsWebAppUrl: 'https://script.google.com/macros/s/AKfycbx31DQTu96c5pO_46P0mJHE2bBten4d5ynCThs-G_V03QFnq4v1Mknjujj7Ohd6up4/exec',
+
+  // (2) SEN KPI Performance — HANYA Achievement KPI (tab Maintenance: kolom Acv./Score W1–W4…)
+  //     WAJIB diisi agar sync KPI menulis ke spreadsheet yang benar.
+  //     Ambil dari URL: https://docs.google.com/spreadsheets/d/XXXXXXXX/edit → XXXXXXXX
+  //     Sync otomatis (live + tombol) menghitung MA/PA/MTBS/MTTR/PMR/SA dari data web
+  //     per minggu (W1, W2, W3, W4 sesuai header di sheet) lalu mengisi kolom Acv. & Score.
+  sheetsKpiSpreadsheetId: '',
 };
 
 const localFallbackStorage = {
@@ -13520,7 +13528,10 @@ async function fetchMaintenancePeriods(force){
       const res2 = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
         method:'POST',
         headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action:'getMaintenancePeriods', spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId||'' }),
+        body: JSON.stringify({
+          action:'getMaintenancePeriods',
+          spreadsheetId: (BACKEND_CONFIG.sheetsKpiSpreadsheetId || BACKEND_CONFIG.sheetsSpreadsheetId || '')
+        }),
         cache:'no-store'
       });
       try{ data = await res2.json(); }catch(_e){ data = null; }
@@ -13621,7 +13632,8 @@ async function syncMaintenanceKPIToSheet(opts){
         }
         const payload = {
           action: 'syncMaintenanceKPI',
-          spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
+          // Tulis ke spreadsheet KPI Achievement (terpisah). Fallback ke SEN Maintenance bila kosong.
+          spreadsheetId: (BACKEND_CONFIG.sheetsKpiSpreadsheetId || BACKEND_CONFIG.sheetsSpreadsheetId || ''),
           month: p.month,
           week: p.week,
           kpis: items
@@ -14126,6 +14138,18 @@ async function runPerformanceSyncFromUI(btn){
 
 document.getElementById('mapa-sync-perf-btn')?.addEventListener('click', function(){
   runPerformanceSyncFromUI(document.getElementById('mapa-sync-perf-btn'));
+});
+
+document.getElementById('mapa-sync-kpi-btn')?.addEventListener('click', async function(){
+  const btn = document.getElementById('mapa-sync-kpi-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan KPI…'; }
+  try{
+    // Pastikan performance segar dulu, lalu push KPI ke SEN KPI Performance (W1–W4)
+    try{ await ensurePerformanceSynced({ force:true }); }catch(_e){}
+    await syncMaintenanceKPIToSheet({ force:true, manual:true });
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '☁ Sync KPI → Sheet Maintenance'; }
+  }
 });
 
 document.getElementById('unit-sync-perf-btn')?.addEventListener('click', function(){
