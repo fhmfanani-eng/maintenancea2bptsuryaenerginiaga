@@ -12290,15 +12290,17 @@ function renderKPIChartDashboard(k, globalStats){
     }).join('')}
   </select>`;
 
-  // Urutan kartu: MA, PA, MTBS, MTTR, PMR, SA (sesuai referensi)
+  // Urutan kartu: MA, PA, MTBS, MTTR, PMR, SA (sesuai referensi KPI OPERATIONAL)
+  // Target mengikuti tabel KEY PERFORMANCE INDICATOR resmi:
+  // MA 90% | PA 90% | MTBS 80 hr | MTTR 90% | PMR 90% | SA 90%
   const monthlyKpiDefs = [
-    { key:'ma',   label:'MA',   full:'MECHANICAL AVAILABILITY', unit:'%',   target:KPI_TARGET.ma,   value:kMonthly.ma||0,   color:'#22C55E', targetHint:'≥90%', icon:'gear' },
-    { key:'pa',   label:'PA',   full:'PHYSICAL AVAILABILITY',   unit:'%',   target:KPI_TARGET.pa,   value:kMonthly.pa||0,   color:'#3B82F6', targetHint:'≥90%', icon:'shield' },
-    { key:'mtbs', label:'MTBS', full:'MEAN TIME BETWEEN STOPPAGES', unit:' hrs', target:KPI_TARGET.mtbs, value:kMonthly.mtbs||0, color:'#A78BFA', targetHint:'>80 jam', icon:'hourglass' },
+    { key:'ma',   label:'MA',   full:'MECHANICAL AVAILABILITY', unit:'%',   target:KPI_TARGET.ma,   value:kMonthly.ma||0,   color:'#22C55E', targetHint:'90%', icon:'gear' },
+    { key:'pa',   label:'PA',   full:'PHYSICAL AVAILABILITY',   unit:'%',   target:KPI_TARGET.pa,   value:kMonthly.pa||0,   color:'#3B82F6', targetHint:'90%', icon:'shield' },
+    { key:'mtbs', label:'MTBS', full:'MEAN TIME BETWEEN STOPPAGES', unit:' hrs', target:KPI_TARGET.mtbs, value:kMonthly.mtbs||0, color:'#A78BFA', targetHint:'80 jam', icon:'hourglass' },
     /* MTTR: tampilkan % capaian; target budget 90% (<36 jam = 100% of weight) */
     { key:'mttr', label:'MTTR', full:'MEAN TIME TO REPAIR',     unit:'%',   target:90, value:kpiAchievePct('mttr', kMonthly.mttr||0), color:'#F97316', targetHint:'90%', icon:'wrench', rawHours:kMonthly.mttr||0 },
-    { key:'pmr',  label:'PMR',  full:'PLANNED MAINTENANCE RATIO', unit:'%', target:KPI_TARGET.pmr, value:kMonthly.pmr||0, color:'#A3E635', targetHint:'>90%', icon:'clipboard' },
-    { key:'sa',   label:'SA',   full:'SERVICE ACCURACY',        unit:'%',   target:KPI_TARGET.sa,   value:kMonthly.sa||0,   color:'#38BDF8', targetHint:'>90%', icon:'headset' },
+    { key:'pmr',  label:'PMR',  full:'PLANNED MAINTENANCE RATIO', unit:'%', target:KPI_TARGET.pmr, value:kMonthly.pmr||0, color:'#A3E635', targetHint:'90%', icon:'clipboard' },
+    { key:'sa',   label:'SA',   full:'SERVICE ACCURACY',        unit:'%',   target:KPI_TARGET.sa,   value:kMonthly.sa||0,   color:'#38BDF8', targetHint:'90%', icon:'headset' },
   ];
 
   // --- Rekap Quarter (donut 4D + KPI summary quarter, ikut filter periode triwulan, live sync dari
@@ -13475,6 +13477,10 @@ async function fetchPerformanceFromSheets(opts){
         rows.length + ' unit · W: ' + totalW.toFixed(1) +
         ' · S: ' + totalS.toFixed(1) +
         ' · R: ' + totalR.toFixed(1) + ' jam');
+      // Setelah sync performance manual, ikut push KPI ke tab Maintenance
+      try{ await syncMaintenanceKPIToSheet({ force:true, manual:true }); }catch(_e){}
+    } else {
+      try{ await syncMaintenanceKPIToSheet({ force:false, manual:false }); }catch(_e){}
     }
     return { ok:true, rows: rows.length, totalW, totalS, totalR, totalT, changed:true };
   }catch(e){
@@ -13483,6 +13489,187 @@ async function fetchPerformanceFromSheets(opts){
       '\nPastikan Apps Script sudah di-deploy (Who has access: Anyone) dan action getPerformance aktif.');
     return { ok:false, error:String(e) };
   }
+}
+
+/* ================= SYNC KPI → Sheet "Maintenance" =================
+   Apps Script action: syncMaintenanceKPI / getMaintenancePeriods
+   Panel menghitung MA/PA/MTBS/MTTR/PMR/SA per minggu, lalu menulis
+   ke pasangan kolom Acv. + Score di tab Maintenance. */
+const MAINT_KPI_SYNC_TTL_MS = 60000; // jangan spam Apps Script
+let _maintKpiLastSyncAt = 0;
+let _maintKpiInFlight = null;
+let _maintPeriodsCache = null;
+let _maintPeriodsCacheAt = 0;
+
+async function fetchMaintenancePeriods(force){
+  if(!BACKEND_CONFIG.sheetsWebAppUrl) return { ok:false, error:'no_url', periods:[] };
+  const age = Date.now() - (_maintPeriodsCacheAt||0);
+  if(!force && _maintPeriodsCache && age < 5*60*1000){
+    return { ok:true, periods:_maintPeriodsCache, cached:true };
+  }
+  try{
+    const url = BACKEND_CONFIG.sheetsWebAppUrl +
+      (BACKEND_CONFIG.sheetsWebAppUrl.indexOf('?')>=0 ? '&' : '?') +
+      'action=getMaintenancePeriods';
+    let data = null;
+    try{
+      const res = await fetch(url, { method:'GET', redirect:'follow', cache:'no-store' });
+      data = await res.json();
+    }catch(_e){ data = null; }
+    if(!data || data.ok!==true){
+      const res2 = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+        method:'POST',
+        headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action:'getMaintenancePeriods', spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId||'' }),
+        cache:'no-store'
+      });
+      try{ data = await res2.json(); }catch(_e){ data = null; }
+    }
+    if(data && data.ok===true && Array.isArray(data.periods)){
+      _maintPeriodsCache = data.periods;
+      _maintPeriodsCacheAt = Date.now();
+      return { ok:true, periods:data.periods, year:data.year };
+    }
+    return { ok:false, error:(data && data.error) || 'empty', periods:[] };
+  }catch(e){
+    console.error('fetchMaintenancePeriods', e);
+    return { ok:false, error:String(e), periods:[] };
+  }
+}
+
+/** Bangun payload kpis[] untuk satu periode (start..end). */
+function buildMaintenanceKpiItems(startStr, endStr){
+  const k = (typeof computeKPIsForRange==='function')
+    ? computeKPIsForRange(startStr, endStr)
+    : { ma:0, pa:0, mtbs:0, mttr:0, pmr:0, sa:0 };
+  const keys = ['ma','pa','mtbs','mttr','pmr','sa'];
+  return keys.map(key=>{
+    const acu = Number(k[key])||0;
+    // score = poin bobot (mis. 15 untuk MA full) — sesuai kontrak Apps Script
+    const score = Math.round((kpiWeightedScore(key, acu) + Number.EPSILON) * 100) / 100;
+    return { key, acu: Math.round(acu * 100) / 100, score };
+  });
+}
+
+/** Fallback pembagian minggu Agustus-style bila getMaintenancePeriods gagal. */
+function fallbackMaintenancePeriodsForMonth(year, monthNum){
+  const names = ['','JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+  const month = names[monthNum] || '';
+  const lastDay = new Date(year, monthNum, 0).getDate();
+  const weeks = [
+    { week:'W1', start:1, end:Math.min(10, lastDay) },
+    { week:'W2', start:11, end:Math.min(17, lastDay) },
+    { week:'W3', start:18, end:Math.min(24, lastDay) },
+    { week:'W4', start:25, end:lastDay }
+  ];
+  return weeks.filter(w=>w.start<=lastDay).map(w=>({
+    month, monthNumber:monthNum, year, week:w.week,
+    start: year+'-'+pad2(monthNum)+'-'+pad2(w.start),
+    end: year+'-'+pad2(monthNum)+'-'+pad2(w.end)
+  }));
+}
+
+/**
+ * Sync KPI ke tab Maintenance untuk minggu yang relevan (bulan berjalan,
+ * atau semua minggu yang end-date-nya sudah lewat / sedang berjalan).
+ * opts.manual = true → tampilkan alert hasil.
+ * opts.force = true → abaikan TTL.
+ */
+async function syncMaintenanceKPIToSheet(opts){
+  opts = opts || {};
+  if(!BACKEND_CONFIG.sheetsWebAppUrl){
+    if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG.');
+    return { ok:false, error:'no_url' };
+  }
+  const age = Date.now() - (_maintKpiLastSyncAt||0);
+  if(!opts.force && !opts.manual && _maintKpiLastSyncAt && age < MAINT_KPI_SYNC_TTL_MS){
+    return { ok:true, skipped:'ttl', age };
+  }
+  if(_maintKpiInFlight && !opts.manual) return _maintKpiInFlight;
+
+  const run = (async ()=>{
+    try{
+      // Pastikan MA/PA dari performance sudah segar sebelum hitung
+      try{ await ensurePerformanceSynced({ force: !!opts.force }); }catch(_e){}
+
+      let periods = [];
+      const perRes = await fetchMaintenancePeriods(!!opts.force);
+      if(perRes.ok && perRes.periods && perRes.periods.length){
+        periods = perRes.periods.filter(p=>p.week && p.week!=='TOTAL');
+      } else {
+        const now = new Date();
+        periods = fallbackMaintenancePeriodsForMonth(now.getFullYear(), now.getMonth()+1);
+      }
+
+      // Hanya sync minggu yang sudah mulai (start <= hari ini)
+      const today = toDateStr(new Date());
+      const toSync = periods.filter(p=>p.start && p.start <= today);
+      if(!toSync.length){
+        if(opts.manual) alert('ℹ Tidak ada periode minggu yang perlu di-sync.');
+        return { ok:true, synced:0, detail:[] };
+      }
+
+      const detail = [];
+      let okCount = 0, failCount = 0;
+      for(const p of toSync){
+        const items = buildMaintenanceKpiItems(p.start, p.end);
+        // Skip minggu yang sama sekali belum punya data (semua 0) kecuali manual force
+        const hasData = items.some(it=>Number(it.acu)>0);
+        if(!hasData && !opts.manual){
+          detail.push({ month:p.month, week:p.week, skipped:'no_data' });
+          continue;
+        }
+        const payload = {
+          action: 'syncMaintenanceKPI',
+          spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
+          month: p.month,
+          week: p.week,
+          kpis: items
+        };
+        try{
+          const res = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload),
+            cache: 'no-store'
+          });
+          let data = null;
+          try{ data = await res.json(); }catch(_e){ data = null; }
+          if(data && data.ok){
+            okCount++;
+            detail.push({ month:p.month, week:p.week, ok:true, updated:(data.updated||[]).length, skipped:(data.skipped||[]).length });
+          } else {
+            failCount++;
+            detail.push({ month:p.month, week:p.week, ok:false, error:(data && data.error) || ('HTTP '+res.status) });
+          }
+        }catch(e){
+          failCount++;
+          detail.push({ month:p.month, week:p.week, ok:false, error:String(e.message||e) });
+        }
+      }
+      _maintKpiLastSyncAt = Date.now();
+      if(opts.manual){
+        const lines = detail.map(d=>{
+          if(d.skipped==='no_data') return `· ${d.month} ${d.week}: dilewati (belum ada data)`;
+          if(d.ok) return `· ${d.month} ${d.week}: ✓ ${d.updated} baris`;
+          return `· ${d.month} ${d.week}: ✗ ${d.error||'gagal'}`;
+        });
+        alert((failCount? '⚠ ' : '✓ ') + 'Sync KPI → Sheet Maintenance\n' +
+          okCount + ' minggu OK, ' + failCount + ' gagal.\n\n' + lines.join('\n') +
+          (failCount ? '\n\nPastikan Apps Script sudah di-deploy ulang dengan action syncMaintenanceKPI,\ndan label kolom di sheet adalah "Acv." (bukan "Acu.").' : ''));
+      }
+      return { ok: failCount===0, synced:okCount, failed:failCount, detail };
+    }catch(e){
+      console.error('syncMaintenanceKPIToSheet', e);
+      if(opts.manual) alert('⚠ Sync KPI Maintenance gagal: '+(e.message||e));
+      return { ok:false, error:String(e) };
+    }finally{
+      _maintKpiInFlight = null;
+    }
+  })();
+
+  _maintKpiInFlight = run;
+  return run;
 }
 
 /**
@@ -13747,6 +13934,9 @@ function startPerformanceLiveSync(){
       const res = await ensurePerformanceSynced({ force:true });
       const newStamp = (mapaData && mapaData.updatedAt) || '';
       const perfChanged = !!(res && res.ok && (res.changed || (newStamp && newStamp !== prevStamp)));
+
+      // 3) Push KPI (MA/PA/MTBS/MTTR/PMR/SA) ke tab Maintenance (Acv. + Score per minggu)
+      try{ await syncMaintenanceKPIToSheet({ force:false, manual:false }); }catch(_e){}
 
       const dash = document.getElementById('view-dashboard');
       const units = document.getElementById('view-database');
