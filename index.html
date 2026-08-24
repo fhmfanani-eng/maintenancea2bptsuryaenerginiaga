@@ -13265,7 +13265,19 @@ function computeKPIsForRange(startStr, endStr){
   const plannedServiceCountRange = periodicalRecordsRange.filter(r=>r.planUnplan==='Plan').length;
   const sa = periodicalRecordsRange.length ? (plannedServiceCountRange/periodicalRecordsRange.length*100) : 0;
 
-  return { mtbs, mttr, pmr, sa };
+  // MA & PA: dari sheet performance (W/S/R) bila periode overlap, else Monitoring HM.
+  // Sheet performance biasanya 1 blok bulanan — dipakai untuk SEMUA minggu di dalam bulan itu
+  // (performancePeriodMatches memakai overlap, bukan exact match).
+  let ma = 0, pa = 0;
+  try{
+    if(typeof resolveMaPa === 'function'){
+      const mp = resolveMaPa(null, startStr||null, endStr||null) || {};
+      ma = Number(mp.ma)||0;
+      pa = Number(mp.pa)||0;
+    }
+  }catch(_e){ ma = 0; pa = 0; }
+
+  return { ma, pa, mtbs, mttr, pmr, sa };
 }
 
 /* ---- Filter periode bulan untuk Dashboard KPI ---- */
@@ -13548,11 +13560,26 @@ async function fetchMaintenancePeriods(force){
   }
 }
 
-/** Bangun payload kpis[] untuk satu periode (start..end). */
+/** Bangun payload kpis[] untuk satu periode (start..end) — MA/PA/MTBS/dst sesuai rentang minggu tsb. */
 function buildMaintenanceKpiItems(startStr, endStr){
   const k = (typeof computeKPIsForRange==='function')
     ? computeKPIsForRange(startStr, endStr)
     : { ma:0, pa:0, mtbs:0, mttr:0, pmr:0, sa:0 };
+
+  // Pastikan MA/PA selalu diisi untuk rentang minggu ini (bukan 0 karena terlewat).
+  // Urutan: (1) Monitoring HM di rentang minggu → (2) sheet performance bila overlap → (3) tetap 0.
+  if(!(Number(k.ma)>0) || !(Number(k.pa)>0)){
+    try{
+      const mp = (typeof resolveMaPaForWeek==='function')
+        ? resolveMaPaForWeek(startStr, endStr)
+        : (typeof resolveMaPa==='function' ? resolveMaPa(null, startStr, endStr) : null);
+      if(mp){
+        if(!(Number(k.ma)>0) && Number(mp.ma)>0) k.ma = Number(mp.ma);
+        if(!(Number(k.pa)>0) && Number(mp.pa)>0) k.pa = Number(mp.pa);
+      }
+    }catch(_e){}
+  }
+
   const keys = ['ma','pa','mtbs','mttr','pmr','sa'];
   return keys.map(key=>{
     const acu = Number(k[key])||0;
@@ -13560,6 +13587,39 @@ function buildMaintenanceKpiItems(startStr, endStr){
     const score = Math.round((kpiWeightedScore(key, acu) + Number.EPSILON) * 100) / 100;
     return { key, acu: Math.round(acu * 100) / 100, score };
   });
+}
+
+/**
+ * MA/PA khusus per minggu:
+ * - Jika rentang ≤ 14 hari (mingguan), prioritaskan Monitoring HM pada tanggal minggu itu
+ *   supaya W1/W2/W3 bisa berbeda.
+ * - Jika HM kosong, pakai sheet performance (biasanya data bulanan) bila overlap.
+ */
+function resolveMaPaForWeek(startStr, endStr){
+  const spanDays = (function(){
+    try{
+      if(!startStr || !endStr) return 999;
+      const a = new Date(startStr+'T00:00:00');
+      const b = new Date(endStr+'T00:00:00');
+      return Math.round((b - a) / 86400000) + 1;
+    }catch(_e){ return 999; }
+  })();
+
+  // 1) HM per minggu (lebih akurat untuk W1 vs W2 vs W3)
+  if(spanDays <= 14 && typeof hmWSRGlobal === 'function'){
+    try{
+      const hm = hmWSRGlobal(startStr||null, endStr||null);
+      if(hm && (Number(hm.W)||0)+(Number(hm.S)||0)+(Number(hm.R)||0) > 0){
+        if(typeof maPaFromWSR === 'function') return maPaFromWSR(hm);
+      }
+    }catch(_e){}
+  }
+
+  // 2) resolveMaPa standar (performance overlap → HM → manual)
+  if(typeof resolveMaPa === 'function'){
+    return resolveMaPa(null, startStr||null, endStr||null);
+  }
+  return { ma:0, pa:0 };
 }
 
 /** Fallback pembagian minggu Agustus-style bila getMaintenancePeriods gagal. */
