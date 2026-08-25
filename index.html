@@ -7309,6 +7309,7 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
   await syncCodeBDChronological();
   renderAll();
   syncDailyToSheets();
+  autoSyncHistoricalBreakdown();
 });
 
 /* ---- Sinkron ULANG Code BD supaya SELALU urut sesuai tanggal & jam kejadian ----
@@ -7420,6 +7421,12 @@ async function syncDailyToSheets(opts){
         alert('✓ Permintaan sync terkirim ('+ dailyRecords.length +' record).\nCek tab "data" di spreadsheet (refresh halaman sheet).');
       }
     }
+    // Auto-update sheet Historical Breakdown (Breakdown / Unplan) — silent
+    try{
+      if(typeof syncBreakdownHistoryToSheets === 'function'){
+        syncBreakdownHistoryToSheets({ manual:false });
+      }
+    }catch(_e){}
     return data || { ok:true };
   }catch(e){
     console.error('Sync ke Google Sheets gagal', e);
@@ -7507,6 +7514,20 @@ document.getElementById('plan-record-sync-sheets-btn')?.addEventListener('click'
 /* ---- Sinkron Breakdown / Unplan → Google Sheets tab "Breakdown History" ----
    Mirip Record Service: sheet dibuat otomatis di Apps Script setelah tab Record Service.
    Hanya mengirim record kategori Breakdown ATAU Plan/Unplan = Unplan. */
+
+/** Auto-push Breakdown/Unplan ke sheet Historical Breakdown (silent, non-blocking). */
+function autoSyncHistoricalBreakdown(){
+  try{
+    if(typeof syncBreakdownHistoryToSheets !== 'function') return;
+    const hasBd = (dailyRecords||[]).some(r=>{
+      const cat = String(r.category||'').toLowerCase();
+      const pu = String(r.planUnplan||r.plan_unplan||'').toLowerCase();
+      return cat === 'breakdown' || pu === 'unplan' || pu.indexOf('unplan') >= 0;
+    });
+    if(hasBd) syncBreakdownHistoryToSheets({ manual:false });
+  }catch(e){ console.warn('autoSyncHistoricalBreakdown', e); }
+}
+
 async function syncBreakdownHistoryToSheets(opts){
   opts = opts || {};
   if(!BACKEND_CONFIG.sheetsWebAppUrl){
