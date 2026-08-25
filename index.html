@@ -2489,7 +2489,7 @@ body.role-mechanic #history-filters{ display:none !important; }
               <table>
                 <thead><tr>
                   <th>Date</th><th>Unit</th><th>HM</th><th>Component</th>
-                  <th>Plan/Unplan</th><th>Duration (hours)</th><th>Description</th><th>Mechanic</th><th>Status</th>
+                  <th>Plan/Unplan</th><th>Duration (hours)</th><th>Description</th><th>Keterangan Part Consumable</th><th>Mechanic</th><th>Status</th>
                 </tr></thead>
                 <tbody id="cbm-hist-tbody"></tbody>
               </table>
@@ -7563,6 +7563,8 @@ async function syncBreakdownHistoryToSheets(opts){
           planUnplan: r.planUnplan || r.plan_unplan || '',
           job_desc: r.jobDesc || r.job_desc || '',
           jobDesc: r.jobDesc || r.job_desc || '',
+          keterangan: r.keterangan || '',
+          part_consumable: r.keterangan || '',
           repair_action: r.repairAction || r.repair_action || '',
           repairAction: r.repairAction || r.repair_action || '',
           breakdown_date: r.breakdownDate || r.breakdown_date || '',
@@ -15584,12 +15586,13 @@ function renderCBMHistory(rows){
   if(!tbody) return;
   const sorted = rows.slice().sort((a,b)=> String(b.tanggal||'').localeCompare(String(a.tanggal||'')));
   if(!sorted.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">No breakdown history for this filter.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">No breakdown history for this filter.</td></tr>`;
     return;
   }
   tbody.innerHTML = sorted.map(r=>{
     const pu = r.planUnplan||'—';
     const puCls = pu==='Unplan'?'open':(pu==='Plan'?'close':'progress');
+    const partNote = r.keterangan || '';
     return `<tr>
       <td>${formatDateDMY(r.tanggal)}</td>
       <td>${escUH(r.unitCode)}</td>
@@ -15597,7 +15600,8 @@ function renderCBMHistory(rows){
       <td><span class="cat ${escUH(r._cbmComp)}">${escUH(r._cbmComp)}</span></td>
       <td><span class="pill ${puCls}">${escUH(pu)}</span></td>
       <td>${r.duration!=null?Number(r.duration).toFixed(1):'—'}</td>
-      <td style="white-space:normal;text-align:left;min-width:200px">${escUH(r.jobDesc||'')}</td>
+      <td style="white-space:normal;text-align:left;min-width:180px">${escUH(r.jobDesc||'')}</td>
+      <td style="white-space:normal;text-align:left;min-width:160px">${escUH(partNote||'—')}</td>
       <td>${escUH(r.mechanic||'')}</td>
       <td>${escUH(r.status||'')}</td>
     </tr>`;
