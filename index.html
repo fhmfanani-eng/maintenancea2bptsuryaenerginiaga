@@ -1929,6 +1929,7 @@ body.role-mechanic #history-filters{ display:none !important; }
                   <option value="Differential/Exel">Differential/Exel</option>
                   <option value="Electrical">Electrical</option>
                   <option value="Cabin">Cabin</option>
+                  <option value="AC System">AC System</option>
                   <option value="Undercarriage">Undercarriage</option>
                   <option value="Attachment (Bucket, Blade)">Attachment (Bucket, Blade)</option>
                   <option value="Support & Consumable">Support &amp; Consumable (Umum)</option>
@@ -2474,7 +2475,16 @@ body.role-mechanic #history-filters{ display:none !important; }
         <!-- UNPLAN HISTORY -->
         <div class="cbm-tab-panel" id="cbm-tab-unplan" style="display:none;">
           <div class="panel">
-            <div class="panel-head"><h2>Breakdown / Unplan History</h2></div>
+            <div class="panel-head">
+              <h2>Breakdown / Unplan History</h2>
+              <div class="toolbar">
+                <button type="button" class="btn" id="cbm-sync-bd-history-btn" title="Kirim record Breakdown/Unplan ke Google Sheets tab Historical Breakdown">☁ Sync ke Sheet Historical Breakdown</button>
+              </div>
+            </div>
+            <div class="hint" style="margin-top:-8px; margin-bottom:12px;">
+              Tombol di atas mengirim semua record <b>Breakdown</b> / <b>Unplan</b> ke sheet spreadsheet
+              <code>Historical Breakdown</code> (dibuat otomatis setelah tab Record Service).
+            </div>
             <div class="table-wrap">
               <table>
                 <thead><tr>
@@ -7492,6 +7502,100 @@ document.getElementById('plan-record-sync-sheets-btn')?.addEventListener('click'
   if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
   try{ await syncPlanServiceToSheets({ manual:true }); }
   finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet Record Service'; } }
+});
+
+/* ---- Sinkron Breakdown / Unplan → Google Sheets tab "Breakdown History" ----
+   Mirip Record Service: sheet dibuat otomatis di Apps Script setelah tab Record Service.
+   Hanya mengirim record kategori Breakdown ATAU Plan/Unplan = Unplan. */
+async function syncBreakdownHistoryToSheets(opts){
+  opts = opts || {};
+  if(!BACKEND_CONFIG.sheetsWebAppUrl){
+    if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG.');
+    return { ok:false, error:'no sheetsWebAppUrl' };
+  }
+  const bdList = (dailyRecords||[]).filter(r=>{
+    const cat = String(r.category||'').toLowerCase();
+    const pu = String(r.planUnplan||r.plan_unplan||'').toLowerCase();
+    return cat === 'breakdown' || pu === 'unplan' || pu.indexOf('unplan') >= 0;
+  });
+  try{
+    const res = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'sync',
+        sheet: 'Historical Breakdown',
+        spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
+        records: bdList.map(r=>({
+          code_bd: r.codeBD || r.code_bd || '',
+          codeBD: r.codeBD || r.code_bd || '',
+          tanggal: r.tanggal || '',
+          shift: r.shift || '',
+          unit_code: r.unitCode || r.unit_code || '',
+          unitCode: r.unitCode || r.unit_code || '',
+          type_unit: r.typeUnit || r.type_unit || '',
+          typeUnit: r.typeUnit || r.type_unit || '',
+          hm: r.hm != null ? r.hm : '',
+          bd_category: r.bdCategory || r.bd_category || '',
+          bdCategory: r.bdCategory || r.bd_category || '',
+          plan_unplan: r.planUnplan || r.plan_unplan || '',
+          planUnplan: r.planUnplan || r.plan_unplan || '',
+          job_desc: r.jobDesc || r.job_desc || '',
+          jobDesc: r.jobDesc || r.job_desc || '',
+          repair_action: r.repairAction || r.repair_action || '',
+          repairAction: r.repairAction || r.repair_action || '',
+          breakdown_date: r.breakdownDate || r.breakdown_date || '',
+          breakdownDate: r.breakdownDate || r.breakdown_date || '',
+          breakdown_time: r.breakdownTime || r.breakdown_time || '',
+          breakdownTime: r.breakdownTime || r.breakdown_time || '',
+          start_date: r.startDate || r.start_date || '',
+          startDate: r.startDate || r.start_date || '',
+          start: r.start || r.start_time || '',
+          start_time: r.start || r.start_time || '',
+          end_date: r.endDate || r.end_date || '',
+          endDate: r.endDate || r.end_date || '',
+          end: r.end || r.end_time || '',
+          end_time: r.end || r.end_time || '',
+          duration: r.duration != null ? r.duration : '',
+          total_breakdown: r.totalBreakdown != null ? r.totalBreakdown : (r.total_breakdown != null ? r.total_breakdown : ''),
+          totalBreakdown: r.totalBreakdown != null ? r.totalBreakdown : (r.total_breakdown != null ? r.total_breakdown : ''),
+          mechanic: r.mechanic || '',
+          mechanic2: r.mechanic2 || '',
+          mechanic3: r.mechanic3 || '',
+          area: r.area || '',
+          status: r.status || '',
+          approval_status: r.approvalStatus || r.approval_status || '',
+          approvalStatus: r.approvalStatus || r.approval_status || '',
+          submitted_by: r.submittedBy || r.submitted_by || '',
+          submittedBy: r.submittedBy || r.submitted_by || ''
+        })),
+        syncedAt: new Date().toISOString()
+      })
+    });
+    let data = null;
+    try{ data = await res.json(); }catch(_e){ data = null; }
+    if(opts.manual){
+      if(data && data.ok){
+        alert('✓ Berhasil sync '+ (data.written!=null?data.written:bdList.length) +' record Breakdown/Unplan ke sheet "Historical Breakdown".\nBuka spreadsheet dan refresh tab Historical Breakdown.');
+      } else if(data && data.error){
+        alert('⚠ Sync Historical Breakdown gagal: '+ data.error);
+      } else {
+        alert('✓ Permintaan sync terkirim ('+ bdList.length +' record).\nCek tab "Breakdown History" di spreadsheet.');
+      }
+    }
+    return data || { ok:true };
+  }catch(e){
+    console.error('Sync Breakdown History ke Google Sheets gagal', e);
+    if(opts.manual) alert('⚠ Sync Historical Breakdown gagal: '+ (e.message||e) +'\nPastikan Apps Script sudah di-deploy ulang (New version).');
+    return { ok:false, error:String(e) };
+  }
+}
+
+document.getElementById('cbm-sync-bd-history-btn')?.addEventListener('click', async ()=>{
+  const btn = document.getElementById('cbm-sync-bd-history-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
+  try{ await syncBreakdownHistoryToSheets({ manual:true }); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet Historical Breakdown'; } }
 });
 
 /**
