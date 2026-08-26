@@ -5747,8 +5747,23 @@ document.getElementById('accounts-filter-search')?.addEventListener('input', ren
    Tanpa ini, mekanik yang mendaftar akun baru tidak bisa dipilih/terkunci di field ini,
    sehingga record yang mereka input tersimpan dengan nama mekanik kosong dan tidak muncul
    dengan benar di tabel Daily Maintenance, Historical Report, maupun Mechanic Activity Report. */
+/* User yang tidak boleh muncul di dropdown mekanik (Daily / Plan Schedule / Pre Inspection). */
+const EXCLUDED_MECHANIC_DROPDOWN = ['sasmi','yoan'];
+function isExcludedMechanicDropdown(u){
+  if(!u) return true;
+  const name = String(u.name||'').trim().toLowerCase();
+  const uname = String(u.username||'').trim().toLowerCase();
+  return EXCLUDED_MECHANIC_DROPDOWN.some(x=> name===x || uname===x || name.includes(x) || uname.includes(x));
+}
+function listMechanicUsersForDropdown(){
+  return getAllUsers().filter(u=>{
+    const isMech = (u.position==='Mechanic' || u.role==='Mechanic') && u.position!=='Operator';
+    return isMech && !isExcludedMechanicDropdown(u);
+  });
+}
+
 function populateMechanicSelects(){
-  const mechanics = getAllUsers().filter(u=>u.role==='Mechanic');
+  const mechanics = listMechanicUsersForDropdown();
   const optsHTML = mechanics.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
 
   const dMech = document.getElementById('d-mechanic');
@@ -7582,9 +7597,11 @@ async function syncBreakdownHistoryToSheets(opts){
           duration: r.duration != null ? r.duration : '',
           total_breakdown: r.totalBreakdown != null ? r.totalBreakdown : (r.total_breakdown != null ? r.total_breakdown : ''),
           totalBreakdown: r.totalBreakdown != null ? r.totalBreakdown : (r.total_breakdown != null ? r.total_breakdown : ''),
-          mechanic: r.mechanic || '',
-          mechanic2: r.mechanic2 || '',
-          mechanic3: r.mechanic3 || '',
+          /* Satu kolom Mechanic: gabungan mechanic + mechanic2 + mechanic3
+             sesuai input Daily Maintenance (pisah koma jika lebih dari satu). */
+          mechanic: [r.mechanic, r.mechanic2, r.mechanic3].filter(Boolean).join(', ') || '',
+          mechanic2: '',
+          mechanic3: '',
           area: r.area || '',
           status: r.status || '',
           approval_status: r.approvalStatus || r.approval_status || '',
@@ -10256,7 +10273,7 @@ function updatePicMechanic1Field(){
   const sel = document.getElementById('ps-pic1');
   if(!sel) return;
   const prev = sel.value;
-  const mechanics = getAllUsers().filter(u=>u.position==='Mechanic' || u.role==='Mechanic');
+  const mechanics = listMechanicUsersForDropdown();
   sel.innerHTML = mechanics.map(m=>`<option value="${m.username}">${m.name}</option>`).join('');
   if(loggedInUser && currentRole()==='Mechanic'){
     sel.value = loggedInUser.username;
@@ -10274,7 +10291,7 @@ function populatePicMechanicSelect(){
   const sel = document.getElementById('ps-pic2');
   if(!sel) return;
   const prev = sel.value;
-  const mechanics = getAllUsers().filter(u=>u.position==='Mechanic' || u.role==='Mechanic');
+  const mechanics = listMechanicUsersForDropdown();
   sel.innerHTML = '<option value="">— Tidak ada —</option>' + mechanics.map(m=>`<option value="${m.username}">${m.name}</option>`).join('');
   if(mechanics.some(m=>m.username===prev)) sel.value = prev;
 }
@@ -11001,7 +11018,7 @@ function populatePreinsPlanMechanicSelect(){
   const sel = document.getElementById('preins-plan-mechanic');
   if(!sel) return;
   const prev = sel.value;
-  const mechanics = getAllUsers().filter(u=> (u.position==='Mechanic' || (u.role==='Mechanic' && u.position!=='Operator')));
+  const mechanics = listMechanicUsersForDropdown();
   sel.innerHTML = '<option value="">— Pilih Mekanik —</option>' + mechanics.map(m=>`<option value="${m.username}">${m.name}</option>`).join('');
   if(mechanics.some(m=>m.username===prev)) sel.value = prev;
 }
@@ -15602,7 +15619,7 @@ function renderCBMHistory(rows){
       <td>${r.duration!=null?Number(r.duration).toFixed(1):'—'}</td>
       <td style="white-space:normal;text-align:left;min-width:180px">${escUH(r.jobDesc||'')}</td>
       <td style="white-space:normal;text-align:left;min-width:160px">${escUH(partNote||'—')}</td>
-      <td>${escUH(r.mechanic||'')}</td>
+      <td style="white-space:normal;min-width:120px">${escUH([r.mechanic, r.mechanic2, r.mechanic3].filter(Boolean).join(', ') || '—')}</td>
       <td>${escUH(r.status||'')}</td>
     </tr>`;
   }).join('');
