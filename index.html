@@ -2345,6 +2345,7 @@ body.role-mechanic #history-filters{ display:none !important; }
         <div class="chip-tabs" id="cbm-tabs">
           <button type="button" class="chip active" data-cbm-tab="overview">Overview Komponen</button>
           <button type="button" class="chip" data-cbm-tab="lifetime">Life Time &amp; Performance</button>
+          <button type="button" class="chip" data-cbm-tab="safety">Safety Critical Parts</button>
           <button type="button" class="chip" data-cbm-tab="unplan">Histori Breakdown / Unplan</button>
           <button type="button" class="chip" data-cbm-tab="insight">Insight AI</button>
         </div>
@@ -2388,7 +2389,7 @@ body.role-mechanic #history-filters{ display:none !important; }
             <div class="unit-card"><div class="cat-label">Critical Components</div><div class="type" style="color:var(--red)" id="cbm-ov-crit">0</div><div class="hint">High frequency / low MTBF</div></div>
           </div>
 
-          <div class="section-title">Asset Analysis — Select Unit</div>
+          <div class="section-title" id="cbm-select-unit-title">Asset Analysis — Select Unit</div>
           <div class="cbm-unit-grid" id="cbm-unit-cards"></div>
 
           <div id="cbm-asset-detail" style="display:none;">
@@ -2416,13 +2417,13 @@ body.role-mechanic #history-filters{ display:none !important; }
                 <div class="table-wrap" style="margin-top:14px;">
                   <table class="cbm-target-table">
                     <thead><tr>
-                      <th>Component</th><th>Health</th><th>Target Life (HM)</th><th>Est. Used HM*</th>
-                      <th>Remaining to Target</th><th>Events</th><th>Unplan</th><th>Avg HM Gap</th>
+                      <th>Component</th><th>Health</th><th>Target Life (HM)</th><th>HM Sekarang*</th>
+                      <th>Sisa Lifetime (HM)</th><th>Sisa Lifetime %</th><th>Events</th><th>Unplan</th><th>Avg HM Gap</th>
                     </tr></thead>
                     <tbody id="cbm-asset-lt-tbody"></tbody>
                   </table>
                 </div>
-                <p class="hint" style="margin-top:8px;">*Est. Used HM = <b>HM Sekarang</b> di Plan Service (auto-sync): HM Monitoring + proyeksi hari × WH/hari dari sheet <b>performance</b>. Remaining = Target Life − Est. Used (proxy, bukan jam pakai komponen aktual). CBM hanya membaca aktivitas <b>Breakdown</b> (Plan/Daily seperti Greasing tidak dihitung). Health &amp; warna merah Remaining hanya aktif jika ada event breakdown pada komponen tersebut.</p>
+                <p class="hint" style="margin-top:8px;">*<b>HM Sekarang</b> = pemakaian aktual unit (Plan Service auto-sync: baseline HM Monitoring + proyeksi hari × WH/hari dari sheet <b>performance</b>). <b>Sisa Lifetime %</b> dihitung murni dari HM: <code>(Target Life − HM Sekarang) / Target Life × 100</code> — tidak dipengaruhi jumlah breakdown. Events/Unplan tetap dari data Breakdown Daily Maintenance (Plan/Daily seperti Greasing tidak dihitung).</p>
               </div>
               <div class="cbm-analysis-hero">
                 <div class="section-title" style="margin-top:0;">Recent Breakdown / Unplan</div>
@@ -2443,7 +2444,7 @@ body.role-mechanic #history-filters{ display:none !important; }
             <div class="table-wrap">
               <table>
                 <thead><tr>
-                  <th>Component</th><th>Target Life (HM)</th><th>Breakdown</th><th>Unplan</th><th>Plan BD</th>
+                  <th>Component</th><th>Target Life (HM)</th><th>Sisa Lifetime %</th><th>Breakdown</th><th>Unplan</th><th>Plan BD</th>
                   <th>Repair Hours</th><th>Affected Units</th><th>Avg HM Gap</th><th>Status</th>
                 </tr></thead>
                 <tbody id="cbm-ov-tbody"></tbody>
@@ -2492,6 +2493,44 @@ body.role-mechanic #history-filters{ display:none !important; }
                   <th>Plan/Unplan</th><th>Duration (hours)</th><th>Description</th><th>Keterangan Part Consumable</th><th>Mechanic</th><th>Status</th>
                 </tr></thead>
                 <tbody id="cbm-hist-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SAFETY CRITICAL PARTS -->
+        <div class="cbm-tab-panel" id="cbm-tab-safety" style="display:none;">
+          <div class="panel">
+            <div class="panel-head">
+              <h2><span class="tag">OM</span> Safety Critical Parts — Periodic Replacement</h2>
+            </div>
+            <p class="hint" style="margin-bottom:12px;">Daftar <b>Safety Critical Parts</b> (manual OM) + <b>Critical Hydraulic Hose</b> (recommended lifetime). <b>Sisa Lifetime %</b> = <code>(Target HM − HM Sekarang) / Target HM × 100</code>. Interval berbasis tahun (mis. seat belt) ditampilkan sebagai referensi kalender. Hose bertanda * = optional / if equipped.</p>
+            <div class="sp-model-tabs" id="cbm-safety-model-tabs" style="margin-bottom:12px;"></div>
+            <div class="field" style="max-width:260px;margin-bottom:14px;">
+              <label>Unit (HM Sekarang)</label>
+              <select id="cbm-safety-unit"></select>
+            </div>
+            <div class="grid grid-4" style="margin-bottom:14px;">
+              <div class="unit-card"><div class="cat-label">Model</div><div class="type" id="cbm-safety-kpi-model" style="font-size:16px;">—</div><div class="hint">Selected type</div></div>
+              <div class="unit-card"><div class="cat-label">Total Parts</div><div class="type" id="cbm-safety-kpi-parts">0</div><div class="hint">Line items</div></div>
+              <div class="unit-card"><div class="cat-label">HM Sekarang</div><div class="type" style="color:var(--yellow)" id="cbm-safety-kpi-hm">—</div><div class="hint">Selected unit</div></div>
+              <div class="unit-card"><div class="cat-label">Due / Overdue</div><div class="type" style="color:var(--red)" id="cbm-safety-kpi-due">0</div><div class="hint">Sisa ≤ 0% (HM interval)</div></div>
+            </div>
+            <div class="table-wrap">
+              <table id="cbm-safety-table">
+                <thead><tr>
+                  <th>No.</th>
+                  <th>Safety Critical Part</th>
+                  <th>Function / Location</th>
+                  <th>Q'ty</th>
+                  <th>Replacement Interval</th>
+                  <th>Target HM</th>
+                  <th>HM Sekarang</th>
+                  <th>Sisa HM</th>
+                  <th>Sisa Lifetime %</th>
+                  <th>Status</th>
+                </tr></thead>
+                <tbody id="cbm-safety-tbody"></tbody>
               </table>
             </div>
           </div>
@@ -15063,6 +15102,52 @@ function cbmCompFilterMatch(filterKey, normalizedKey){
   return false;
 }
 
+/** Normalisasi flag Plan/Unplan dari berbagai sumber (form, Sheets, DB). */
+function cbmIsUnplan(v){
+  const s = String(v||'').trim().toLowerCase();
+  return s === 'unplan' || s === 'unplanned' || s === 'un-plan' || s === 'un plan' || /^un\s*plan/.test(s);
+}
+function cbmIsPlan(v){
+  const s = String(v||'').trim().toLowerCase();
+  if(cbmIsUnplan(v)) return false;
+  return s === 'plan' || s === 'planned' || /^plan/.test(s);
+}
+
+/** Sub-komponen "utama" per group (baris pertama master) — penampung event high-level bdCategory. */
+function cbmPrimarySubKeyForGroup(groupOrCbmKey, unitType){
+  const gk = String(groupOrCbmKey||'');
+  const types = unitType ? [unitType] : Object.keys(CBM_MASTER_BY_TYPE||{});
+  for(const t of types){
+    const list = CBM_MASTER_BY_TYPE[t] || [];
+    const hit = list.find(c=>{
+      const gKey = CBM_GROUP_TO_KEY[c.group] || c.group;
+      return c.group === gk || gKey === gk;
+    });
+    if(hit) return hit.key;
+  }
+  return null;
+}
+
+/**
+ * Apakah event (normalized key) diatribusikan ke definisi komponen tampilan (sub atau high-level).
+ * - Exact match selalu dihitung.
+ * - Event high-level (Engine, Transmission, …) hanya diatribusikan ke sub-komponen UTAMA group tersebut
+ *   agar tidak menggandakan angka di semua sub (Turbocharger, Injector, dst).
+ */
+function cbmEventMatchesCompDef(compDef, normalizedKey, unitType){
+  if(!compDef || !normalizedKey) return false;
+  const key = compDef.key;
+  if(normalizedKey === key) return true;
+  const groupKey = compDef.cbmKey || CBM_GROUP_TO_KEY[compDef.group] || compDef.group || key;
+  // Event high-level → primary sub saja
+  if(normalizedKey === groupKey || normalizedKey === compDef.group){
+    const primary = cbmPrimarySubKeyForGroup(groupKey, unitType) || cbmPrimarySubKeyForGroup(compDef.group, unitType);
+    return primary === key || key === groupKey;
+  }
+  // Event sub lain dalam group yang sama tidak dihitung ke sub berbeda
+  return false;
+}
+
 function cbmGetFilters(){
   return {
     unit: (document.getElementById('cbm-filter-unit')||{}).value || '',
@@ -15111,14 +15196,28 @@ function cbmBuildStats(rows){
     if(!byComp[comp]) byComp[comp] = { key:comp, total:0, unplan:0, plan:0, hours:0, units:new Set(), gaps:[] };
     const st = byComp[comp];
     st.total++;
-    if((r.planUnplan||'')==='Unplan') st.unplan++; else if((r.planUnplan||'')==='Plan') st.plan++;
+    if(cbmIsUnplan(r.planUnplan)) st.unplan++; else if(cbmIsPlan(r.planUnplan)) st.plan++;
     st.hours += Number(r.duration)||0;
     if(r.unitCode) st.units.add(r.unitCode);
+
+    // Roll-up ke high-level group agar summary sub-komponen / kartu group tetap terisi
+    const masterHit = Object.values(CBM_MASTER_BY_TYPE||{}).flat().find(c=>c.key===comp);
+    if(masterHit){
+      const gk = CBM_GROUP_TO_KEY[masterHit.group] || masterHit.group;
+      if(gk && gk!==comp){
+        if(!byComp[gk]) byComp[gk] = { key:gk, total:0, unplan:0, plan:0, hours:0, units:new Set(), gaps:[] };
+        const gst = byComp[gk];
+        gst.total++;
+        if(cbmIsUnplan(r.planUnplan)) gst.unplan++; else if(cbmIsPlan(r.planUnplan)) gst.plan++;
+        gst.hours += Number(r.duration)||0;
+        if(r.unitCode) gst.units.add(r.unitCode);
+      }
+    }
 
     const uk = (r.unitCode||'-') + '||' + comp;
     if(!byUC[uk]) byUC[uk] = { unitCode:r.unitCode||'-', component:comp, events:[], unplan:0, hours:0 };
     byUC[uk].events.push(r);
-    if((r.planUnplan||'')==='Unplan') byUC[uk].unplan++;
+    if(cbmIsUnplan(r.planUnplan)) byUC[uk].unplan++;
     byUC[uk].hours += Number(r.duration)||0;
   });
 
@@ -15194,10 +15293,260 @@ function initCBMFilters(){
   }
 }
 
+/** Safety Critical / Defined Life Parts — sumber manual OM per model unit. */
+const CBM_SAFETY_PARTS = {
+  'WA500-6R': [
+    { no:1,  name:'Fuel hose (fuel tank - water separator)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:2,  name:'Fuel hose (water separator - fuel pre-filter)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:3,  name:'Fuel hose (fuel pre-filter - electric priming pump)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:4,  name:'Fuel hose (feed pump - controller cooling)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:5,  name:'Fuel hose (controller cooling - fuel filter)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:6,  name:'Fuel hose (fuel injection pump return)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:7,  name:'Fuel hose (fuel spill return)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:8,  name:'Steering hose (pump - steering valve)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:9,  name:'Steering hose (steering valve - joint)', qty:2, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:10, name:'Steering hose (joint - steering cylinder)', qty:4, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:11, name:'Steering hose (steering valve - stop valve)', qty:2, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:12, name:'Steering hose (orbital valve - stop valve)', qty:2, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:13, name:'Steering hose (orbital valve - charge valve)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:14, name:'Steering hose (orbital valve - joint to tank)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:15, name:'Brake hose (pump - accumulator charge valve)', qty:2, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:16, name:'Brake hose (accumulator charge valve - accumulator)', qty:2, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:17, name:'Brake hose (accumulator - brake valve)', qty:4, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:18, name:'Brake hose (brake valve - front brake)', qty:3, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:19, name:'Brake hose (brake valve - rear brake)', qty:4, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:20, name:'Brake hose (brake valve - hydraulic tank)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:21, name:'Brake hose (brake accumulator - reduction valve for emergency parking brake cancel)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:22, name:'Brake hose (transmission valve - reduction valve)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:23, name:'Brake hose (reduction valve - parking brake chamber)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:24, name:'Brake hose (reduction valve - charge valve drain)', qty:1, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:25, name:'Accumulator (for PPC)', qty:2, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:26, name:'Alarm', qty:2, interval:'Every 2 years or every 4000 hours, whichever comes first', targetHm:4000, targetYears:2 },
+    { no:27, name:'High-pressure piping clamp', qty:15, interval:'Every 8000 hours', targetHm:8000, targetYears:null },
+    { no:28, name:'Fuel spray prevention cap', qty:16, interval:'Every 8000 hours', targetHm:8000, targetYears:null },
+    { no:29, name:'Seat belt', qty:1, interval:'Every 3 years', targetHm:null, targetYears:3 },
+    /* —— Critical Hydraulic Hose List (recommended lifetime) —— */
+    { no:30, name:'Main Pump Delivery Hose', location:'Hydraulic pump → main control valve', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:31, name:'Main Pump Suction Hose', location:'Hydraulic tank → main pump', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:32, name:'Main Pump Return Hose', location:'System → hydraulic tank', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:33, name:'Lift Cylinder Head Hose', location:'Control valve → lift cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:34, name:'Lift Cylinder Rod Hose', location:'Control valve → lift cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:35, name:'Tilt Cylinder Head Hose', location:'Control valve → tilt cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:36, name:'Tilt Cylinder Rod Hose', location:'Control valve → tilt cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:37, name:'Steering Cylinder Hose LH', location:'Steering system → LH cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:38, name:'Steering Cylinder Hose RH', location:'Steering system → RH cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:39, name:'Steering Pump Pressure Hose', location:'Steering pump → steering valve', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:40, name:'Steering Return Hose', location:'Steering valve → tank', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:41, name:'Pilot Pressure Hose', location:'Pilot pump → pilot/control system', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:42, name:'Pilot Return Hose', location:'Pilot system → tank', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:43, name:'Hydraulic Cooler Inlet Hose', location:'Hydraulic system → oil cooler', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:44, name:'Hydraulic Cooler Outlet Hose', location:'Oil cooler → hydraulic tank/system', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:45, name:'Quick Coupler / Attachment Hose', location:'Auxiliary hydraulic line', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' }
+  ],
+  'D85ESS-2A': [
+    { no:1,  name:'Fuel hose (fuel tank - injection pump)', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:2,  name:'Fuel hose (injection pump - fuel filter)', qty:2, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:3,  name:'Fuel return hose (injection pump - fuel tank)', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:4,  name:'Fuel return hose (injection nozzle - fuel tank)', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:5,  name:'Hose (power train strainer - power train pump)', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:6,  name:'Hose (power train pump - power train filter)', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:7,  name:'Hose (power train filter - transmission case)', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:8,  name:'Hose (transmission case - steering case)', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:9,  name:'Hose (power train lubrication pump - steering case)', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:10, name:'Hose (Scavenging pump - Steering case)', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:11, name:'Hose (torque converter case - transmission oil cooler)', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:12, name:'Hose (transmission oil cooler - transmission case)', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:13, name:'Brake pressure detection hose', qty:2, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:14, name:'Steering clutch pressure detection hose', qty:2, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:15, name:'Torque converter inlet post pressure detection hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:16, name:'Torque converter outlet post pressure detection hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:17, name:'Transmission modulation pressure detection hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2 },
+    { no:18, name:'Seat belt', qty:1, interval:'Replace 3 years', targetHm:null, targetYears:3 },
+    /* —— Critical Hydraulic Hose List (recommended lifetime) —— */
+    { no:19, name:'Hydraulic Pump Delivery Hose', location:'Main pump → control valve', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:20, name:'Hydraulic Pump Suction Hose', location:'Tank → hydraulic pump', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:21, name:'Hydraulic Pump Return Hose', location:'Hydraulic system → tank', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:22, name:'Blade Lift Cylinder Hose LH Head', location:'Control valve → LH lift cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:23, name:'Blade Lift Cylinder Hose LH Rod', location:'Control valve → LH lift cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:24, name:'Blade Lift Cylinder Hose RH Head', location:'Control valve → RH lift cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:25, name:'Blade Lift Cylinder Hose RH Rod', location:'Control valve → RH lift cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:26, name:'Blade Tilt Cylinder Head Hose', location:'Control valve → tilt cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:27, name:'Blade Tilt Cylinder Rod Hose', location:'Control valve → tilt cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:28, name:'Steering Pressure Hose', location:'Steering pump → steering control', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:29, name:'Steering Return Hose', location:'Steering system → tank', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:30, name:'Pilot Pressure Hose', location:'Pilot pump → pilot valve', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:31, name:'Pilot Return Hose', location:'Pilot system → tank', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:32, name:'Hydraulic Cooler Inlet Hose', location:'System → cooler', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:33, name:'Hydraulic Cooler Outlet Hose', location:'Cooler → tank', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:34, name:'Ripper Hydraulic Pressure Hose', location:'Control valve → ripper cylinder (if equipped)', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:35, name:'Ripper Hydraulic Return Hose', location:'Ripper cylinder → control valve (if equipped)', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' }
+  ],
+  'PC210-10MO': [
+    { no:1,  name:'Fuel system — Fuel hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Fuel system' },
+    { no:2,  name:'Fuel system — Spill hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Fuel system' },
+    { no:3,  name:'Engine lubrication system — Turbocharger lubrication hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Engine lubrication system' },
+    { no:4,  name:'Engine lubrication system — Engine oil filter hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Engine lubrication system' },
+    { no:5,  name:'Work equipment hydraulic — Main pump delivery hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Work equipment hydraulic system' },
+    { no:6,  name:'Work equipment hydraulic — Pump delivery hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Work equipment hydraulic system' },
+    { no:7,  name:'Work equipment hydraulic — Pump branch hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Work equipment hydraulic system' },
+    { no:8,  name:'Work equipment hydraulic — Main pump LS hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Work equipment hydraulic system' },
+    { no:9,  name:'Work equipment hydraulic — Boom foot connection hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Work equipment hydraulic system' },
+    { no:10, name:'Work equipment hydraulic — Boom cylinder hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Work equipment hydraulic system' },
+    { no:11, name:'Work equipment hydraulic — Arm connection hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Work equipment hydraulic system' },
+    { no:12, name:'Work equipment hydraulic — Arm cylinder hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Work equipment hydraulic system' },
+    { no:13, name:'Work equipment hydraulic — Attachment additional line hose', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Work equipment hydraulic system' },
+    { no:14, name:'Others — PPC accumulator', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Others' },
+    { no:15, name:'Others — Attachment additional accumulator', qty:1, interval:'Every 2 years or 4000 hours, whichever comes sooner', targetHm:4000, targetYears:2, group:'Others' },
+    { no:16, name:'Others — Seat belt', qty:1, interval:'Every 3 years from start of usage or 5 years after manufacturing of seat belt, whichever comes sooner', targetHm:null, targetYears:3, group:'Others' },
+    /* —— Critical Hydraulic Hose List (recommended lifetime) —— */
+    { no:17, name:'Main Pump Delivery Hose #1', location:'Main pump → main control valve', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:18, name:'Main Pump Delivery Hose #2', location:'Main pump → main control valve', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:19, name:'Main Pump Suction Hose #1', location:'Tank → pump', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:20, name:'Main Pump Suction Hose #2', location:'Tank → pump', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:21, name:'Main Pump Return Hose', location:'Hydraulic system → tank', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:22, name:'Boom Cylinder Head Hose LH', location:'Control valve → boom cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:23, name:'Boom Cylinder Rod Hose LH', location:'Control valve → boom cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:24, name:'Boom Cylinder Head Hose RH', location:'Control valve → boom cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:25, name:'Boom Cylinder Rod Hose RH', location:'Control valve → boom cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:26, name:'Arm Cylinder Head Hose', location:'Control valve → arm cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:27, name:'Arm Cylinder Rod Hose', location:'Control valve → arm cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:28, name:'Bucket Cylinder Head Hose', location:'Control valve → bucket cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:29, name:'Bucket Cylinder Rod Hose', location:'Control valve → bucket cylinder', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:30, name:'Swing Motor Pressure Hose', location:'Control valve → swing motor', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:31, name:'Swing Motor Return Hose', location:'Swing motor → hydraulic return', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:32, name:'Travel Motor LH Pressure Hose', location:'Control valve → LH travel motor', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:33, name:'Travel Motor LH Return Hose', location:'LH travel motor → return', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:34, name:'Travel Motor RH Pressure Hose', location:'Control valve → RH travel motor', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:35, name:'Travel Motor RH Return Hose', location:'RH travel motor → return', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:36, name:'Pilot Pump Pressure Hose', location:'Pilot pump → pilot system', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:37, name:'Pilot Control Hose', location:'Pilot valve → control system', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:38, name:'Pilot Return Hose', location:'Pilot system → tank', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:39, name:'Hydraulic Cooler Inlet Hose', location:'System → oil cooler', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:40, name:'Hydraulic Cooler Outlet Hose', location:'Oil cooler → tank/system', qty:1, interval:'Recommended lifetime 10,000 HM', targetHm:10000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:41, name:'Attachment / Breaker Pressure Hose', location:'Auxiliary circuit (if equipped)', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' },
+    { no:42, name:'Attachment / Breaker Return Hose', location:'Auxiliary circuit (if equipped)', qty:1, interval:'Recommended lifetime 8,000 HM', targetHm:8000, targetYears:null, group:'Critical Hydraulic Hose' }
+  ]
+};
+
+let cbmSafetyModel = 'WA500-6R';
+let cbmSafetyUnitCode = '';
+
+function cbmSafetyModels(){
+  return Object.keys(CBM_SAFETY_PARTS);
+}
+
+function cbmSafetyUnitsForModel(model){
+  return (UNITS||[]).filter(u=>String(u.type||'')===model);
+}
+
+/** Sisa lifetime % safety part: hanya HM Sekarang vs Target HM interval. */
+function cbmSafetyRemainPct(targetHm, unitHm){
+  if(targetHm==null || !(Number(targetHm)>0)) return null;
+  if(unitHm==null || isNaN(Number(unitHm))) return null;
+  const pct = ((Number(targetHm) - Number(unitHm)) / Number(targetHm)) * 100;
+  return Math.round(Math.max(0, Math.min(100, pct)) * 10) / 10;
+}
+
+function cbmSafetyStatus(part, unitHm){
+  if(part.targetHm!=null && Number(part.targetHm)>0 && unitHm!=null && !isNaN(Number(unitHm))){
+    const remain = Number(part.targetHm) - Number(unitHm);
+    const pct = cbmSafetyRemainPct(part.targetHm, unitHm);
+    if(remain <= 0 || (pct!=null && pct <= 0)) return { label:'OVERDUE', cls:'ai-crit' };
+    if(pct < 20) return { label:'DUE SOON', cls:'ai-high' };
+    if(pct < 40) return { label:'WATCH', cls:'ai-med' };
+    return { label:'OK', cls:'ai-low' };
+  }
+  if(part.targetYears!=null){
+    return { label: part.targetYears + ' YR', cls:'' };
+  }
+  return { label:'—', cls:'' };
+}
+
+function renderCBMSafety(){
+  const models = cbmSafetyModels();
+  if(!models.includes(cbmSafetyModel)) cbmSafetyModel = models[0] || 'WA500-6R';
+
+  // Model chips
+  const tabs = document.getElementById('cbm-safety-model-tabs');
+  if(tabs){
+    tabs.innerHTML = models.map(m=>{
+      const active = cbmSafetyModel===m ? ' active' : '';
+      return `<button type="button" class="chip${active}" data-cbm-safety-model="${m}">${m}</button>`;
+    }).join('');
+  }
+
+  // Unit select for HM
+  const units = cbmSafetyUnitsForModel(cbmSafetyModel);
+  const uSel = document.getElementById('cbm-safety-unit');
+  if(uSel){
+    const prev = cbmSafetyUnitCode || uSel.value || '';
+    uSel.innerHTML = units.length
+      ? units.map(u=>`<option value="${u.code}">${u.code} — ${u.category||''}</option>`).join('')
+      : '<option value="">No unit for this model</option>';
+    if(prev && units.some(u=>u.code===prev)) uSel.value = prev;
+    else if(units.length) uSel.value = units[0].code;
+    cbmSafetyUnitCode = uSel.value || '';
+  }
+
+  const unitHm = cbmSafetyUnitCode ? cbmUnitCurrentHM(cbmSafetyUnitCode) : null;
+  const parts = CBM_SAFETY_PARTS[cbmSafetyModel] || [];
+
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('cbm-safety-kpi-model', cbmSafetyModel);
+  set('cbm-safety-kpi-parts', parts.length);
+  set('cbm-safety-kpi-hm', unitHm!=null ? Number(unitHm).toLocaleString('id-ID') : '—');
+  const dueCount = parts.filter(p=>{
+    if(p.targetHm==null) return false;
+    const pct = cbmSafetyRemainPct(p.targetHm, unitHm);
+    return pct!=null && pct <= 0;
+  }).length;
+  set('cbm-safety-kpi-due', dueCount);
+
+  const tbody = document.getElementById('cbm-safety-tbody');
+  if(!tbody) return;
+  if(!parts.length){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="10">No safety critical parts list for this model.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = parts.map(p=>{
+    const targetHm = p.targetHm;
+    const sisaHm = (targetHm!=null && unitHm!=null) ? (Number(targetHm) - Number(unitHm)) : null;
+    const pct = cbmSafetyRemainPct(targetHm, unitHm);
+    const st = cbmSafetyStatus(p, unitHm);
+    const pctCell = (typeof cbmRemainingPctCell==='function')
+      ? (pct!=null ? cbmRemainingPctCell(pct) : (p.targetYears!=null ? `<span class="hint">${p.targetYears} yr calendar</span>` : '—'))
+      : (pct!=null ? pct+'%' : '—');
+    let sisaColor = 'var(--text-dim)';
+    if(pct!=null){
+      if(pct <= 0) sisaColor = 'var(--red)';
+      else if(pct < 20) sisaColor = 'var(--red)';
+      else if(pct < 40) sisaColor = 'var(--orange)';
+      else if(pct < 60) sisaColor = 'var(--yellow)';
+      else sisaColor = 'var(--green)';
+    }
+    const statusPill = st.cls
+      ? `<span class="pill ${st.cls}">${st.label}</span>`
+      : `<span class="pill">${st.label}</span>`;
+    const loc = p.location || (p.group && p.group!=='Critical Hydraulic Hose' ? p.group : '') || '—';
+    return `<tr>
+      <td>${p.no}</td>
+      <td style="text-align:left;white-space:normal;min-width:200px;">${escUH(p.name)}${p.group==='Critical Hydraulic Hose'?' <span class="pill" style="margin-left:4px;font-size:9px;">HYD HOSE</span>':''}</td>
+      <td style="text-align:left;white-space:normal;min-width:160px;font-size:11px;color:var(--text-dim)">${escUH(loc)}</td>
+      <td>${p.qty!=null?p.qty:'—'}</td>
+      <td style="text-align:left;white-space:normal;min-width:150px;font-size:11px;color:var(--text-dim)">${escUH(p.interval||'')}</td>
+      <td><b style="color:var(--yellow)">${targetHm!=null?Number(targetHm).toLocaleString('id-ID'):'—'}</b></td>
+      <td>${unitHm!=null?Number(unitHm).toLocaleString('id-ID'):'—'}</td>
+      <td style="color:${sisaColor}">${sisaHm!=null?Number(sisaHm).toLocaleString('id-ID'):'—'}</td>
+      <td>${pctCell}</td>
+      <td>${statusPill}</td>
+    </tr>`;
+  }).join('');
+}
+
 function switchCBMTab(tab){
   cbmActiveTab = tab || 'overview';
   document.querySelectorAll('#cbm-tabs .chip').forEach(c=> c.classList.toggle('active', c.dataset.cbmTab===cbmActiveTab));
-  ['overview','lifetime','unplan','insight'].forEach(t=>{
+  ['overview','lifetime','safety','unplan','insight'].forEach(t=>{
     const p = document.getElementById('cbm-tab-'+t);
     if(p) p.style.display = t===cbmActiveTab ? '' : 'none';
   });
@@ -15209,9 +15558,11 @@ function renderCBMActiveTab(){
   const stats = cbmBuildStats(rows);
   if(cbmActiveTab==='overview') renderCBMOverview(rows, stats);
   else if(cbmActiveTab==='lifetime') renderCBMLifetime(stats);
+  else if(cbmActiveTab==='safety') renderCBMSafety();
   else if(cbmActiveTab==='unplan') renderCBMHistory(rows);
   else if(cbmActiveTab==='insight') renderCBMInsight(stats);
 }
+
 
 /** HM unit di CBM = sama dengan kolom "HM Sekarang" di Plan Service
  *  (Monitoring HM aktual via calcHmSekarang / getActualMonitoringHM).
@@ -15322,14 +15673,19 @@ function cbmBuildUnitCardModel(unit, allRows, stats){
   const comps = cbmComponentsForUnit(unit);
   const byC = {};
   comps.forEach(c=>{ byC[c.key] = { count:0, unplan:0, hours:0, hms:[], gaps:null, avgGap:null }; });
+  const uType = String(unit.type||'').trim();
   unitRows.forEach(r=>{
     const comp = r._cbmComp;
-    if(!comp || !byC[comp]) return;
-    byC[comp].count++;
-    if((r.planUnplan||'')==='Unplan') byC[comp].unplan++;
-    byC[comp].hours += Number(r.duration)||0;
-    const hm = cbmHmValue(r);
-    if(hm!=null) byC[comp].hms.push(hm);
+    if(!comp) return;
+    // Atribusi exact + event high-level ke sub utama group
+    comps.forEach(c=>{
+      if(!cbmEventMatchesCompDef(c, comp, uType)) return;
+      byC[c.key].count++;
+      if(cbmIsUnplan(r.planUnplan)) byC[c.key].unplan++;
+      byC[c.key].hours += Number(r.duration)||0;
+      const hm = cbmHmValue(r);
+      if(hm!=null) byC[c.key].hms.push(hm);
+    });
   });
   const unitHm = cbmUnitCurrentHM(unit.code);
   const healths = comps.map(c=>{
@@ -15343,12 +15699,21 @@ function cbmBuildUnitCardModel(unit, allRows, stats){
     return { ...c, health, count:g.count, unplan:g.unplan, hours:g.hours, avgGap:g.avgGap, unitHm };
   });
   const overall = healths.length ? Math.round(healths.reduce((s,h)=>s+h.health,0)/healths.length) : 100;
-  return { unit, unitHm, healths, overall, eventCount: unitRows.length, unplanCount: unitRows.filter(r=>(r.planUnplan||'')==='Unplan').length };
+  return { unit, unitHm, healths, overall, eventCount: unitRows.length, unplanCount: unitRows.filter(r=>cbmIsUnplan(r.planUnplan)).length };
 }
 
 function renderCBMUnitCards(rows, stats){
   const wrap = document.getElementById('cbm-unit-cards');
   if(!wrap) return;
+  const titleEl = document.getElementById('cbm-select-unit-title');
+  // Saat unit dipilih, sembunyikan grid kartu agar tidak double dengan kartu di detail
+  if(cbmSelectedUnit){
+    wrap.style.display = 'none';
+    if(titleEl) titleEl.style.display = 'none';
+    return;
+  }
+  wrap.style.display = '';
+  if(titleEl) titleEl.style.display = '';
   const f = cbmGetFilters();
   const units = (UNITS||[]).filter(u => !f.unit || u.code===f.unit);
   // use unfiltered-by-comp rows for unit cards so health reflects full unit picture under date/unit filter
@@ -15405,10 +15770,25 @@ window.cbmSelectUnit = function(code){
 function renderCBMAssetDetail(){
   const box = document.getElementById('cbm-asset-detail');
   if(!box) return;
-  if(!cbmSelectedUnit){ box.style.display='none'; return; }
+  const titleEl = document.getElementById('cbm-select-unit-title');
+  const cardsEl = document.getElementById('cbm-unit-cards');
+  if(!cbmSelectedUnit){
+    box.style.display='none';
+    if(titleEl) titleEl.style.display = '';
+    if(cardsEl) cardsEl.style.display = '';
+    return;
+  }
   const u = (UNITS||[]).find(x=>x.code===cbmSelectedUnit);
-  if(!u){ box.style.display='none'; return; }
+  if(!u){
+    box.style.display='none';
+    if(titleEl) titleEl.style.display = '';
+    if(cardsEl) cardsEl.style.display = '';
+    return;
+  }
   box.style.display = '';
+  // Sembunyikan kartu select-unit agar hanya 1 kartu unit (di hero detail) yang tampil
+  if(titleEl) titleEl.style.display = 'none';
+  if(cardsEl) cardsEl.style.display = 'none';
 
   const f = cbmGetFilters();
   const list = (typeof dailyRecords!=='undefined' && Array.isArray(dailyRecords)) ? dailyRecords : [];
@@ -15454,30 +15834,37 @@ function renderCBMAssetDetail(){
   }
 
   // full lifetime target table
-  // Est. Used / Remaining = proxy HM unit vs target life (bukan jam pakai komponen aktual).
-  // Warna merah hanya jika sisa negatif/rendah DAN ada event breakdown pada komponen itu;
-  // tanpa event breakdown, angka proxy ditampilkan netral (tidak alarm palsu).
+  // Sisa Lifetime % murni dari HM Sekarang vs Target Life (tidak dipengaruhi breakdown).
+  // Rumus: (Target Life − HM Sekarang) / Target Life × 100
   const tbody = document.getElementById('cbm-asset-lt-tbody');
   if(tbody){
     tbody.innerHTML = model.healths.map(h=>{
       const used = model.unitHm!=null ? model.unitHm : null;
-      const sisa = (used!=null) ? (h.targetLife - used) : null;
-      const hasBd = (h.count||0) > 0;
-      let sisaColor = 'var(--text-dim)';
-      if(sisa!=null && hasBd){
-        if(sisa < 0) sisaColor = 'var(--red)';
-        else if(sisa < h.targetLife * 0.15) sisaColor = 'var(--yellow)';
-        else sisaColor = 'var(--green)';
-      } else if(sisa!=null && !hasBd){
-        // Tanpa breakdown: info proxy saja — hijau jika masih positif, dim jika negatif
-        sisaColor = sisa < 0 ? 'var(--text-dim)' : 'var(--green)';
+      const target = Number(h.targetLife)||0;
+      const sisaHm = (used!=null && target>0) ? (target - used) : null;
+      let remainPct = null;
+      if(used!=null && target>0){
+        remainPct = Math.round(((target - Number(used)) / target) * 1000) / 10;
+        remainPct = Math.max(0, Math.min(100, remainPct));
       }
+      // Warna hanya dari sisa % (HM), bukan dari event breakdown
+      let sisaColor = 'var(--text-dim)';
+      if(remainPct!=null){
+        if(remainPct < 20 || (sisaHm!=null && sisaHm < 0)) sisaColor = 'var(--red)';
+        else if(remainPct < 40) sisaColor = 'var(--orange)';
+        else if(remainPct < 60) sisaColor = 'var(--yellow)';
+        else sisaColor = 'var(--green)';
+      }
+      const pctLabel = remainPct!=null
+        ? `<b style="color:${sisaColor}">${remainPct.toLocaleString('id-ID',{maximumFractionDigits:1})}%</b>`
+        : '—';
       return `<tr>
         <td style="display:flex;align-items:center;gap:6px;"><b>${cbmComponentIcon(h.key)}${h.key}</b></td>
         <td><span style="color:${cbmHealthColor(h.health)};font-weight:700">${h.health}%</span></td>
-        <td><b style="color:var(--yellow)">${h.targetLife.toLocaleString('id-ID')}</b></td>
-        <td>${used!=null?used.toLocaleString('id-ID'):'—'}</td>
-        <td style="color:${sisaColor}">${sisa!=null?sisa.toLocaleString('id-ID'):'—'}</td>
+        <td><b style="color:var(--yellow)">${target.toLocaleString('id-ID')}</b></td>
+        <td>${used!=null?Number(used).toLocaleString('id-ID'):'—'}</td>
+        <td style="color:${sisaColor}">${sisaHm!=null?Number(sisaHm).toLocaleString('id-ID'):'—'}</td>
+        <td>${pctLabel}</td>
         <td>${h.count}</td>
         <td style="color:${h.unplan?'var(--orange)':'inherit'}">${h.unplan}</td>
         <td>${h.avgGap!=null?Math.round(h.avgGap):'—'}</td>
@@ -15517,30 +15904,118 @@ function renderCBMAssetDetail(){
   }
 }
 
+/** Hitung metrik breakdown untuk satu definisi komponen (sub/high-level) dari baris filtered. */
+function cbmStatsForCompDef(compDef, rows, unitTypeHint){
+  const matched = rows.filter(r=>{
+    const u = cbmUnitByCode(r.unitCode);
+    const uType = unitTypeHint || (u && u.type) || '';
+    return cbmEventMatchesCompDef(compDef, r._cbmComp, uType);
+  });
+  const total = matched.length;
+  let unplan = 0, plan = 0, hours = 0;
+  const units = new Set();
+  const byUnitHms = {};
+  matched.forEach(r=>{
+    if(cbmIsUnplan(r.planUnplan)) unplan++;
+    else if(cbmIsPlan(r.planUnplan)) plan++;
+    hours += Number(r.duration)||0;
+    if(r.unitCode) units.add(r.unitCode);
+    const hm = cbmHmValue(r);
+    if(hm!=null && r.unitCode){
+      if(!byUnitHms[r.unitCode]) byUnitHms[r.unitCode] = [];
+      byUnitHms[r.unitCode].push(hm);
+    }
+  });
+  const gaps = [];
+  Object.values(byUnitHms).forEach(hms=>{
+    hms.sort((a,b)=>a-b);
+    for(let i=1;i<hms.length;i++) gaps.push(hms[i]-hms[i-1]);
+  });
+  const avgGap = gaps.length ? gaps.reduce((a,b)=>a+b,0)/gaps.length : null;
+  const unplanRatio = total ? unplan/total : 0;
+  let status = '—';
+  if(total>=4 && (unplanRatio>=0.6 || (avgGap!=null && avgGap<300))) status = 'CRITICAL';
+  else if(total>=2 && (unplanRatio>=0.4 || (avgGap!=null && avgGap<600))) status = 'WATCH';
+  else if(total>0) status = 'OK';
+  return { total, unplan, plan, hours, unitCount: units.size, avgGap, status, units };
+}
+
+/**
+ * Sisa Lifetime % — HANYA dari HM pemakaian aktual vs Target Life.
+ * Rumus: (Target Life HM − HM Sekarang) / Target Life HM × 100
+ * Sumber HM Sekarang = cbmUnitCurrentHM (Plan Service / monitoring), tanpa faktor breakdown.
+ * Hasil di-clamp 0–100 untuk tampilan persen sisa (jika HM > target → 0%).
+ */
+function cbmRemainingLifetimePct(compDef, filterUnitCode){
+  const target = Number(compDef && compDef.targetLife) || 0;
+  if(target <= 0) return null;
+  let used = null;
+  const code = (filterUnitCode || (typeof cbmSelectedUnit!=='undefined' ? cbmSelectedUnit : '') || '').trim();
+  if(code){
+    used = cbmUnitCurrentHM(code);
+  } else {
+    // Tanpa unit filter: rata-rata HM Sekarang unit yang relevan dengan komponen ini
+    const units = (UNITS||[]).filter(u=>{
+      const master = cbmMasterForUnit(u);
+      if(master && master.some(c=>c.key===compDef.key)) return true;
+      return cbmIsCompKeyAllowedForUnit(compDef.key, u);
+    });
+    const hms = units.map(u=>cbmUnitCurrentHM(u.code)).filter(v=>v!=null && !isNaN(Number(v)) && Number(v)>0);
+    if(hms.length) used = hms.reduce((a,b)=>a+Number(b),0)/hms.length;
+  }
+  if(used==null || isNaN(Number(used))) return null;
+  // Perbandingan murni persen terhadap target life
+  const pct = ((target - Number(used)) / target) * 100;
+  return Math.round(Math.max(0, Math.min(100, pct)) * 10) / 10;
+}
+
+function cbmRemainingPctCell(pct){
+  if(pct==null || isNaN(pct)) return '—';
+  // Skala warna murni dari sisa % terhadap target life (HM)
+  let color = 'var(--green)';
+  if(pct <= 0) color = 'var(--red)';
+  else if(pct < 20) color = 'var(--red)';
+  else if(pct < 40) color = 'var(--orange)';
+  else if(pct < 60) color = 'var(--yellow)';
+  return `<b style="color:${color}">${Number(pct).toLocaleString('id-ID',{maximumFractionDigits:1})}%</b>`;
+}
+
 function renderCBMOverview(rows, stats){
   const totalBd = rows.length;
-  const unplan = rows.filter(r=>(r.planUnplan||'')==='Unplan').length;
+  const unplan = rows.filter(r=>cbmIsUnplan(r.planUnplan)).length;
   const hours = rows.reduce((s,r)=>s+(Number(r.duration)||0),0);
-  const crit = Object.values(stats.byComp).filter(c=>c.status==='CRITICAL').length;
   const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
   set('cbm-ov-bd', totalBd);
   set('cbm-ov-unplan', unplan);
   set('cbm-ov-hours', hours.toFixed(1));
-  set('cbm-ov-crit', crit);
 
   renderCBMUnitCards(rows, stats);
   renderCBMAssetDetail();
 
   const visibleComps = cbmVisibleComponents();
+  const f = cbmGetFilters();
+  const unitHint = f.unit || cbmSelectedUnit || '';
+  const unitObj = unitHint ? cbmUnitByCode(unitHint) : null;
+  const unitTypeHint = unitObj ? String(unitObj.type||'') : '';
+
+  // Precompute stats per visible component dari rows (bukan hanya lookup byComp key)
+  const compStats = visibleComps.map(c=>{
+    const st = cbmStatsForCompDef(c, rows, unitTypeHint);
+    const remainPct = cbmRemainingLifetimePct(c, unitHint || '');
+    return { c, st, remainPct };
+  });
+  const crit = compStats.filter(x=>x.st.status==='CRITICAL').length;
+  set('cbm-ov-crit', crit);
+
   const cards = document.getElementById('cbm-comp-cards');
   if(cards){
-    cards.innerHTML = visibleComps.map(c=>{
-      const st = stats.byComp[c.key] || { total:0, unplan:0, plan:0, hours:0, status:'—' };
+    cards.innerHTML = compStats.map(({c, st, remainPct})=>{
       const active = cbmSelectedComp===c.key ? ' active' : '';
       const unplanB = st.unplan>0 ? 'bad' : 'ok';
       return `<div class="cbm-comp-card${active}" data-comp="${c.key}" onclick="cbmSelectComp('${c.key}')">
-        <div class="cc-name">${cbmComponentIcon(c.key)}${c.key}</div>
+        <div class="cc-name">${cbmComponentIcon(c.cbmKey||c.key)}${c.key}</div>
         <div class="cc-stat"><span>Target Life</span><b style="color:var(--yellow)">${(c.targetLife||0).toLocaleString('id-ID')} HM</b></div>
+        <div class="cc-stat"><span>Sisa Lifetime %</span><span>${remainPct!=null?cbmRemainingPctCell(remainPct):'—'}</span></div>
         <div class="cc-stat"><span>Breakdown</span><b>${st.total}</b></div>
         <div class="cc-stat"><span>Unplan</span><b class="${unplanB}">${st.unplan}</b></div>
         <div class="cc-stat"><span>Jam Repair</span><b class="${st.hours>20?'warn':''}">${(st.hours||0).toFixed(1)}</b></div>
@@ -15551,11 +16026,11 @@ function renderCBMOverview(rows, stats){
 
   const tbody = document.getElementById('cbm-ov-tbody');
   if(tbody){
-    tbody.innerHTML = visibleComps.map(c=>{
-      const st = stats.byComp[c.key] || { total:0, unplan:0, plan:0, hours:0, unitCount:0, avgGap:null, status:'—' };
+    tbody.innerHTML = compStats.map(({c, st, remainPct})=>{
       return `<tr>
-        <td style="display:flex;align-items:center;gap:6px;"><b>${cbmComponentIcon(c.key)}${c.key}</b></td>
+        <td style="display:flex;align-items:center;gap:6px;"><b>${cbmComponentIcon(c.cbmKey||c.key)}${c.key}</b></td>
         <td><b style="color:var(--yellow)">${(c.targetLife||0).toLocaleString('id-ID')}</b></td>
+        <td>${cbmRemainingPctCell(remainPct)}</td>
         <td>${st.total||0}</td>
         <td style="color:${st.unplan?'var(--orange)':'inherit'}">${st.unplan||0}</td>
         <td>${st.plan||0}</td>
@@ -15672,6 +16147,17 @@ function renderCBM(){
     const chip = e.target.closest('.chip');
     if(!chip || !chip.dataset.cbmTab) return;
     switchCBMTab(chip.dataset.cbmTab);
+  });
+  document.getElementById('cbm-safety-model-tabs')?.addEventListener('click', (e)=>{
+    const chip = e.target.closest('[data-cbm-safety-model]');
+    if(!chip) return;
+    cbmSafetyModel = chip.dataset.cbmSafetyModel;
+    cbmSafetyUnitCode = '';
+    renderCBMSafety();
+  });
+  document.getElementById('cbm-safety-unit')?.addEventListener('change', (e)=>{
+    cbmSafetyUnitCode = e.target.value || '';
+    renderCBMSafety();
   });
   ['cbm-filter-unit','cbm-filter-start','cbm-filter-end','cbm-filter-comp'].forEach(id=>{
     document.getElementById(id)?.addEventListener('change', ()=>{
