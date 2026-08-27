@@ -2345,7 +2345,7 @@ body.role-mechanic #history-filters{ display:none !important; }
         <div class="chip-tabs" id="cbm-tabs">
           <button type="button" class="chip active" data-cbm-tab="overview">Overview Komponen</button>
           <button type="button" class="chip" data-cbm-tab="lifetime">Life Time &amp; Performance</button>
-          <button type="button" class="chip" data-cbm-tab="safety">Safety Critical Parts</button>
+          <button type="button" class="chip" data-cbm-tab="safety">Critical Parts</button>
           <button type="button" class="chip" data-cbm-tab="unplan">Histori Breakdown / Unplan</button>
           <button type="button" class="chip" data-cbm-tab="insight">Insight AI</button>
         </div>
@@ -2418,12 +2418,12 @@ body.role-mechanic #history-filters{ display:none !important; }
                   <table class="cbm-target-table">
                     <thead><tr>
                       <th>Component</th><th>Health</th><th>Target Life (HM)</th><th>HM Sekarang*</th>
-                      <th>Sisa Lifetime (HM)</th><th>Sisa Lifetime %</th><th>Events</th><th>Unplan</th><th>Avg HM Gap</th>
+                      <th>Lifetime (HM)</th><th>Lifetime %</th><th>Events</th><th>Unplan</th><th>Avg HM Gap</th>
                     </tr></thead>
                     <tbody id="cbm-asset-lt-tbody"></tbody>
                   </table>
                 </div>
-                <p class="hint" style="margin-top:8px;">*<b>HM Sekarang</b> = pemakaian aktual unit (Plan Service auto-sync: baseline HM Monitoring + proyeksi hari × WH/hari dari sheet <b>performance</b>). <b>Sisa Lifetime %</b> dihitung murni dari HM: <code>(Target Life − HM Sekarang) / Target Life × 100</code> — tidak dipengaruhi jumlah breakdown. Events/Unplan tetap dari data Breakdown Daily Maintenance (Plan/Daily seperti Greasing tidak dihitung).</p>
+                <p class="hint" style="margin-top:8px;">*<b>HM Sekarang</b> = pemakaian aktual unit (Plan Service auto-sync: baseline HM Monitoring + proyeksi hari × WH/hari dari sheet <b>performance</b>). <b>Lifetime %</b> dihitung murni dari HM: <code>(HM Sekarang / Target Life) × 100</code> (continuous; &gt; 100% jika lewat target) — tidak dipengaruhi jumlah breakdown. Events/Unplan tetap dari data Breakdown Daily Maintenance (Plan/Daily seperti Greasing tidak dihitung).</p>
               </div>
               <div class="cbm-analysis-hero">
                 <div class="section-title" style="margin-top:0;">Recent Breakdown / Unplan</div>
@@ -2444,7 +2444,7 @@ body.role-mechanic #history-filters{ display:none !important; }
             <div class="table-wrap">
               <table>
                 <thead><tr>
-                  <th>Component</th><th>Target Life (HM)</th><th>Sisa Lifetime %</th><th>Breakdown</th><th>Unplan</th><th>Plan BD</th>
+                  <th>Component</th><th>Target Life (HM)</th><th>Lifetime %</th><th>Breakdown</th><th>Unplan</th><th>Plan BD</th>
                   <th>Repair Hours</th><th>Affected Units</th><th>Avg HM Gap</th><th>Status</th>
                 </tr></thead>
                 <tbody id="cbm-ov-tbody"></tbody>
@@ -2502,9 +2502,9 @@ body.role-mechanic #history-filters{ display:none !important; }
         <div class="cbm-tab-panel" id="cbm-tab-safety" style="display:none;">
           <div class="panel">
             <div class="panel-head">
-              <h2><span class="tag">OM</span> Safety Critical Parts — Periodic Replacement</h2>
+              <h2><span class="tag">OM</span> Critical Parts — Periodic Replacement</h2>
             </div>
-            <p class="hint" style="margin-bottom:12px;">Daftar <b>Safety Critical Parts</b> (manual OM) + <b>Critical Hydraulic Hose</b> (recommended lifetime). <b>Sisa Lifetime %</b> = <code>(Target HM − HM Sekarang) / Target HM × 100</code>. Interval berbasis tahun (mis. seat belt) ditampilkan sebagai referensi kalender. Hose bertanda * = optional / if equipped.</p>
+            <p class="hint" style="margin-bottom:12px;">Daftar <b>Critical Parts</b> (manual OM) + <b>Critical Hydraulic Hose</b> (recommended lifetime). <b>Lifetime %</b> = <code>(HM Sekarang / Target HM) × 100</code> (continuous; &gt; 100% jika lewat target, tanpa status OVERDUE). Interval berbasis tahun (mis. seat belt) ditampilkan sebagai referensi kalender. Hose bertanda * = optional / if equipped.</p>
             <div class="sp-model-tabs" id="cbm-safety-model-tabs" style="margin-bottom:12px;"></div>
             <div class="field" style="max-width:260px;margin-bottom:14px;">
               <label>Unit (HM Sekarang)</label>
@@ -2514,20 +2514,19 @@ body.role-mechanic #history-filters{ display:none !important; }
               <div class="unit-card"><div class="cat-label">Model</div><div class="type" id="cbm-safety-kpi-model" style="font-size:16px;">—</div><div class="hint">Selected type</div></div>
               <div class="unit-card"><div class="cat-label">Total Parts</div><div class="type" id="cbm-safety-kpi-parts">0</div><div class="hint">Line items</div></div>
               <div class="unit-card"><div class="cat-label">HM Sekarang</div><div class="type" style="color:var(--yellow)" id="cbm-safety-kpi-hm">—</div><div class="hint">Selected unit</div></div>
-              <div class="unit-card"><div class="cat-label">Due / Overdue</div><div class="type" style="color:var(--red)" id="cbm-safety-kpi-due">0</div><div class="hint">Sisa ≤ 0% (HM interval)</div></div>
+              <div class="unit-card"><div class="cat-label">≥ 100% Lifetime</div><div class="type" style="color:var(--red)" id="cbm-safety-kpi-due">0</div><div class="hint">Lifetime % ≥ 100%</div></div>
             </div>
             <div class="table-wrap">
               <table id="cbm-safety-table">
                 <thead><tr>
                   <th>No.</th>
-                  <th>Safety Critical Part</th>
+                  <th>Critical Part</th>
                   <th>Function / Location</th>
                   <th>Q'ty</th>
                   <th>Replacement Interval</th>
                   <th>Target HM</th>
                   <th>HM Sekarang</th>
-                  <th>Sisa HM</th>
-                  <th>Sisa Lifetime %</th>
+                  <th>Lifetime %</th>
                   <th>Status</th>
                 </tr></thead>
                 <tbody id="cbm-safety-tbody"></tbody>
@@ -15439,27 +15438,39 @@ function cbmSafetyUnitsForModel(model){
   return (UNITS||[]).filter(u=>String(u.type||'')===model);
 }
 
-/** Sisa lifetime % safety part: hanya HM Sekarang vs Target HM interval. */
+/** Lifetime % critical part = pemakaian vs target: (HM Sekarang / Target HM) × 100.
+ *  Continuous — jika HM lewat target, persen > 100% (tanpa clamp, tanpa status OVERDUE). */
 function cbmSafetyRemainPct(targetHm, unitHm){
   if(targetHm==null || !(Number(targetHm)>0)) return null;
   if(unitHm==null || isNaN(Number(unitHm))) return null;
-  const pct = ((Number(targetHm) - Number(unitHm)) / Number(targetHm)) * 100;
-  return Math.round(Math.max(0, Math.min(100, pct)) * 10) / 10;
+  const pct = (Number(unitHm) / Number(targetHm)) * 100;
+  return Math.round(pct * 10) / 10;
 }
 
+/** Status berdasarkan Lifetime % (pemakaian). Tidak memakai label OVERDUE. */
 function cbmSafetyStatus(part, unitHm){
   if(part.targetHm!=null && Number(part.targetHm)>0 && unitHm!=null && !isNaN(Number(unitHm))){
-    const remain = Number(part.targetHm) - Number(unitHm);
     const pct = cbmSafetyRemainPct(part.targetHm, unitHm);
-    if(remain <= 0 || (pct!=null && pct <= 0)) return { label:'OVERDUE', cls:'ai-crit' };
-    if(pct < 20) return { label:'DUE SOON', cls:'ai-high' };
-    if(pct < 40) return { label:'WATCH', cls:'ai-med' };
+    if(pct==null) return { label:'—', cls:'' };
+    if(pct >= 100) return { label:'REPLACE', cls:'ai-crit' };
+    if(pct >= 80) return { label:'DUE SOON', cls:'ai-high' };
+    if(pct >= 60) return { label:'WATCH', cls:'ai-med' };
     return { label:'OK', cls:'ai-low' };
   }
   if(part.targetYears!=null){
     return { label: part.targetYears + ' YR', cls:'' };
   }
   return { label:'—', cls:'' };
+}
+
+/** Sel Lifetime % (pemakaian) untuk Critical Parts — hijau rendah, merah ≥100%. */
+function cbmSafetyLifetimePctCell(pct){
+  if(pct==null || isNaN(pct)) return '—';
+  let color = 'var(--green)';
+  if(pct >= 100) color = 'var(--red)';
+  else if(pct >= 80) color = 'var(--orange)';
+  else if(pct >= 60) color = 'var(--yellow)';
+  return `<b style="color:${color}">${Number(pct).toLocaleString('id-ID',{maximumFractionDigits:1})}%</b>`;
 }
 
 function renderCBMSafety(){
@@ -15496,34 +15507,25 @@ function renderCBMSafety(){
   set('cbm-safety-kpi-parts', parts.length);
   set('cbm-safety-kpi-hm', unitHm!=null ? Number(unitHm).toLocaleString('id-ID') : '—');
   const dueCount = parts.filter(p=>{
-    if(p.targetHm==null) return false;
+    if(p.targetHm==null || !(Number(p.targetHm)>0) || unitHm==null || isNaN(Number(unitHm))) return false;
     const pct = cbmSafetyRemainPct(p.targetHm, unitHm);
-    return pct!=null && pct <= 0;
+    return pct!=null && pct >= 100;
   }).length;
   set('cbm-safety-kpi-due', dueCount);
 
   const tbody = document.getElementById('cbm-safety-tbody');
   if(!tbody) return;
   if(!parts.length){
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="10">No safety critical parts list for this model.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">No critical parts list for this model.</td></tr>';
     return;
   }
   tbody.innerHTML = parts.map(p=>{
     const targetHm = p.targetHm;
-    const sisaHm = (targetHm!=null && unitHm!=null) ? (Number(targetHm) - Number(unitHm)) : null;
     const pct = cbmSafetyRemainPct(targetHm, unitHm);
     const st = cbmSafetyStatus(p, unitHm);
-    const pctCell = (typeof cbmRemainingPctCell==='function')
-      ? (pct!=null ? cbmRemainingPctCell(pct) : (p.targetYears!=null ? `<span class="hint">${p.targetYears} yr calendar</span>` : '—'))
-      : (pct!=null ? pct+'%' : '—');
-    let sisaColor = 'var(--text-dim)';
-    if(pct!=null){
-      if(pct <= 0) sisaColor = 'var(--red)';
-      else if(pct < 20) sisaColor = 'var(--red)';
-      else if(pct < 40) sisaColor = 'var(--orange)';
-      else if(pct < 60) sisaColor = 'var(--yellow)';
-      else sisaColor = 'var(--green)';
-    }
+    const pctCell = pct!=null
+      ? cbmSafetyLifetimePctCell(pct)
+      : (p.targetYears!=null ? `<span class="hint">${p.targetYears} yr calendar</span>` : '—');
     const statusPill = st.cls
       ? `<span class="pill ${st.cls}">${st.label}</span>`
       : `<span class="pill">${st.label}</span>`;
@@ -15536,7 +15538,6 @@ function renderCBMSafety(){
       <td style="text-align:left;white-space:normal;min-width:150px;font-size:11px;color:var(--text-dim)">${escUH(p.interval||'')}</td>
       <td><b style="color:var(--yellow)">${targetHm!=null?Number(targetHm).toLocaleString('id-ID'):'—'}</b></td>
       <td>${unitHm!=null?Number(unitHm).toLocaleString('id-ID'):'—'}</td>
-      <td style="color:${sisaColor}">${sisaHm!=null?Number(sisaHm).toLocaleString('id-ID'):'—'}</td>
       <td>${pctCell}</td>
       <td>${statusPill}</td>
     </tr>`;
@@ -15834,8 +15835,8 @@ function renderCBMAssetDetail(){
   }
 
   // full lifetime target table
-  // Sisa Lifetime % murni dari HM Sekarang vs Target Life (tidak dipengaruhi breakdown).
-  // Rumus: (Target Life − HM Sekarang) / Target Life × 100
+  // Lifetime % murni dari HM Sekarang vs Target Life (tidak dipengaruhi breakdown).
+  // Rumus: (HM Sekarang / Target Life) × 100 — continuous (boleh > 100%)
   const tbody = document.getElementById('cbm-asset-lt-tbody');
   if(tbody){
     tbody.innerHTML = model.healths.map(h=>{
@@ -15844,15 +15845,15 @@ function renderCBMAssetDetail(){
       const sisaHm = (used!=null && target>0) ? (target - used) : null;
       let remainPct = null;
       if(used!=null && target>0){
-        remainPct = Math.round(((target - Number(used)) / target) * 1000) / 10;
-        remainPct = Math.max(0, Math.min(100, remainPct));
+        // Continuous pemakaian: (HM / Target) × 100 — boleh > 100% jika lewat target
+        remainPct = Math.round((Number(used) / target) * 1000) / 10;
       }
-      // Warna hanya dari sisa % (HM), bukan dari event breakdown
+      // Warna dari Lifetime % pemakaian (bukan dari event breakdown)
       let sisaColor = 'var(--text-dim)';
       if(remainPct!=null){
-        if(remainPct < 20 || (sisaHm!=null && sisaHm < 0)) sisaColor = 'var(--red)';
-        else if(remainPct < 40) sisaColor = 'var(--orange)';
-        else if(remainPct < 60) sisaColor = 'var(--yellow)';
+        if(remainPct >= 100) sisaColor = 'var(--red)';
+        else if(remainPct >= 80) sisaColor = 'var(--orange)';
+        else if(remainPct >= 60) sisaColor = 'var(--yellow)';
         else sisaColor = 'var(--green)';
       }
       const pctLabel = remainPct!=null
@@ -15941,10 +15942,10 @@ function cbmStatsForCompDef(compDef, rows, unitTypeHint){
 }
 
 /**
- * Sisa Lifetime % — HANYA dari HM pemakaian aktual vs Target Life.
- * Rumus: (Target Life HM − HM Sekarang) / Target Life HM × 100
+ * Lifetime % — HANYA dari HM pemakaian aktual vs Target Life.
+ * Rumus: (HM Sekarang / Target Life HM) × 100
  * Sumber HM Sekarang = cbmUnitCurrentHM (Plan Service / monitoring), tanpa faktor breakdown.
- * Hasil di-clamp 0–100 untuk tampilan persen sisa (jika HM > target → 0%).
+ * Continuous (tidak di-clamp): jika HM > target → persen > 100%.
  */
 function cbmRemainingLifetimePct(compDef, filterUnitCode){
   const target = Number(compDef && compDef.targetLife) || 0;
@@ -15964,19 +15965,18 @@ function cbmRemainingLifetimePct(compDef, filterUnitCode){
     if(hms.length) used = hms.reduce((a,b)=>a+Number(b),0)/hms.length;
   }
   if(used==null || isNaN(Number(used))) return null;
-  // Perbandingan murni persen terhadap target life
-  const pct = ((target - Number(used)) / target) * 100;
-  return Math.round(Math.max(0, Math.min(100, pct)) * 10) / 10;
+  // Continuous pemakaian: boleh > 100% jika sudah lewat target life
+  const pct = (Number(used) / target) * 100;
+  return Math.round(pct * 10) / 10;
 }
 
 function cbmRemainingPctCell(pct){
   if(pct==null || isNaN(pct)) return '—';
-  // Skala warna murni dari sisa % terhadap target life (HM)
+  // Skala warna dari Lifetime % pemakaian (rendah = hijau, ≥100% = merah)
   let color = 'var(--green)';
-  if(pct <= 0) color = 'var(--red)';
-  else if(pct < 20) color = 'var(--red)';
-  else if(pct < 40) color = 'var(--orange)';
-  else if(pct < 60) color = 'var(--yellow)';
+  if(pct >= 100) color = 'var(--red)';
+  else if(pct >= 80) color = 'var(--orange)';
+  else if(pct >= 60) color = 'var(--yellow)';
   return `<b style="color:${color}">${Number(pct).toLocaleString('id-ID',{maximumFractionDigits:1})}%</b>`;
 }
 
@@ -16015,7 +16015,7 @@ function renderCBMOverview(rows, stats){
       return `<div class="cbm-comp-card${active}" data-comp="${c.key}" onclick="cbmSelectComp('${c.key}')">
         <div class="cc-name">${cbmComponentIcon(c.cbmKey||c.key)}${c.key}</div>
         <div class="cc-stat"><span>Target Life</span><b style="color:var(--yellow)">${(c.targetLife||0).toLocaleString('id-ID')} HM</b></div>
-        <div class="cc-stat"><span>Sisa Lifetime %</span><span>${remainPct!=null?cbmRemainingPctCell(remainPct):'—'}</span></div>
+        <div class="cc-stat"><span>Lifetime %</span><span>${remainPct!=null?cbmRemainingPctCell(remainPct):'—'}</span></div>
         <div class="cc-stat"><span>Breakdown</span><b>${st.total}</b></div>
         <div class="cc-stat"><span>Unplan</span><b class="${unplanB}">${st.unplan}</b></div>
         <div class="cc-stat"><span>Jam Repair</span><b class="${st.hours>20?'warn':''}">${(st.hours||0).toFixed(1)}</b></div>
