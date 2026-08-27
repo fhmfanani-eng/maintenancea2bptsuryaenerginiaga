@@ -423,6 +423,11 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover{ opacity:1; }
 @media(max-width:640px){ .period-date-group{ min-width:150px; } }
 .field{ margin-bottom:14px; }
 textarea{ resize:vertical; min-height:56px; }
+/* Daily Maintenance: Breakdown Deskripsi, Repair Action, Keterangan — tanpa baris baru via Enter */
+textarea.no-enter-nl{
+  min-height:42px; max-height:72px; resize:none;
+  white-space:pre-wrap; overflow-y:auto; line-height:1.4;
+}
 .btn{
   background:var(--yellow); color:#15171b; border:none; padding:10px 18px;
   font-weight:700; font-size:12px; letter-spacing:0.5px; text-transform:uppercase;
@@ -1969,8 +1974,8 @@ body.role-mechanic #history-filters{ display:none !important; }
               </div>
             </div>
 
-            <div class="field"><label>Breakdown Deskripsi</label><textarea id="d-jobdesc" required placeholder="Uraian kerusakan / pekerjaan..."></textarea></div>
-            <div class="field"><label>Repair Action</label><textarea id="d-repairaction" placeholder="Tindakan perbaikan yang dilakukan..."></textarea></div>
+            <div class="field"><label>Breakdown Deskripsi</label><textarea id="d-jobdesc" class="no-enter-nl" rows="2" required placeholder="Uraian kerusakan / pekerjaan..." title="Enter dinonaktifkan — teks tetap satu alur"></textarea></div>
+            <div class="field"><label>Repair Action</label><textarea id="d-repairaction" class="no-enter-nl" rows="2" placeholder="Tindakan perbaikan yang dilakukan..." title="Enter dinonaktifkan — teks tetap satu alur"></textarea></div>
 
             <div class="grid grid-4">
               <div class="field"><label>Breakdown — Tanggal</label><input type="date" id="d-breakdowndate"></div>
@@ -1985,7 +1990,7 @@ body.role-mechanic #history-filters{ display:none !important; }
               <div class="field"><label>Total Breakdown (auto)</label><input type="text" id="d-totalbreakdown" disabled placeholder="—"></div>
             </div>
 
-            <div class="field"><label>Keterangan Part Consumable</label><textarea id="d-keterangan" placeholder="Catatan part consumable (opsional)..."></textarea></div>
+            <div class="field"><label>Keterangan Part Consumable</label><textarea id="d-keterangan" class="no-enter-nl" rows="2" placeholder="Catatan part consumable (opsional)..." title="Enter dinonaktifkan — teks tetap satu alur"></textarea></div>
 
             <div class="toolbar">
               <button type="submit" class="btn" id="d-submit-btn">＋ Simpan Record</button>
@@ -16690,6 +16695,41 @@ function exportSpMonthlyCsv(){
   a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
 }
+
+
+/* ---- Daily Maintenance: kunci Enter di kolom deskripsi panjang ----
+   Breakdown Deskripsi (#d-jobdesc), Repair Action (#d-repairaction),
+   Keterangan Part Consumable (#d-keterangan) — teks tidak pindah ke baris bawah. */
+(function initDailyNoEnterFields(){
+  /* Hanya kunci Enter & paste ber-newline untuk input baru.
+     Data lama (record tersimpan) tidak diubah / tidak di-strip saat dibuka atau disimpan. */
+  const ids = ['d-jobdesc','d-repairaction','d-keterangan'];
+  function stripNewlines(s){
+    return String(s==null?'':s).replace(/[\r\n\u2028\u2029]+/g, ' ').replace(/[ \t]{2,}/g, ' ');
+  }
+  function bind(el){
+    if(!el || el.dataset.noEnterBound==='1') return;
+    el.dataset.noEnterBound = '1';
+    el.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter' || e.keyCode===13){
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+    el.addEventListener('paste', (e)=>{
+      e.preventDefault();
+      const raw = (e.clipboardData || window.clipboardData).getData('text') || '';
+      const clean = stripNewlines(raw);
+      const start = el.selectionStart, end = el.selectionEnd;
+      const v = el.value || '';
+      el.value = v.slice(0, start) + clean + v.slice(end);
+      const pos = start + clean.length;
+      try{ el.setSelectionRange(pos, pos); }catch(_e){}
+      el.dispatchEvent(new Event('input', { bubbles:true }));
+    });
+  }
+  ids.forEach(id=> bind(document.getElementById(id)));
+})();
 
 (function initSparepartHandlers(){
   document.getElementById('sp-tabs')?.addEventListener('click', (e)=>{
