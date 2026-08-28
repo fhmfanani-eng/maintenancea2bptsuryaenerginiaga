@@ -1713,6 +1713,7 @@ body.role-mechanic #history-filters{ display:none !important; }
             <h2><span class="tag">SYNC</span> Sheet Performance + Fallback Manual</h2>
             <div class="toolbar">
               <button type="button" class="btn small" id="mapa-sync-perf-btn" title="Ambil W/S/R terbaru dari sheet performance di Google Spreadsheet">☁ Sync dari Sheet Performance</button>
+              <button type="button" class="btn small" id="dashboard-sync-sheet-btn" title="Kirim ringkasan Dashboard KPI (MA/PA/MTBS/MTTR/PMR/SA + data per unit) ke Google Sheets tab &quot;dashboard&quot; beserta chart-nya">☁ Sync ke Sheet Dashboard</button>
               <button type="button" class="btn secondary small" id="mapa-template-btn">⬇ Unduh Template</button>
               <button type="button" class="btn danger" id="mapa-clear-btn" style="display:none;">Hapus Data</button>
             </div>
@@ -7891,10 +7892,114 @@ document.getElementById('cbm-sync-bd-history-btn')?.addEventListener('click', as
 });
 
 /**
- * Bangun baris data Dashboard KPI (sama dengan yang tampil di panel) untuk di-push ke sheet "dashboard".
- * Satu baris ALL (agregat) + satu baris per unit A2B.
+ * Bangun ringkasan Dashboard KPI (sama dengan yang tampil di panel) untuk di-push ke sheet "dashboard".
+ * Hanya ringkasan + KPI (nilai, target, achievement) — tidak ada lagi rincian per unit.
  */
+function buildDashboardSyncPayload(){
+  const periodValue = kpiMonthlyChartPeriodValue || '';
+  const k = computeKPIsFor(periodValue);
+  const globalStats = computeKPIs();
 
+  const kpiKeys = ['ma','pa','mtbs','mttr','pmr','sa'];
+  const kpiLabels = { ma:'MA', pa:'PA', mtbs:'MTBS', mttr:'MTTR', pmr:'PMR', sa:'SA' };
+  const kpiUnits  = { ma:'%', pa:'%', mtbs:'hrs', mttr:'hrs', pmr:'%', sa:'%' };
+  const kpis = kpiKeys.map(key=>{
+    const raw = Number(k[key])||0;
+    return {
+      key,
+      label: kpiLabels[key],
+      unit: kpiUnits[key],
+      value: Math.round(raw*100)/100,
+      target: KPI_TARGET[key],
+      achievePct: kpiAchievePct(key, raw) // tier 60/80/100, sama seperti kartu KPI di panel
+    };
+  });
+
+  const stats = {
+    units: UNITS.length,
+    jobsThisMonth: Number(document.getElementById('stat-jobs')?.textContent) || 0,
+    open: Number(document.getElementById('stat-open')?.textContent) || 0,
+    overduePlans: globalStats.overduePlans,
+    pendingApproval: globalStats.pendingApproval
+  };
+
+  return {
+    period: periodValue || 'ALL',
+    generatedAt: new Date().toISOString(),
+    kpis,
+    stats
+  };
+}
+
+const DASHBOARD_SYNC_TTL_MS = 45000; // 45 detik — auto-sync silent tidak membanjiri Apps Script
+let _dashboardSyncLastAt = 0;
+let _dashboardSyncInFlight = null;
+
+/**
+ * Kirim ringkasan Dashboard KPI (summary + target per KPI) ke Google Sheets tab "dashboard",
+ * sekaligus meminta Apps Script membangun ulang chart-nya (dieksekusi di sisi server/Apps Script,
+ * lihat action 'syncDashboard' pada Code.gs). Dipanggil otomatis setiap kali renderDashboard()
+ * jalan (silent, dibatasi TTL), dan bisa dipicu manual lewat tombol "☁ Sync ke Sheet Dashboard".
+ */
+async function syncDashboardToSheet(opts){
+  opts = opts || {};
+  if(!BACKEND_CONFIG.sheetsWebAppUrl){
+    if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG. Deploy Apps Script dulu, lalu tempel URL /exec.');
+    return { ok:false, error:'no_url' };
+  }
+  const age = Date.now() - (_dashboardSyncLastAt||0);
+  if(!opts.force && !opts.manual && _dashboardSyncLastAt && age < DASHBOARD_SYNC_TTL_MS){
+    return { ok:true, skipped:'ttl', age };
+  }
+  if(_dashboardSyncInFlight && !opts.manual) return _dashboardSyncInFlight;
+
+  const run = (async ()=>{
+    try{
+      const payload = buildDashboardSyncPayload();
+      const res = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+        method: 'POST',
+        // text/plain supaya tidak kena CORS preflight ke Apps Script (sama seperti sync lain)
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'syncDashboard',
+          spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
+          ...payload
+        }),
+        cache: 'no-store'
+      });
+      let data = null;
+      try{ data = await res.json(); }catch(_e){ data = null; }
+      _dashboardSyncLastAt = Date.now();
+      if(data && data.ok){
+        if(opts.manual) alert('✓ Dashboard KPI ter-sync ke sheet "dashboard" beserta chart-nya.\nBuka spreadsheet dan refresh tab dashboard.');
+        return { ok:true, data };
+      }
+      let errMsg = (data && (data.error||data.message)) || ('HTTP '+res.status);
+      if(/unsupported action|tidak dikenal|unknown action/i.test(String(errMsg))){
+        errMsg = 'Apps Script BELUM di-deploy ulang (action syncDashboard belum ada). '+
+          'Buka Extensions → Apps Script → tempel patch syncDashboard → Deploy → Manage deployments → New version.';
+      }
+      if(opts.manual) alert('⚠ Sync Dashboard gagal: '+errMsg);
+      return { ok:false, error:errMsg };
+    }catch(e){
+      console.error('Sync Dashboard ke Google Sheets gagal', e);
+      if(opts.manual) alert('⚠ Sync Dashboard gagal: '+(e.message||e)+'\nPastikan Apps Script sudah di-deploy (Who has access: Anyone).');
+      return { ok:false, error:String(e) };
+    }finally{
+      _dashboardSyncInFlight = null;
+    }
+  })();
+
+  _dashboardSyncInFlight = run;
+  return run;
+}
+
+document.getElementById('dashboard-sync-sheet-btn')?.addEventListener('click', async ()=>{
+  const btn = document.getElementById('dashboard-sync-sheet-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
+  try{ await syncDashboardToSheet({ manual:true, force:true }); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet Dashboard'; } }
+});
 
 function approvalPillHTML(r){
   const a = r.approvalStatus || 'Pending';
@@ -13913,6 +14018,7 @@ function renderDashboard(){
   const globalStats = computeKPIs(); // overdue plan & pending approval selalu snapshot terkini, tidak tergantung filter periode
   renderKPIChartDashboard(k, globalStats);
   // Auto-push KPI Dashboard ke sheet "dashboard" (silent, TTL-limited)
+  try{ syncDashboardToSheet({ manual:false, force:false }); }catch(_e){}
   // Kartu gauge KPI individual dihapus — detail % sudah ada di tabel KPI Report Monthly & Rekap Triwulan
   const grid = document.getElementById('kpi-grid');
   if(grid) grid.innerHTML = '';
