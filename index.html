@@ -2942,14 +2942,14 @@ const KPI_INFO = {
   },
   mttr: {
     full: 'Mean Time To Repair (MTTR)',
-    formula: 'Total Repair Duration ÷ Number of Repairs',
-    desc: 'Average repair time (hours) per event. Achievement % of weight: <36 hrs = 100%, 36–45 hrs = 80%, >45 hrs = 60%. Lower is better. 0 hrs (no repair) = 100%. Source: Approved Daily Maintenance duration in the selected period.',
+    formula: 'Total Breakdown Repair Duration ÷ Number of Repairs',
+    desc: 'Average repair time (hours) per breakdown event only (category = Breakdown). Achievement % of weight: <36 hrs = 100%, 36–45 hrs = 80%, >45 hrs = 60%. Lower is better. 0 hrs (no repair) = 100%. Source: Approved Daily Maintenance (Breakdown records) duration in the selected period.',
     unit: ' hrs', higherBetter: false
   },
   pmr: {
     full: 'Planned Maintenance Ratio (PMR)',
-    formula: '(Non-Breakdown jobs ÷ Total Approved jobs) × 100%',
-    desc: 'Planned Maintenance Hours / Total Maintenance Hours. Achievement % of weight: >90% = 100%, 85–90% = 80%, <85% = 60%. Higher is better (target >90%). Reflects how dominant planned work is versus breakdown work.',
+    formula: '(Non-Breakdown repair hours ÷ Total Approved repair hours) × 100%',
+    desc: 'Planned Maintenance Hours / Total Maintenance Hours. Achievement % of weight: >90% = 100%, 85–90% = 80%, <85% = 60%. Higher is better (target >90%). Reflects how dominant planned work HOURS are versus breakdown work hours (calculated from duration, not job count).',
     unit: '%', higherBetter: true
   },
   sa: {
@@ -6759,11 +6759,17 @@ function computeUnitKPIs(unitCode){
   const mtbs = bdCount>0 ? (totalHM / bdCount) : totalHM;
 
   // MTTR = rata-rata jam repair (Total Jam Breakdown / Jumlah Repair) — format spreadsheet
-  const mttrEligible = approvedRecords.filter(r=>r.duration!==null && r.duration!==undefined);
+  // MTTR = rata-rata jam repair HANYA dari record kategori Breakdown (Total Jam Breakdown / Jumlah
+  // Repair) — sesuai kalimat formula resmi di sheet KPI. Record Daily/Periodical Maintenance yang
+  // punya field durasi kerja (bukan repair breakdown) tidak lagi ikut dihitung ke MTTR.
+  const mttrEligible = approvedRecords.filter(r=>r.category==='Breakdown' && r.duration!==null && r.duration!==undefined);
   const mttr = mttrEligible.length ? (mttrEligible.reduce((s,r)=>s+(Number(r.duration)||0),0)/mttrEligible.length) : 0;
 
-  const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
-  const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
+  // PMR = Planned Maintenance HOURS / Total Maintenance HOURS — sesuai kalimat formula resmi di sheet
+  // KPI (sebelumnya dihitung dari jumlah record/job, bukan jumlah jam, sudah diperbaiki di sini).
+  const plannedHours = approvedRecords.filter(r=>r.category!=='Breakdown').reduce((s,r)=>s+(Number(r.duration)||0),0);
+  const totalMaintHours = approvedRecords.reduce((s,r)=>s+(Number(r.duration)||0),0);
+  const pmr = totalMaintHours>0 ? (plannedHours/totalMaintHours*100) : 0;
 
   // Service Accuracy (SA): dihitung dari data Daily Maintenance (kategori Periodical, sudah Approved),
   // berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan Service (Plan Service hanya
@@ -6786,11 +6792,17 @@ function computeUnitKPIsForRange(unitCode, startStr, endStr){
   const mtbs = bdCount>0 ? (totalHM / bdCount) : totalHM;
 
   // MTTR = rata-rata jam repair (Total Jam Breakdown / Jumlah Repair) — format spreadsheet
-  const mttrEligible = approvedRecords.filter(r=>r.duration!==null && r.duration!==undefined);
+  // MTTR = rata-rata jam repair HANYA dari record kategori Breakdown (Total Jam Breakdown / Jumlah
+  // Repair) — sesuai kalimat formula resmi di sheet KPI. Record Daily/Periodical Maintenance yang
+  // punya field durasi kerja (bukan repair breakdown) tidak lagi ikut dihitung ke MTTR.
+  const mttrEligible = approvedRecords.filter(r=>r.category==='Breakdown' && r.duration!==null && r.duration!==undefined);
   const mttr = mttrEligible.length ? (mttrEligible.reduce((s,r)=>s+(Number(r.duration)||0),0)/mttrEligible.length) : 0;
 
-  const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
-  const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
+  // PMR = Planned Maintenance HOURS / Total Maintenance HOURS — sesuai kalimat formula resmi di sheet
+  // KPI (sebelumnya dihitung dari jumlah record/job, bukan jumlah jam, sudah diperbaiki di sini).
+  const plannedHours = approvedRecords.filter(r=>r.category!=='Breakdown').reduce((s,r)=>s+(Number(r.duration)||0),0);
+  const totalMaintHours = approvedRecords.reduce((s,r)=>s+(Number(r.duration)||0),0);
+  const pmr = totalMaintHours>0 ? (plannedHours/totalMaintHours*100) : 0;
 
   // Service Accuracy (SA): dihitung dari data Daily Maintenance (kategori Periodical, sudah Approved)
   // pada rentang tanggal tsb saja, berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan
@@ -13926,11 +13938,17 @@ function computeKPIs(){
   const mtbs = bdCount>0 ? (totalHM / bdCount) : totalHM;
 
   // MTTR = rata-rata jam repair (Total Jam Breakdown / Jumlah Repair) — format spreadsheet
-  const mttrEligible = approvedRecords.filter(r=>r.duration!==null && r.duration!==undefined);
+  // MTTR = rata-rata jam repair HANYA dari record kategori Breakdown (Total Jam Breakdown / Jumlah
+  // Repair) — sesuai kalimat formula resmi di sheet KPI. Record Daily/Periodical Maintenance yang
+  // punya field durasi kerja (bukan repair breakdown) tidak lagi ikut dihitung ke MTTR.
+  const mttrEligible = approvedRecords.filter(r=>r.category==='Breakdown' && r.duration!==null && r.duration!==undefined);
   const mttr = mttrEligible.length ? (mttrEligible.reduce((s,r)=>s+(Number(r.duration)||0),0)/mttrEligible.length) : 0;
 
-  const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
-  const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
+  // PMR = Planned Maintenance HOURS / Total Maintenance HOURS — sesuai kalimat formula resmi di sheet
+  // KPI (sebelumnya dihitung dari jumlah record/job, bukan jumlah jam, sudah diperbaiki di sini).
+  const plannedHours = approvedRecords.filter(r=>r.category!=='Breakdown').reduce((s,r)=>s+(Number(r.duration)||0),0);
+  const totalMaintHours = approvedRecords.reduce((s,r)=>s+(Number(r.duration)||0),0);
+  const pmr = totalMaintHours>0 ? (plannedHours/totalMaintHours*100) : 0;
 
   // Service Accuracy (SA): dihitung dari data Daily Maintenance (kategori Periodical, sudah Approved),
   // berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan Service (Plan Service hanya
@@ -13984,11 +14002,17 @@ function computeKPIsForRange(startStr, endStr){
   const mtbs = bdCount>0 ? (totalHM / bdCount) : totalHM;
 
   // MTTR = rata-rata jam repair (Total Jam Breakdown / Jumlah Repair) — format spreadsheet
-  const mttrEligible = approvedRecords.filter(r=>r.duration!==null && r.duration!==undefined);
+  // MTTR = rata-rata jam repair HANYA dari record kategori Breakdown (Total Jam Breakdown / Jumlah
+  // Repair) — sesuai kalimat formula resmi di sheet KPI. Record Daily/Periodical Maintenance yang
+  // punya field durasi kerja (bukan repair breakdown) tidak lagi ikut dihitung ke MTTR.
+  const mttrEligible = approvedRecords.filter(r=>r.category==='Breakdown' && r.duration!==null && r.duration!==undefined);
   const mttr = mttrEligible.length ? (mttrEligible.reduce((s,r)=>s+(Number(r.duration)||0),0)/mttrEligible.length) : 0;
 
-  const plannedCount = approvedRecords.filter(r=>r.category!=='Breakdown').length;
-  const pmr = approvedRecords.length ? (plannedCount/approvedRecords.length*100) : 0;
+  // PMR = Planned Maintenance HOURS / Total Maintenance HOURS — sesuai kalimat formula resmi di sheet
+  // KPI (sebelumnya dihitung dari jumlah record/job, bukan jumlah jam, sudah diperbaiki di sini).
+  const plannedHours = approvedRecords.filter(r=>r.category!=='Breakdown').reduce((s,r)=>s+(Number(r.duration)||0),0);
+  const totalMaintHours = approvedRecords.reduce((s,r)=>s+(Number(r.duration)||0),0);
+  const pmr = totalMaintHours>0 ? (plannedHours/totalMaintHours*100) : 0;
 
   // Service Accuracy (SA): dihitung dari data Daily Maintenance (kategori Periodical, sudah Approved)
   // pada rentang tanggal tsb saja, berdasarkan flag Plan/Unplan tiap record — bukan lagi dari data Plan
