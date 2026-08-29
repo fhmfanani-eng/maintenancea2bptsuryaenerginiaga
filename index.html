@@ -5026,6 +5026,16 @@ function resolveMaPa(unitCode, startStr, endStr){
 }
 
 /* ---- Mapping Daily Maintenance: JS (camelCase) <-> Supabase table (snake_case) ---- */
+/** Submitted By: ganti placeholder Import Excel/Data → nama mechanic (Man Power). */
+function resolveSubmittedByName(r){
+  const mp = [r.mechanic, r.mechanic2, r.mechanic3].filter(x=>x && String(x).trim()).join(', ');
+  const raw = String(r.submittedBy||'').trim();
+  if(!raw || /^import(\s|$)/i.test(raw) || /import\s*(excel|data|csv|sheet)/i.test(raw) ||
+     /^(import excel|import data|import csv|system|admin import)$/i.test(raw)){
+    return mp || raw || null;
+  }
+  return raw;
+}
 function dailyRecToRow(r){
   return {
     id: r.id,
@@ -5054,7 +5064,7 @@ function dailyRecToRow(r){
     area: r.area || null,
     status: r.status || null,
     keterangan: r.keterangan || null,
-    submitted_by: r.submittedBy || null,
+    submitted_by: (typeof resolveSubmittedByName==='function' ? resolveSubmittedByName(r) : (r.submittedBy || null)),
     approval_status: r.approvalStatus || 'Pending',
     approved_by: r.approvedBy || null,
     approved_at: r.approvedAt || null,
@@ -5111,6 +5121,15 @@ async function loadDailyFromTable(){
     return;
   }
   dailyRecords = (data||[]).map(rowToDailyRec);
+  // Normalisasi Submitted By historis: "Import Excel/Data" → nama Man Power
+  try{
+    dailyRecords.forEach(r=>{
+      if(typeof resolveSubmittedByName==='function'){
+        const fixed = resolveSubmittedByName(r);
+        if(fixed && fixed !== r.submittedBy) r.submittedBy = fixed;
+      }
+    });
+  }catch(_e){}
 }
 /* Supabase mengembalikan error "Could not find the 'X' column of 'daily_maintenance_records'
    in the schema cache" kalau kolom di tabel database belum dibuat (mis. kolom mechanic_3 untuk
