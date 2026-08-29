@@ -7640,15 +7640,15 @@ document.getElementById('form-daily').addEventListener('submit', async (e)=>{
     category,
     bdCategory: document.getElementById('d-bdcategory').value,
     planUnplan: document.getElementById('d-planunplan').value,
-    jobDesc: document.getElementById('d-jobdesc').value,
-    repairAction: document.getElementById('d-repairaction').value,
+    jobDesc: String(document.getElementById('d-jobdesc').value||'').replace(/[\r\n\u2028\u2029]+/g,' ').replace(/[ \t]{2,}/g,' ').trim(),
+    repairAction: String(document.getElementById('d-repairaction').value||'').replace(/[\r\n\u2028\u2029]+/g,' ').replace(/[ \t]{2,}/g,' ').trim(),
     breakdownDate, breakdownTime,
     startDate, start, endDate, end,
     duration, totalBreakdown,
     mechanic, mechanic2, mechanic3,
     area: document.getElementById('d-area').value,
     status: document.getElementById('d-status').value,
-    keterangan: document.getElementById('d-keterangan').value,
+    keterangan: String(document.getElementById('d-keterangan').value||'').replace(/[\r\n\u2028\u2029]+/g,' ').replace(/[ \t]{2,}/g,' ').trim(),
   };
 
   let wasEditing = false;
@@ -17225,21 +17225,38 @@ function exportSpMonthlyCsv(){
    Breakdown Deskripsi (#d-jobdesc), Repair Action (#d-repairaction),
    Keterangan Part Consumable (#d-keterangan) — teks tidak pindah ke baris bawah. */
 (function initDailyNoEnterFields(){
-  /* Hanya kunci Enter & paste ber-newline untuk input baru.
-     Data lama (record tersimpan) tidak diubah / tidak di-strip saat dibuka atau disimpan. */
+  /* Kunci Enter, soft-line, paste ber-newline, dan input event.
+     Teks selalu satu alur (spasi menggantikan baris baru). Data lama tidak diubah
+     saat dibuka; hanya input baru yang dicegah membuat baris baru. */
   const ids = ['d-jobdesc','d-repairaction','d-keterangan'];
   function stripNewlines(s){
     return String(s==null?'':s).replace(/[\r\n\u2028\u2029]+/g, ' ').replace(/[ \t]{2,}/g, ' ');
   }
+  function isEnterKey(e){
+    return e.key==='Enter' || e.key==='NumpadEnter' || e.keyCode===13 || e.which===13;
+  }
   function bind(el){
     if(!el || el.dataset.noEnterBound==='1') return;
     el.dataset.noEnterBound = '1';
-    el.addEventListener('keydown', (e)=>{
-      if(e.key==='Enter' || e.keyCode===13){
+    /* Cegah Enter di semua fase keyboard */
+    ['keydown','keypress','keyup'].forEach(evt=>{
+      el.addEventListener(evt, (e)=>{
+        if(isEnterKey(e)){
+          e.preventDefault();
+          e.stopPropagation();
+          if(typeof e.stopImmediatePropagation==='function') e.stopImmediatePropagation();
+          return false;
+        }
+      }, true);
+    });
+    /* beforeinput: blok insertParagraph / insertLineBreak (modern browsers) */
+    el.addEventListener('beforeinput', (e)=>{
+      if(e.inputType==='insertParagraph' || e.inputType==='insertLineBreak'){
         e.preventDefault();
         e.stopPropagation();
       }
-    });
+    }, true);
+    /* Paste: ganti newline jadi spasi */
     el.addEventListener('paste', (e)=>{
       e.preventDefault();
       const raw = (e.clipboardData || window.clipboardData).getData('text') || '';
@@ -17250,9 +17267,26 @@ function exportSpMonthlyCsv(){
       const pos = start + clean.length;
       try{ el.setSelectionRange(pos, pos); }catch(_e){}
       el.dispatchEvent(new Event('input', { bubbles:true }));
+    }, true);
+    /* Jaring pengaman: jika newline tetap masuk (drag-drop, autocomplete, dll) → strip */
+    el.addEventListener('input', ()=>{
+      const v = el.value || '';
+      if(/[\r\n\u2028\u2029]/.test(v)){
+        const start = el.selectionStart;
+        const cleaned = stripNewlines(v);
+        el.value = cleaned;
+        const pos = Math.min(start, cleaned.length);
+        try{ el.setSelectionRange(pos, pos); }catch(_e){}
+      }
     });
   }
-  ids.forEach(id=> bind(document.getElementById(id)));
+  function bindAll(){ ids.forEach(id=> bind(document.getElementById(id))); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindAll);
+  else bindAll();
+  /* Re-bind jika form di-reset / field diganti dinamis */
+  document.addEventListener('focusin', (e)=>{
+    if(e.target && ids.indexOf(e.target.id)>-1) bind(e.target);
+  });
 })();
 
 (function initSparepartHandlers(){
