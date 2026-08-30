@@ -13053,8 +13053,9 @@ function renderKPIChartDashboard(k, globalStats){
     { key:'ma',   label:'MA',   full:'MECHANICAL AVAILABILITY', unit:'%',   target:KPI_TARGET.ma,   value:kMonthly.ma||0,   color:'#22C55E', targetHint:'90%', icon:'gear' },
     { key:'pa',   label:'PA',   full:'PHYSICAL AVAILABILITY',   unit:'%',   target:KPI_TARGET.pa,   value:kMonthly.pa||0,   color:'#3B82F6', targetHint:'90%', icon:'shield' },
     { key:'mtbs', label:'MTBS', full:'MEAN TIME BETWEEN STOPPAGES', unit:' hrs', target:KPI_TARGET.mtbs, value:kMonthly.mtbs||0, color:'#A78BFA', targetHint:'80 jam', icon:'hourglass' },
-    /* MTTR: tampilkan % capaian; target budget 90% (<36 jam = 100% of weight) */
-    { key:'mttr', label:'MTTR', full:'MEAN TIME TO REPAIR',     unit:'%',   target:90, value:kpiAchievePct('mttr', kMonthly.mttr||0), color:'#F97316', targetHint:'90%', icon:'wrench', rawHours:kMonthly.mttr||0 },
+    /* MTTR: tampilkan jam repair rata-rata sesungguhnya (konsisten dgn MTBS); target resmi 36 jam
+       (<36 jam = 100% of weight). Skor tier 60/80/100 tetap dipakai terpisah di kpiWeightedScore(). */
+    { key:'mttr', label:'MTTR', full:'MEAN TIME TO REPAIR',     unit:' hrs', target:KPI_TARGET.mttr, value:kMonthly.mttr||0, color:'#F97316', targetHint:'36 jam', icon:'wrench' },
     { key:'pmr',  label:'PMR',  full:'PLANNED MAINTENANCE RATIO', unit:'%', target:KPI_TARGET.pmr, value:kMonthly.pmr||0, color:'#A3E635', targetHint:'90%', icon:'clipboard' },
     { key:'sa',   label:'SA',   full:'SERVICE ACCURACY',        unit:'%',   target:KPI_TARGET.sa,   value:kMonthly.sa||0,   color:'#38BDF8', targetHint:'90%', icon:'headset' },
   ];
