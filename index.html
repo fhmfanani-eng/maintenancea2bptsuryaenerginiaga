@@ -2255,9 +2255,10 @@ body.role-mechanic #history-filters{ display:none !important; }
         <div class="panel">
           <div class="panel-head">
             <h2>Schedule Plan Service <span class="tag">AUTO SYNC · 4 UNIT LOCK</span></h2>
-          <div class="hint" style="margin-top:8px; width:100%;">Sebelum <b>Status Eksekusi = Close</b>, isi kolom <b>HM Eksekusi</b> (HM unit saat service dikerjakan). Nilai ini dipakai untuk menghitung <b>plan service berikutnya</b> (target HM + estimasi tanggal).</div>
+          <div class="hint" style="margin-top:8px; width:100%;">Kolom <b>HM Sekarang</b> bisa diisi <b>HM Actual manual</b> per unit → <b>Est. Sisa HM</b> &amp; <b>Plan Date</b> menyesuaikan otomatis (WH/hari dari <b>Jam Kerja Harian aktual</b> (fallback performance)). Sebelum <b>Close</b>, isi juga <b>HM Eksekusi</b> (HM saat service dikerjakan) untuk plan berikutnya.</div>
             <div class="toolbar">
-              <button type="button" class="btn small" id="btn-sync-plan-all" title="Sync performance + HM, lalu generate jadwal otomatis">☁ Sync & Generate Otomatis</button>
+              <button type="button" class="btn small" id="btn-sync-plan-all" title="Sync performance + HM + Jam Kerja Harian, lalu generate jadwal otomatis">☁ Sync & Generate Otomatis</button>
+              <button type="button" class="btn small secondary" id="btn-sync-daily-wh" title="Sync Jam Kerja Harian dari sheet/API (WH aktual per tanggal)">☁ Sync Jam Kerja Harian</button>
               <button type="button" class="btn small secondary" id="btn-rebuild-plan" title="Hapus semua plan lama dan buat ulang dari W sheet performance">🗑 Hapus & Generate Ulang</button>
             </div>
           </div>
@@ -2294,6 +2295,7 @@ body.role-mechanic #history-filters{ display:none !important; }
               <button type="button" class="btn small secondary" id="plan-period-this-month-btn" title="Filter ke bulan berjalan (Open)">Bulan Ini</button>
             </div>
             <div class="hint" style="margin-top:10px; margin-bottom:0;">Filter <b>Tahun + Bulan</b> berdasarkan <b>Plan Date</b>. Tabel Schedule hanya menampilkan jadwal berstatus <b>Open</b> (Close ada di Record Service Unit).</div>
+            <div class="hint" id="plan-daily-wh-status" style="margin-top:8px; margin-bottom:0;">WH/hari Plan Service: prioritas <b>Jam Kerja Harian aktual</b> (rata-rata 7 hari) → fallback sheet performance.</div>
           </div>
           <div class="scroll-top-track" id="plan-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="plan-scroll-top-inner"></div></div>
           <div class="table-wrap" id="plan-table-wrap">
@@ -4936,6 +4938,12 @@ let preInspectionPlans = []; // jadwal Pre Inspection (dibuat Supervisor, dituga
 let breakdownReports = [];
 let hmRecords = [];
 let mapaData = null; // { rows:[{unit,w,s,r}], totalW, totalS, totalR, fileName, updatedAt }
+/** Jam kerja HARIAN per unit (bukan rata-rata periode performance).
+ *  { id, tanggal, unitCode, workingHours, actualWorkingHours, idlingHours, source }
+ *  Sumber: sheet "Jam Kerja Harian" (Apps Script action=getDailyWorkingHours) + telemetri/HM.
+ */
+let dailyWhRecords = [];
+let _dailyWhMeta = { updatedAt:'', source:'', lastSyncOk:false };
 
 /* Data seed dari Google Sheet tab "performance" (SEN-MaintenanceA2B)
    Periode: 1-8-2026 s/d 10-8-2026. Dipakai agar KPI MA & PA di Dashboard
@@ -5411,6 +5419,18 @@ async function loadData(){
     const mapa = await appStorage.get('mapa-data');
     mapaData = mapa ? JSON.parse(mapa.value) : null;
   }catch(e){ mapaData = null; }
+
+  try{
+    const dwh = await appStorage.get('daily-wh-records');
+    dailyWhRecords = dwh ? JSON.parse(dwh.value) : [];
+    if(!Array.isArray(dailyWhRecords)) dailyWhRecords = [];
+  }catch(e){ dailyWhRecords = []; }
+  try{
+    const meta = await appStorage.get('daily-wh-meta');
+    _dailyWhMeta = meta ? JSON.parse(meta.value) : { updatedAt:'', source:'', lastSyncOk:false };
+  }catch(e){ _dailyWhMeta = { updatedAt:'', source:'', lastSyncOk:false }; }
+  try{ mergeDailyWhFromTelemetry(); }catch(_e){}
+  try{ await fetchDailyWorkingHoursFromSheets({ manual:false }); }catch(_e){}
 
   // MA/PA dari sheet "performance" Google Spreadsheet (live via Apps Script getPerformance).
   // Prioritas: live fetch → data tersimpan (fromPerformance) → seed hardcoded (sekali saja).
@@ -9089,16 +9109,145 @@ function getPerformancePeriodDays(){
   return d>0 ? d : 0;
 }
 
+/* ================= JAM KERJA HARIAN (WH aktual per tanggal) ================= */
+
+async function saveDailyWhRecords(){
+  try{ await appStorage.set('daily-wh-records', JSON.stringify(dailyWhRecords||[])); }catch(e){ console.error(e); }
+  try{ await appStorage.set('daily-wh-meta', JSON.stringify(_dailyWhMeta||{})); }catch(e){}
+}
+
+/** Gabungkan Actual Working Hours dari telemetri/Monitoring ke dailyWhRecords. */
+function mergeDailyWhFromTelemetry(){
+  if(typeof dailyWhRecords==='undefined') dailyWhRecords = [];
+  const keyOf = r => String(r.unitCode||'').trim().toUpperCase()+'|'+String(r.tanggal||'').slice(0,10);
+  const map = new Map();
+  (dailyWhRecords||[]).forEach(r=>{ if(r && r.tanggal && r.unitCode) map.set(keyOf(r), r); });
+
+  function upsert(tanggal, unitCode, wh, actual, idling, source){
+    const t = String(tanggal||'').slice(0,10);
+    const u = String(unitCode||'').trim().toUpperCase();
+    if(!t || !u) return;
+    const w = Number(wh);
+    const a = actual!=null ? Number(actual) : w;
+    if(isNaN(w) && isNaN(a)) return;
+    const rec = {
+      id: 'dwh-'+u+'-'+t,
+      tanggal: t,
+      unitCode: u,
+      workingHours: !isNaN(w) ? Math.round(w*10)/10 : (!isNaN(a)?Math.round(a*10)/10:0),
+      actualWorkingHours: !isNaN(a) ? Math.round(a*10)/10 : (!isNaN(w)?Math.round(w*10)/10:0),
+      idlingHours: idling!=null && !isNaN(Number(idling)) ? Math.round(Number(idling)*10)/10 : Math.max(0, Math.round(((Number(w)||0)-(Number(a)||0))*10)/10),
+      source: source||'telemetry'
+    };
+    const k = keyOf(rec);
+    const prev = map.get(k);
+    // sheet/API menang atas telemetry; telemetry menang atas seed
+    if(!prev){ map.set(k, rec); return; }
+    const rank = s => (s==='sheet'||s==='api') ? 3 : (s==='telemetry'||s==='hm-telemetry') ? 2 : 1;
+    if(rank(rec.source) >= rank(prev.source)) map.set(k, Object.assign({}, prev, rec, { source: rank(rec.source)>=rank(prev.source)?rec.source:prev.source }));
+  }
+
+  (typeof hmTelemetryRecords!=='undefined' ? hmTelemetryRecords : []).forEach(r=>{
+    if(!r) return;
+    const wh = r.workingHours!=null ? r.workingHours : r.actualWorkingHours;
+    const act = r.actualWorkingHours!=null ? r.actualWorkingHours : r.workingHours;
+    upsert(r.tanggal, r.unitCode, wh, act, r.idlingHours, 'hm-telemetry');
+  });
+  // HM records: hmTotal sebagai actual WH hari itu (jika ada)
+  (typeof hmRecords!=='undefined' ? hmRecords : []).forEach(r=>{
+    if(!r || !r.tanggal || !r.unitCode) return;
+    const ht = Number(r.hmTotal);
+    if(isNaN(ht) || ht<=0) return;
+    const k = String(r.unitCode).trim().toUpperCase()+'|'+String(r.tanggal).slice(0,10);
+    if(map.has(k) && (map.get(k).source==='sheet'||map.get(k).source==='api')) return;
+    // agregasi per hari jika banyak baris
+    const prev = map.get(k);
+    if(prev && prev.source==='hm-total'){
+      prev.actualWorkingHours = Math.round((Number(prev.actualWorkingHours)||0 + ht)*10)/10;
+      prev.workingHours = prev.actualWorkingHours;
+    } else if(!prev || prev.source==='hm-seed-agg'){
+      upsert(r.tanggal, r.unitCode, ht, ht, 0, 'hm-total');
+    }
+  });
+
+  dailyWhRecords = Array.from(map.values()).sort((a,b)=>{
+    const d = String(b.tanggal).localeCompare(String(a.tanggal));
+    if(d) return d;
+    return String(a.unitCode).localeCompare(String(b.unitCode));
+  });
+}
+
+/**
+ * WH aktual pada tanggal tertentu (null jika tidak ada data hari itu).
+ * Prioritas: actualWorkingHours → workingHours.
+ */
+function getWhOnDate(unitCode, dateStr){
+  const code = String(unitCode||'').trim().toUpperCase();
+  const d = String(dateStr||'').slice(0,10);
+  if(!code || !d) return null;
+  const hits = (dailyWhRecords||[]).filter(r=>
+    String(r.unitCode||'').trim().toUpperCase()===code && String(r.tanggal||'').slice(0,10)===d
+  );
+  if(!hits.length) return null;
+  // Ambil nilai actual terbaik
+  let best = null;
+  hits.forEach(r=>{
+    const v = r.actualWorkingHours!=null ? Number(r.actualWorkingHours) : Number(r.workingHours);
+    if(isNaN(v) || v<0) return;
+    if(best==null || v > best) best = v;
+  });
+  return best;
+}
+
+/**
+ * Rata-rata WH harian aktual N hari terakhir yang ADA datanya (default 7).
+ * Return null jika tidak ada data harian sama sekali.
+ */
+function getRecentActualWhPerDay(unitCode, lookbackDays){
+  const code = String(unitCode||'').trim().toUpperCase();
+  const lb = lookbackDays!=null ? Number(lookbackDays) : 7;
+  const today = new Date();
+  const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - Math.max(1, lb*3)); // buffer
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+  const rows = (dailyWhRecords||[])
+    .filter(r=> String(r.unitCode||'').trim().toUpperCase()===code && String(r.tanggal||'')>=cutoffStr)
+    .map(r=>{
+      const v = r.actualWorkingHours!=null ? Number(r.actualWorkingHours) : Number(r.workingHours);
+      return { d:String(r.tanggal).slice(0,10), v: isNaN(v)?null:v };
+    })
+    .filter(x=>x.v!=null && x.v>=0)
+    .sort((a,b)=> b.d.localeCompare(a.d));
+  // unik per tanggal (ambil pertama = terbaru source sudah di-merge)
+  const seen = new Set();
+  const vals = [];
+  for(const x of rows){
+    if(seen.has(x.d)) continue;
+    seen.add(x.d);
+    vals.push(x.v);
+    if(vals.length >= lb) break;
+  }
+  if(!vals.length) return null;
+  const avg = vals.reduce((a,b)=>a+b,0) / vals.length;
+  return Math.round(Math.min(24, Math.max(0, avg)) * 10) / 10;
+}
+
 /**
  * WH/hari untuk proyeksi HM Plan Service & CBM.
- * 1) Sheet performance: (Total − Standby) ÷ hari  → termasuk 0 jika full standby
- * 2) Fallback 18 hanya jika unit TIDAK ada di performance
+ * Prioritas:
+ *  1) Rata-rata WH harian aktual (7 hari terakhir yang ada data) — sheet Jam Kerja Harian / telemetri
+ *  2) Sheet performance: (Total − Standby) ÷ hari periode
+ *  3) Fallback 18 hanya jika tidak ada keduanya
  */
 function getDailyWorkingHours(unitCode){
   try{
+    const actual = getRecentActualWhPerDay(unitCode, 7);
+    if(actual !== null && actual !== undefined && !isNaN(Number(actual))){
+      return Number(actual);
+    }
+  }catch(_e){}
+  try{
     if(typeof getPerformanceWorkingHoursPerDay === 'function'){
       const w = getPerformanceWorkingHoursPerDay(unitCode);
-      // 0 = valid (standby); null/undefined = tidak ada data
       if(w !== null && w !== undefined && !isNaN(Number(w))) return Number(w);
     }
   }catch(_e){}
@@ -9110,6 +9259,37 @@ function getDailyWorkingHours(unitCode){
     }
   }catch(_e){}
   return 18;
+}
+
+/**
+ * Proyeksi delta HM dari lastDate (eksklusif) s/d asOfDate (inklusif) memakai WH harian aktual per tanggal.
+ * Hari tanpa data → pakai rata-rata recent / performance / 18.
+ */
+function projectHmDeltaWithDailyWh(unitCode, lastDateStr, asOfDateStr){
+  const d0s = String(lastDateStr||'').slice(0,10);
+  const d1s = String(asOfDateStr||'').slice(0,10);
+  if(!d0s || !d1s || d1s <= d0s) return { delta:0, days:0, usedActualDays:0 };
+  const fallback = getDailyWorkingHours(unitCode);
+  let delta = 0, days = 0, usedActual = 0;
+  try{
+    const d0 = new Date(d0s+'T00:00:00');
+    const d1 = new Date(d1s+'T00:00:00');
+    for(let t = new Date(d0); t < d1; ){
+      t.setDate(t.getDate()+1);
+      if(t > d1) break;
+      const ds = t.toISOString().slice(0,10);
+      if(ds > d1s) break;
+      days++;
+      const dayWh = getWhOnDate(unitCode, ds);
+      if(dayWh!=null){ delta += dayWh; usedActual++; }
+      else delta += fallback;
+    }
+  }catch(_e){
+    const diff = Math.floor((new Date(d1s+'T00:00:00') - new Date(d0s+'T00:00:00'))/86400000);
+    days = diff > 0 ? diff : 0;
+    delta = days * fallback;
+  }
+  return { delta: Math.round(delta*10)/10, days, usedActualDays: usedActual };
 }
 
 /** HM Eksekusi baseline unit: Close atau input manual saja (bukan auto-fill Open). */
@@ -9355,36 +9535,50 @@ function calcHmSekarang(unitCode, asOfDateStr){
     source = best.source;
   }
 
-  // Paksa baseline ≥ max HM Eksekusi HANYA jika lebih tinggi (manual lebih rendah tidak menurunkan)
+  // Baseline dari HM Eksekusi / HM Actual manual:
+  // - Input MANUAL selalu menang (nilai actual yang diisi user).
+  // - Close / max non-manual hanya menaikkan jika lebih tinggi dari monitoring.
   const maxExec = (typeof getMaxHmEksekusiForUnit==='function') ? getMaxHmEksekusiForUnit(unitCode) : null;
   if(maxExec && maxExec.hm!=null){
     const execHm = Number(maxExec.hm);
-    if(hmNow==null || execHm > Number(hmNow)){
+    if(maxExec.manual){
       hmNow = execHm;
       lastHm = execHm;
       lastDate = maxExec.date || lastDate || new Date().toISOString().slice(0,10);
-      source = maxExec.manual ? 'hm-eksekusi-manual' : 'hm-eksekusi-max';
+      source = 'hm-manual';
+    } else if(hmNow==null || execHm > Number(hmNow)){
+      hmNow = execHm;
+      lastHm = execHm;
+      lastDate = maxExec.date || lastDate || new Date().toISOString().slice(0,10);
+      source = 'hm-eksekusi-max';
     }
   }
 
   const asOfStr = periodEnd || periodStart || (new Date().toISOString().slice(0,10));
 
-  // Proyeksi: HANYA hari PENUH setelah tanggal HM Akhir terakhir.
-  // Hari yang sama dengan lastDate → pakai HM aktual murni (tidak di-proyeksi).
-  // Contoh: HM Akhir 20-Agu = 5420.9, asOf 20-Agu → 5420.9; asOf 21-Agu → 5420.9 + 1×WH/hari.
+  // Proyeksi: H+1 setelah lastDate s/d asOf, memakai WH HARIAN AKTUAL per tanggal
+  // (sheet Jam Kerja Harian / telemetri). Hari tanpa data → rata-rata recent / performance.
   let daysElapsed = 0;
   if(hmNow!=null && lastDate && String(lastDate).length>=10){
     try{
-      const d0 = new Date(String(lastDate).slice(0,10)+'T00:00:00');
-      const d1 = new Date(String(asOfStr).slice(0,10)+'T00:00:00');
-      const diff = Math.floor((d1 - d0) / 86400000);
-      // Proyeksi mulai H+1 setelah pembacaan HM (hari pembacaan sudah tercermin di HM Akhir)
-      daysElapsed = diff > 0 ? diff : 0;
-      if(daysElapsed > 0 && dailyWh > 0){
-        hmNow = Math.round((Number(hmNow) + daysElapsed * dailyWh) * 10) / 10;
-        source = (source || 'projected') + '+wh/day';
+      const proj = projectHmDeltaWithDailyWh(unitCode, String(lastDate).slice(0,10), asOfStr);
+      daysElapsed = proj.days || 0;
+      if(daysElapsed > 0 && proj.delta){
+        hmNow = Math.round((Number(hmNow) + Number(proj.delta)) * 10) / 10;
+        source = (source || 'projected') + (proj.usedActualDays>0 ? '+wh-harian' : '+wh/day');
       }
-    }catch(_e){}
+    }catch(_e){
+      try{
+        const d0 = new Date(String(lastDate).slice(0,10)+'T00:00:00');
+        const d1 = new Date(String(asOfStr).slice(0,10)+'T00:00:00');
+        const diff = Math.floor((d1 - d0) / 86400000);
+        daysElapsed = diff > 0 ? diff : 0;
+        if(daysElapsed > 0 && dailyWh > 0){
+          hmNow = Math.round((Number(hmNow) + daysElapsed * dailyWh) * 10) / 10;
+          source = (source || 'projected') + '+wh/day';
+        }
+      }catch(__e){}
+    }
   }
 
   // Floor akhir: HM Sekarang tidak boleh di bawah max HM Eksekusi (input manual / Close)
@@ -9525,7 +9719,8 @@ function enrichPlanRow(r){
 
   // HM Sekarang:
   // - CLOSE: kunci ke HM Eksekusi baris itu (riwayat)
-  // - OPEN: selalu unit-level calcHmSekarang (sama untuk semua baris unit)
+  // - OPEN + input manual: pakai HM Actual manual unit (calcHmSekarang sudah hormati manual)
+  // - OPEN auto: unit-level calcHmSekarang (Monitoring + proyeksi WH/hari performance)
   let hmSekarang = null;
   if(isClosed && hasHmAktual){
     hmSekarang = Number(r.hmAktual);
@@ -9703,7 +9898,8 @@ function correctAllUnitsHmSekarang(){
     if(!info) return;
     const prev = (r.hmAktual!==undefined && r.hmAktual!==null && r.hmAktual!=='') ? Number(r.hmAktual) : null;
     // Manual yang ≥ monitoring dibiarkan; manual lebih rendah = stale → override
-    if(r.hmAktualManual && prev!=null && prev + 0.05 >= Number(info.hm)) return;
+    // Jangan timpa HM Actual manual yang diisi user
+    if(r.hmAktualManual) return;
     if(prev===null || Math.abs(prev - info.hm) > 0.05){
       r.hmAktual = info.hm;
       r.hmAktualDate = info.date;
@@ -9777,7 +9973,29 @@ function renderPlanTable(){
 
   const today = new Date().toISOString().slice(0,10);
   const perfMap = getPerformanceWByUnit();
+
+function updatePlanDailyWhStatusUI(){
+  const el = document.getElementById('plan-daily-wh-status');
+  if(!el) return;
+  const units = ['SWA-101','SWA-102','SBD-103','SPC-104'];
+  const parts = units.map(u=>{
+    const actual = (typeof getRecentActualWhPerDay==='function') ? getRecentActualWhPerDay(u,7) : null;
+    const fall = (typeof getPerformanceWorkingHoursPerDay==='function') ? getPerformanceWorkingHoursPerDay(u) : null;
+    const used = (actual!=null) ? actual : (fall!=null ? fall : 18);
+    const tag = actual!=null ? 'harian' : (fall!=null ? 'perf' : 'default');
+    return u+': <b style="color:var(--yellow)">'+Number(used).toFixed(1)+'</b>h <span style="color:var(--text-faint)">('+tag+')</span>';
+  });
+  const meta = (typeof _dailyWhMeta!=='undefined' && _dailyWhMeta) ? _dailyWhMeta : {};
+  const n = (typeof dailyWhRecords!=='undefined' && dailyWhRecords) ? dailyWhRecords.length : 0;
+  const ts = meta.updatedAt ? String(meta.updatedAt).replace('T',' ').slice(0,19) : '—';
+  const src = meta.source || (n ? 'lokal' : '—');
+  el.innerHTML = 'WH/hari aktif (prioritas <b>harian aktual 7hr</b> → performance → 18): '+parts.join(' · ')+
+    '<br>Data harian: <b>'+n+'</b> baris · sumber: <b>'+src+'</b> · sync: <b>'+ts+'</b>'+
+    (meta.lastError ? ' · <span style="color:var(--orange)">'+String(meta.lastError).slice(0,80)+'</span>' : '');
+}
+
   try{ populatePlanPeriodYearOptions(); }catch(_e){}
+  try{ updatePlanDailyWhStatusUI(); }catch(_e){}
   const { year: filterYear, month: filterMonth } = getPlanPeriodYearMonth();
   const asOfDate = getPlanPeriodAsOfDate() || today;
 
@@ -9869,7 +10087,15 @@ function renderPlanTable(){
       <td>${psTypeCell}</td>
       <td style="font-family:'JetBrains Mono',monospace;"><b style="color:#7fe0e0;">${workingHoursLabel}</b></td>
       <td style="font-family:'JetBrains Mono',monospace;"><b style="color:var(--yellow);">${(dailyWh!=null && dailyWh!==undefined && !isNaN(Number(dailyWh))) ? Number(dailyWh).toFixed(1) : '—'}</b></td>
-      <td style="font-family:'JetBrains Mono',monospace;"><b>${hmSekarang!==null&&hmSekarang!==undefined?Number(hmSekarang).toFixed(1):'—'}</b>${hmSource?`<div style="color:var(--text-faint);font-size:9px;margin-top:2px;">${escUH(String(hmSource))}</div>`:''}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">
+        <input type="number" step="0.1" min="0" placeholder="HM actual"
+          value="${hmSekarang!==null&&hmSekarang!==undefined?Number(hmSekarang).toFixed(1):''}"
+          onchange="updatePlanHmSekarang('${escUH(String(r.unitCode||''))}', this.value)"
+          onblur="updatePlanHmSekarang('${escUH(String(r.unitCode||''))}', this.value)"
+          title="Input HM Actual manual unit. Est. Sisa HM &amp; Plan Date menyesuaikan otomatis (WH/hari dari sheet performance)."
+          style="width:110px; background:var(--panel-2); color:var(--yellow); border:1px solid var(--yellow-dim); border-radius:6px; padding:4px 6px; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; text-align:center;">
+        ${hmSource?`<div style="color:var(--text-faint);font-size:9px;margin-top:2px;">${escUH(String(hmSource))}${(r.hmAktualManual?' · manual':'')}</div>`:((r.hmAktualManual)?`<div style="color:var(--yellow);font-size:9px;margin-top:2px;">manual</div>`:'')}
+      </td>
       <td>${sisaHmCell}</td>
       <td><span class="pill ${statusClass}">${statusLabel}</span></td>
       <td>
@@ -10058,6 +10284,20 @@ async function onPlanPeriodChange(){
 }
 document.getElementById('plan-period-year')?.addEventListener('change', onPlanPeriodChange);
 document.getElementById('plan-period-month')?.addEventListener('change', onPlanPeriodChange);
+document.getElementById('btn-sync-daily-wh')?.addEventListener('click', async ()=>{
+  const btn = document.getElementById('btn-sync-daily-wh');
+  if(btn){ btn.disabled=true; btn.textContent='☁ Sync...'; }
+  try{
+    await ensureDailyWhSynced({ force:true, manual:true });
+    try{ if(typeof correctAllUnitsHmSekarang==='function') correctAllUnitsHmSekarang(); }catch(_e){}
+    renderPlanTable();
+    try{ if(typeof renderCBM==='function') renderCBM(); }catch(_e){}
+  }catch(e){
+    alert('⚠ Sync Jam Kerja Harian gagal: '+(e.message||e));
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='☁ Sync Jam Kerja Harian'; }
+  }
+});
 document.getElementById('plan-period-reset-btn')?.addEventListener('click', ()=>{
   const y = document.getElementById('plan-period-year');
   const m = document.getElementById('plan-period-month');
@@ -10718,6 +10958,7 @@ async function syncPlanAll(){
   try{
     try{ await fetchHMFromSheets({ manual:false }); }catch(_e){}
     await fetchPerformanceFromSheets({ manual:false });
+    try{ await fetchDailyWorkingHoursFromSheets({ manual:false }); }catch(_e){}
     const perfMap=getPerformanceWByUnit();
 
     if(!planRecords.length){
@@ -10763,6 +11004,59 @@ async function syncPlanFromHM(opts){
   if(!opts.silent) renderAll(); else renderPlanTable();
   return { ok:true, updated:res.updated, added:res.added, removed:res.removed, autoClosed:0 };
 }
+
+/**
+ * Input HM Actual manual di kolom HM Sekarang (per unit).
+ * - Disimpan ke semua baris Open unit yang sama (hmAktualManual=true)
+ * - Est. Sisa HM = Target HM − HM Actual
+ * - Plan Date diestimasi ulang dari sisa HM ÷ WH/hari (sheet performance)
+ */
+window.updatePlanHmSekarang = async function(unitCode, value){
+  const code = String(unitCode||'').trim().toUpperCase();
+  if(!code) return;
+  const raw = (value==='' || value===null || value===undefined) ? '' : String(value).trim();
+  let n = null;
+  if(raw!==''){
+    n = Number(String(raw).replace(/\s/g,'').replace(',','.'));
+    if(isNaN(n) || n<0){
+      alert('HM Actual tidak valid.');
+      renderPlanTable();
+      return;
+    }
+  }
+  const today = new Date().toISOString().slice(0,10);
+  let touched = 0;
+  (planRecords||[]).forEach(r=>{
+    if(!r) return;
+    if(String(r.unitCode||'').trim().toUpperCase()!==code) return;
+    if(typeof isPlanClosed==='function' && isPlanClosed(r)) return;
+    if(n===null){
+      // Kosongkan manual → biarkan auto-sync lagi
+      if(r.hmAktualManual){
+        r.hmAktualManual = false;
+        // biarkan nilai hmAktual tetap sampai correctAllUnits mengisi ulang
+        touched++;
+      }
+      return;
+    }
+    r.hmAktual = n;
+    r.hmAktualManual = true;
+    r.hmAktualDate = today;
+    touched++;
+  });
+  if(touched===0 && n!=null){
+    // Tidak ada baris Open — tetap simpan sebagai catatan di planRecords tidak perlu;
+    // HM unit akan terbaca lewat getMaxHmEksekusi jika ada baris. Buat tidak ada-op.
+    alert('Tidak ada jadwal Open untuk unit '+code+'. HM manual tidak disimpan.');
+    return;
+  }
+  await savePlan();
+  // Render ulang: enrichPlanRow → Est Sisa HM + Plan Date otomatis ikut WH/hari performance
+  renderPlanTable();
+  try{ if(typeof renderRecordServiceTable==='function') renderRecordServiceTable(); }catch(_e){}
+  try{ if(typeof renderCBM==='function') renderCBM(); }catch(_e2){}
+  try{ if(typeof renderSparepart==='function') renderSparepart(); }catch(_e3){}
+};
 
 window.updatePlanHmEksekusi = async function(id, value){
   const r = planRecords.find(x=>x.id===id);
@@ -14816,6 +15110,170 @@ async function ensureHmSynced(opts){
  * - force:true → selalu fetch
  * - respect TTL agar filter cepat tidak spam request
  */
+
+/**
+ * Ambil Jam Kerja HARIAN dari sheet "Jam Kerja Harian" lewat Apps Script
+ * action=getDailyWorkingHours
+ *
+ * Response diharapkan:
+ * {
+ *   ok: true,
+ *   rows: [{ tanggal:'YYYY-MM-DD', unit:'SWA-101', workingHours:12.5, actualWorkingHours:11.2, idlingHours:1.3 }],
+ *   updatedAt: 'ISO'
+ * }
+ *
+ * Apps Script (tambahkan di doGet/doPost spreadsheet SEN Maintenance):
+ * ---
+ * function getDailyWorkingHours(){
+ *   var ss = SpreadsheetApp.getActive();
+ *   var sh = ss.getSheetByName('Jam Kerja Harian') || ss.getSheetByName('daily_wh');
+ *   if(!sh) return { ok:false, error:'Sheet Jam Kerja Harian tidak ditemukan' };
+ *   var data = sh.getDataRange().getValues();
+ *   if(data.length < 2) return { ok:true, rows:[] };
+ *   var hdr = data[0].map(function(h){ return String(h||'').toLowerCase().trim(); });
+ *   function col(names){ for(var i=0;i<names.length;i++){ var j=hdr.indexOf(names[i]); if(j>=0) return j; } return -1; }
+ *   var cDate = col(['tanggal','date','tgl']);
+ *   var cUnit = col(['unit','unit code','kode unit','code unit','code']);
+ *   var cWh   = col(['working hours','jam kerja','wh','workinghours']);
+ *   var cAct  = col(['actual working hours','actual wh','jam aktual','actualworkinghours']);
+ *   var cIdle = col(['idling hours','idling','idle']);
+ *   var rows = [];
+ *   for(var r=1;r<data.length;r++){
+ *     var row = data[r];
+ *     var rawDate = row[cDate];
+ *     var tgl = '';
+ *     if(rawDate instanceof Date) tgl = Utilities.formatDate(rawDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+ *     else tgl = String(rawDate||'').slice(0,10);
+ *     var unit = String(row[cUnit]||'').trim();
+ *     if(!tgl || !unit) continue;
+ *     var wh = cWh>=0 ? Number(row[cWh])||0 : 0;
+ *     var act = cAct>=0 ? Number(row[cAct]) : wh;
+ *     var idle = cIdle>=0 ? Number(row[cIdle]) : Math.max(0, wh-act);
+ *     rows.push({ tanggal:tgl, unit:unit, workingHours:wh, actualWorkingHours:act, idlingHours:idle });
+ *   }
+ *   return { ok:true, rows:rows, updatedAt: new Date().toISOString() };
+ * }
+ * // di doGet: if(e.parameter.action==='getDailyWorkingHours') return json(getDailyWorkingHours());
+ * ---
+ */
+async function fetchDailyWorkingHoursFromSheets(opts){
+  opts = opts || {};
+  if(!BACKEND_CONFIG.sheetsWebAppUrl){
+    if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG.');
+    // tetap merge telemetri lokal
+    try{ mergeDailyWhFromTelemetry(); await saveDailyWhRecords(); }catch(_e){}
+    return { ok:false, error:'no_url' };
+  }
+  try{
+    const url = BACKEND_CONFIG.sheetsWebAppUrl +
+      (BACKEND_CONFIG.sheetsWebAppUrl.indexOf('?')>=0 ? '&' : '?') +
+      'action=getDailyWorkingHours';
+    let data = null;
+    try{
+      const res = await fetch(url, { method:'GET', redirect:'follow', cache:'no-store' });
+      data = await res.json();
+    }catch(_e){ data = null; }
+
+    if(!data || data.ok!==true){
+      try{
+        const res2 = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+          method:'POST',
+          headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action:'getDailyWorkingHours' }),
+          cache:'no-store'
+        });
+        data = await res2.json();
+      }catch(_e){ data = null; }
+    }
+
+    // Merge telemetri dulu sebagai baseline
+    mergeDailyWhFromTelemetry();
+
+    if(!data || data.ok!==true || !Array.isArray(data.rows)){
+      const errMsg = (data && data.error) ? data.error : 'Sheet Jam Kerja Harian belum tersedia / kosong';
+      _dailyWhMeta = Object.assign({}, _dailyWhMeta, { lastSyncOk:false, lastError: errMsg, updatedAt: new Date().toISOString() });
+      await saveDailyWhRecords();
+      if(opts.manual){
+        // Soft-fail: tetap pakai telemetri lokal
+        alert('⚠ Sync Jam Kerja Harian: '+errMsg+'\n\nSistem memakai data telemetri/Monitoring lokal jika ada. Pastikan sheet "Jam Kerja Harian" & action getDailyWorkingHours ada di Apps Script.');
+      }
+      return { ok:false, error: errMsg, fromLocal:true };
+    }
+
+    const keyOf = r => String(r.unitCode||r.unit||'').trim().toUpperCase()+'|'+String(r.tanggal||'').slice(0,10);
+    const map = new Map();
+    (dailyWhRecords||[]).forEach(r=>{ if(r && r.tanggal && r.unitCode) map.set(keyOf(r), r); });
+
+    let upserted = 0;
+    data.rows.forEach(r=>{
+      const t = String(r.tanggal || r.date || '').slice(0,10);
+      const u = String(r.unit || r.unitCode || r.code || '').trim().toUpperCase();
+      if(!t || !u) return;
+      const wh = Number(r.workingHours != null ? r.workingHours : r.wh) || 0;
+      const act = r.actualWorkingHours != null ? Number(r.actualWorkingHours) : (r.actual != null ? Number(r.actual) : wh);
+      const idle = r.idlingHours != null ? Number(r.idlingHours) : Math.max(0, Math.round((wh - (isNaN(act)?wh:act))*10)/10);
+      const rec = {
+        id: 'dwh-'+u+'-'+t,
+        tanggal: t,
+        unitCode: u,
+        workingHours: Math.round(wh*10)/10,
+        actualWorkingHours: Math.round((isNaN(act)?wh:act)*10)/10,
+        idlingHours: Math.round((isNaN(idle)?0:idle)*10)/10,
+        source: 'sheet'
+      };
+      map.set(keyOf(rec), rec);
+      upserted++;
+    });
+
+    dailyWhRecords = Array.from(map.values()).sort((a,b)=>{
+      const d = String(b.tanggal).localeCompare(String(a.tanggal));
+      if(d) return d;
+      return String(a.unitCode).localeCompare(String(b.unitCode));
+    });
+    _dailyWhMeta = {
+      updatedAt: data.updatedAt || new Date().toISOString(),
+      source: 'sheet',
+      lastSyncOk: true,
+      rowCount: upserted,
+      lastError: ''
+    };
+    await saveDailyWhRecords();
+    if(opts.manual){
+      alert('✓ Jam Kerja Harian tersinkron: '+upserted+' baris dari sheet.\nPlan Service memakai WH harian aktual (rata-rata 7 hari terakhir).');
+    }
+    return { ok:true, changed:true, rows: upserted };
+  }catch(e){
+    console.error('fetchDailyWorkingHoursFromSheets', e);
+    try{ mergeDailyWhFromTelemetry(); await saveDailyWhRecords(); }catch(_e){}
+    if(opts.manual) alert('⚠ Sync Jam Kerja Harian gagal: '+(e.message||e));
+    return { ok:false, error: String(e.message||e) };
+  }
+}
+
+let _dailyWhSyncInFlight = null;
+let _dailyWhLastFetch = 0;
+const DAILY_WH_TTL_MS = 5 * 60 * 1000; // 5 menit
+
+async function ensureDailyWhSynced(opts){
+  opts = opts || {};
+  const force = !!opts.force;
+  const now = Date.now();
+  if(!force && _dailyWhLastFetch && (now - _dailyWhLastFetch) < DAILY_WH_TTL_MS){
+    return { ok:true, cached:true };
+  }
+  if(_dailyWhSyncInFlight) return _dailyWhSyncInFlight;
+  _dailyWhSyncInFlight = (async ()=>{
+    try{
+      const res = await fetchDailyWorkingHoursFromSheets({ manual:!!opts.manual });
+      _dailyWhLastFetch = Date.now();
+      return res;
+    }finally{
+      _dailyWhSyncInFlight = null;
+    }
+  })();
+  return _dailyWhSyncInFlight;
+}
+
 async function ensurePerformanceSynced(opts){
   opts = opts || {};
   const force = !!opts.force;
@@ -14878,6 +15336,15 @@ function startPerformanceLiveSync(){
       const newStamp = (mapaData && mapaData.updatedAt) || '';
       const perfChanged = !!(res && res.ok && (res.changed || (newStamp && newStamp !== prevStamp)));
 
+      // 2b) Sync Jam Kerja HARIAN aktual (sheet "Jam Kerja Harian" / telemetri)
+      let dailyWhChanged = false;
+      try{
+        const prevDwh = (_dailyWhMeta && _dailyWhMeta.updatedAt) || '';
+        const dwhRes = await ensureDailyWhSynced({ force:false });
+        const newDwh = (_dailyWhMeta && _dailyWhMeta.updatedAt) || '';
+        dailyWhChanged = !!(dwhRes && dwhRes.ok && (dwhRes.changed || (newDwh && newDwh !== prevDwh)));
+      }catch(_e){}
+
       // 3) Push KPI (MA/PA/MTBS/MTTR/PMR/SA) ke tab Maintenance (Acv. + Score per minggu)
       try{ await syncMaintenanceKPIToSheet({ force:false, manual:false }); }catch(_e){}
 
@@ -14885,7 +15352,7 @@ function startPerformanceLiveSync(){
       const units = document.getElementById('view-database');
       const planView = document.getElementById('view-plan');
       const planActive = planView && planView.classList.contains('active');
-      const needRefresh = perfChanged || hmChanged || dayChanged;
+      const needRefresh = perfChanged || hmChanged || dayChanged || dailyWhChanged;
 
       if(needRefresh){
         if(dash && dash.classList.contains('active')) renderDashboard();
