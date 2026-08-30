@@ -2263,19 +2263,37 @@ body.role-mechanic #history-filters{ display:none !important; }
           </div>
           <div class="panel period-panel" style="margin-bottom:14px; padding:14px 16px;">
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-              <span class="period-range-label">Periode / Hari</span>
-              <div class="field period-input-group period-date-group" style="margin-bottom:0;">
+              <span class="period-range-label">Filter Periode (Open)</span>
+              <div class="field period-input-group" style="margin-bottom:0; min-width:140px;">
                 <span class="period-input-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
-                <input type="date" id="plan-period-start" class="period-date-input" title="Tanggal mulai filter Plan Service">
+                <select id="plan-period-year" title="Filter Tahun — hanya jadwal Open" style="min-width:100px;">
+                  <option value="">Semua Tahun</option>
+                </select>
+                <span class="period-input-caret">▾</span>
               </div>
-              <span class="period-range-sep">sd</span>
-              <div class="field period-input-group period-date-group" style="margin-bottom:0;">
-                <span class="period-input-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
-                <input type="date" id="plan-period-end" class="period-date-input" title="Tanggal akhir filter Plan Service (HM Sekarang dihitung s/d tanggal ini)">
+              <div class="field period-input-group" style="margin-bottom:0; min-width:150px;">
+                <span class="period-input-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"/></svg></span>
+                <select id="plan-period-month" title="Filter Bulan — hanya jadwal Open" style="min-width:120px;">
+                  <option value="">Semua Bulan</option>
+                  <option value="01">Januari</option>
+                  <option value="02">Februari</option>
+                  <option value="03">Maret</option>
+                  <option value="04">April</option>
+                  <option value="05">Mei</option>
+                  <option value="06">Juni</option>
+                  <option value="07">Juli</option>
+                  <option value="08">Agustus</option>
+                  <option value="09">September</option>
+                  <option value="10">Oktober</option>
+                  <option value="11">November</option>
+                  <option value="12">Desember</option>
+                </select>
+                <span class="period-input-caret">▾</span>
               </div>
-              <button type="button" class="btn secondary small" id="plan-period-reset-btn" title="Hapus filter tanggal">✕ Reset Periode</button>
-              <button type="button" class="btn small secondary" id="plan-period-today-btn" title="Set periode ke hari ini saja">Hari Ini</button>
+              <button type="button" class="btn secondary small" id="plan-period-reset-btn" title="Tampilkan semua jadwal Open">✕ Reset</button>
+              <button type="button" class="btn small secondary" id="plan-period-this-month-btn" title="Filter ke bulan berjalan (Open)">Bulan Ini</button>
             </div>
+            <div class="hint" style="margin-top:10px; margin-bottom:0;">Filter <b>Tahun + Bulan</b> berdasarkan <b>Plan Date</b>. Tabel Schedule hanya menampilkan jadwal berstatus <b>Open</b> (Close ada di Record Service Unit).</div>
           </div>
           <div class="scroll-top-track" id="plan-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="plan-scroll-top-inner"></div></div>
           <div class="table-wrap" id="plan-table-wrap">
@@ -9160,17 +9178,58 @@ function getMaxHmEksekusiForUnit(unitCode){
  * Sync otomatis: fetchHMFromSheets + fetchPerformance + live poll.
  * Fallback: HM service Close terakhir.
  */
+/** Filter Plan Service: Tahun + Bulan (hanya Open ditampilkan di schedule). */
+function getPlanPeriodYearMonth(){
+  const yEl = document.getElementById('plan-period-year');
+  const mEl = document.getElementById('plan-period-month');
+  const year = (yEl && yEl.value) ? String(yEl.value).trim() : '';
+  const month = (mEl && mEl.value) ? String(mEl.value).trim().padStart(2,'0') : '';
+  return { year, month };
+}
 function getPlanPeriodRange(){
-  const endEl = document.getElementById('plan-period-end');
-  const startEl = document.getElementById('plan-period-start');
-  const end = endEl && endEl.value ? endEl.value : '';
-  const start = startEl && startEl.value ? startEl.value : '';
-  return { start, end };
+  const { year, month } = getPlanPeriodYearMonth();
+  if(!year && !month) return { start:'', end:'' };
+  if(year && month){
+    const y = Number(year), m = Number(month);
+    const lastDay = new Date(y, m, 0).getDate();
+    const mm = String(m).padStart(2,'0');
+    return {
+      start: year+'-'+mm+'-01',
+      end: year+'-'+mm+'-'+String(lastDay).padStart(2,'0')
+    };
+  }
+  if(year){
+    return { start: year+'-01-01', end: year+'-12-31' };
+  }
+  const cy = new Date().getFullYear();
+  const m = Number(month);
+  const lastDay = new Date(cy, m, 0).getDate();
+  const mm = String(m).padStart(2,'0');
+  return {
+    start: cy+'-'+mm+'-01',
+    end: cy+'-'+mm+'-'+String(lastDay).padStart(2,'0')
+  };
 }
 function getPlanPeriodAsOfDate(){
-  const { start, end } = getPlanPeriodRange();
-  // As-of = akhir periode; jika hanya start diisi, pakai start (filter 1 hari)
-  return end || start || '';
+  const { end } = getPlanPeriodRange();
+  return end || '';
+}
+function populatePlanPeriodYearOptions(){
+  const sel = document.getElementById('plan-period-year');
+  if(!sel) return;
+  const prev = sel.value || '';
+  const years = new Set();
+  const nowY = new Date().getFullYear();
+  for(let y = nowY - 1; y <= nowY + 3; y++) years.add(String(y));
+  (planRecords||[]).forEach(r=>{
+    if(!r || (typeof isPlanClosed==='function' && isPlanClosed(r))) return;
+    const d = String(r.planDate||'').slice(0,10);
+    if(d && d.length>=4) years.add(d.slice(0,4));
+  });
+  const sorted = Array.from(years).filter(Boolean).sort();
+  sel.innerHTML = '<option value="">Semua Tahun</option>' +
+    sorted.map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+  if(prev && sorted.indexOf(prev)>=0) sel.value = prev;
 }
 
 /**
@@ -9354,13 +9413,21 @@ function calcEstSisaHm(hmPlan, hmSekarang){
   return Math.round((Number(hmPlan) - Number(hmSekarang)) * 10) / 10;
 }
 
-/** Est. Sisa Hari = Est Sisa HM ÷ WH/hari unit (ceil). 0 jika sudah lewat target. */
+/** Est. Sisa Hari = Est Sisa HM ÷ WH/hari unit (ceil). 0 jika sudah lewat target.
+ * PENTING: jika WH/hari unit belum tersedia (0 / null — misal sheet performance
+ * belum sync untuk unit ini), JANGAN kembalikan null begitu saja — itu membuat
+ * estimatePlanDateFromHm() mengembalikan "hari ini" untuk SEMUA target HM unit
+ * tsb, sehingga puluhan baris menumpuk di 1 tanggal yang sama dan mengubur
+ * unit lain di tabel (bug: tabel terlihat hanya menampilkan 1 unit).
+ * Fallback 18 jam/hari dipakai agar proyeksi tanggal tetap maju secara wajar,
+ * konsisten dengan fallback default getDailyWorkingHours().
+ */
 function estimateDaysToHmPlan(unitCode, hmPlan, hmAktual){
   const remain = calcEstSisaHm(hmPlan, hmAktual);
   if(remain===null) return null;
   if(remain <= 0) return 0;
-  const wPerDay = getDailyWorkingHours(unitCode);
-  if(!(wPerDay > 0)) return null;
+  let wPerDay = getDailyWorkingHours(unitCode);
+  if(!(wPerDay > 0)) wPerDay = 18; // fallback: cegah tanggal collapse ke "hari ini"
   return Math.ceil(remain / wPerDay);
 }
 
@@ -9710,15 +9777,19 @@ function renderPlanTable(){
 
   const today = new Date().toISOString().slice(0,10);
   const perfMap = getPerformanceWByUnit();
-  const periodStart = (document.getElementById('plan-period-start')||{}).value || '';
-  const periodEnd = (document.getElementById('plan-period-end')||{}).value || '';
+  try{ populatePlanPeriodYearOptions(); }catch(_e){}
+  const { year: filterYear, month: filterMonth } = getPlanPeriodYearMonth();
   const asOfDate = getPlanPeriodAsOfDate() || today;
 
   const rows = openPlans.map(enrichPlanRow).filter(x=>{
-    const pd = x.r.planDate || '';
-    if(periodStart && pd && pd < periodStart) return false;
-    if(periodEnd && pd && pd > periodEnd) return false;
-    if((periodStart || periodEnd) && !pd) return false;
+    const pd = String(x.r.planDate || x.planDateAuto || '').slice(0,10);
+    if(filterYear || filterMonth){
+      if(!pd || pd.length < 7) return false;
+      const y = pd.slice(0,4);
+      const m = pd.slice(5,7);
+      if(filterYear && y !== filterYear) return false;
+      if(filterMonth && m !== filterMonth) return false;
+    }
     return true;
   });
 
@@ -9734,7 +9805,7 @@ function renderPlanTable(){
   });
 
   if(!rows.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Tidak ada jadwal open untuk filter periode yang dipilih.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Tidak ada jadwal Open untuk Tahun/Bulan yang dipilih.</td></tr>`;
     attachTopScroll('plan');
     renderRecordServiceTable();
     try{ if(typeof renderSparepart==='function') renderSparepart(); }catch(_e){}
@@ -9985,21 +10056,29 @@ async function onPlanPeriodChange(){
   // CBM Est. Used = HM Sekarang (baseline sheet HM + proyeksi WH/hari)
   try{ if(typeof renderCBM==='function') renderCBM(); }catch(_e){}
 }
-document.getElementById('plan-period-start')?.addEventListener('change', onPlanPeriodChange);
-document.getElementById('plan-period-end')?.addEventListener('change', onPlanPeriodChange);
+document.getElementById('plan-period-year')?.addEventListener('change', onPlanPeriodChange);
+document.getElementById('plan-period-month')?.addEventListener('change', onPlanPeriodChange);
 document.getElementById('plan-period-reset-btn')?.addEventListener('click', ()=>{
-  const s = document.getElementById('plan-period-start');
-  const e = document.getElementById('plan-period-end');
-  if(s) s.value = '';
-  if(e) e.value = '';
+  const y = document.getElementById('plan-period-year');
+  const m = document.getElementById('plan-period-month');
+  if(y) y.value = '';
+  if(m) m.value = '';
   onPlanPeriodChange();
 });
-document.getElementById('plan-period-today-btn')?.addEventListener('click', ()=>{
-  const today = new Date().toISOString().slice(0,10);
-  const s = document.getElementById('plan-period-start');
-  const e = document.getElementById('plan-period-end');
-  if(s) s.value = today;
-  if(e) e.value = today;
+document.getElementById('plan-period-this-month-btn')?.addEventListener('click', ()=>{
+  const now = new Date();
+  const y = document.getElementById('plan-period-year');
+  const m = document.getElementById('plan-period-month');
+  if(y){
+    const ys = String(now.getFullYear());
+    if(!Array.from(y.options).some(o=>o.value===ys)){
+      const opt = document.createElement('option');
+      opt.value = ys; opt.textContent = ys;
+      y.appendChild(opt);
+    }
+    y.value = ys;
+  }
+  if(m) m.value = String(now.getMonth()+1).padStart(2,'0');
   onPlanPeriodChange();
 });
 
@@ -10348,8 +10427,14 @@ async function rebuildPlanServiceAuto(opts){
  */
 function syncOpenPlanRecordLive(r, perfMap){
   if(!r || !isPlanServiceAllowedUnit(r.unitCode) || isPlanClosed(r)) return false;
-  const cur=calcHmSekarang(r.unitCode);
-  if(cur.hmNow==null) return false;
+  let cur=calcHmSekarang(r.unitCode);
+  // Fallback konsisten dgn syncOpenPlanCoverage/rebuildPlanServiceAuto: jangan
+  // biarkan baris Open jadi stale permanen hanya karena HM baseline unit ini
+  // belum resolve (mis. Monitoring HM / Performance belum sync).
+  if(cur.hmNow==null){
+    const lastClosedHm = getLastClosedPlanHm(r.unitCode);
+    cur = Object.assign({}, cur, { hmNow: lastClosedHm>0 ? lastClosedHm : 0 });
+  }
 
   const code=String(r.unitCode||'').trim().toUpperCase();
   const perf=perfMap && perfMap[code];
@@ -10529,8 +10614,23 @@ async function syncOpenPlanCoverage(perfMap){
   added += ensureAugustPlanServiceRecords(perf);
 
   unitCodes.forEach(code=>{
-    const cur = calcHmSekarang(code);
-    if(!cur || cur.hmNow==null) return;
+    let cur = calcHmSekarang(code);
+    // PENTING: JANGAN skip unit total hanya karena HM baseline belum resolve
+    // (mis. Monitoring HM / Performance belum sync untuk unit ini). Sebelumnya
+    // fungsi ini langsung `return` di sini, sehingga plan baru/Open unit
+    // tersebut TIDAK PERNAH dibuat/diperbarui lewat sync biasa — hanya lewat
+    // "Hapus & Generate Ulang" penuh. Samakan perilakunya dengan
+    // rebuildPlanServiceAuto(): fallback ke HM Close terakhir, lalu 0.
+    if(!cur || cur.hmNow==null){
+      const lastClosedHm = getLastClosedPlanHm(code);
+      const fallbackHm = lastClosedHm > 0 ? lastClosedHm : 0;
+      cur = Object.assign({}, cur, {
+        hmNow: fallbackHm,
+        lastHm: (cur && cur.lastHm!=null) ? cur.lastHm : null,
+        lastDate: (cur && cur.lastDate) ? cur.lastDate : '',
+        dailyWh: (cur && cur.dailyWh) ? cur.dailyWh : getDailyWorkingHours(code)
+      });
+    }
 
     const unit = (UNITS||[]).find(u=>String(u.code).toUpperCase()===String(code).toUpperCase());
     const typeUnit = unit ? unit.type : '';
