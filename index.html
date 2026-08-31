@@ -1279,6 +1279,8 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 #access-modal-overlay.show{ display:flex; }
 #ps-close-overlay{ display:none; position:fixed; inset:0; z-index:220; align-items:flex-start; justify-content:center; background:rgba(0,0,0,0.6); padding:26px 16px; overflow-y:auto; }
 #ps-close-overlay.show{ display:flex; }
+#rca-edit-overlay{ display:none; position:fixed; inset:0; z-index:230; align-items:flex-start; justify-content:center; background:rgba(0,0,0,0.6); padding:26px 16px; overflow-y:auto; }
+#rca-edit-overlay.show{ display:flex; }
 .view.access-readonly form button[type="submit"],
 .view.access-readonly .btn:not(.secondary):not(.small),
 .view.access-readonly .btn.danger,
@@ -1575,6 +1577,42 @@ body.role-mechanic #history-filters{ display:none !important; }
   </div>
 </div>
 
+<div id="rca-edit-overlay">
+  <div class="detail-modal" style="max-width:560px;">
+    <div class="detail-modal-head">
+      <h3>Edit RCA</h3>
+      <button type="button" class="detail-modal-close" id="rca-edit-modal-close" title="Tutup">✕</button>
+    </div>
+    <div class="detail-modal-body">
+      <div class="hint" style="margin-bottom:14px;" id="rca-edit-info">—</div>
+      <div class="field"><label>Root Cause</label><textarea id="rca-edit-rootcause" rows="3" required placeholder="Akar masalah…"></textarea></div>
+      <div class="field"><label>Kategori (4M+E)</label>
+        <select id="rca-edit-category">
+          <option value="Man">Man (Manusia)</option>
+          <option value="Method">Method (Metode)</option>
+          <option value="Machine">Machine (Mesin/Unit)</option>
+          <option value="Material">Material (Suku cadang)</option>
+          <option value="Environment">Environment (Lingkungan)</option>
+        </select>
+      </div>
+      <div class="field"><label>Corrective Action</label><textarea id="rca-edit-corrective" rows="2" placeholder="Perbaikan langsung…"></textarea></div>
+      <div class="field"><label>Preventive Action</label><textarea id="rca-edit-preventive" rows="2" placeholder="Agar tidak berulang…"></textarea></div>
+      <div class="field"><label>Status</label>
+        <select id="rca-edit-status">
+          <option value="Open">Open</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Verified">Verified</option>
+          <option value="Closed">Closed</option>
+        </select>
+      </div>
+    </div>
+    <div class="detail-modal-foot">
+      <button type="button" class="btn secondary" id="rca-edit-cancel">Batal</button>
+      <button type="button" class="btn" id="rca-edit-save">💾 Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
 <div id="login-overlay">
   <div class="login-card diamond-plate">
     <div class="login-brand">
@@ -1750,7 +1788,7 @@ body.role-mechanic #history-filters{ display:none !important; }
         </div>
         <div class="role-bar topbar-user">
           <div class="role-field">
-            <label style="margin:0 6px 0 0; text-transform:uppercase; font-size:9px;">Login sebagai</label>
+            <label style="margin:0 6px 0 0; text-transform:uppercase; font-size:9px;">User</label>
             <span id="user-info" style="font-size:12.5px; font-weight:600; color:var(--yellow);">—</span>
           </div>
           <button class="btn small secondary" id="btn-logout" type="button" style="margin-left:4px;">Logout</button>
@@ -1796,6 +1834,7 @@ body.role-mechanic #history-filters{ display:none !important; }
 
         <div class="section-title" style="display:none">Dashboard KPI</div>
         <div id="kpi-chart-dashboard" style="margin-bottom:20px;"></div>
+
 
         <!-- kpi-grid gauge cards dihapus — diganti tabel detail di chart monthly/quarterly -->
         <div class="grid grid-3" id="kpi-grid" style="display:none;"></div>
@@ -2255,7 +2294,6 @@ body.role-mechanic #history-filters{ display:none !important; }
         <div class="panel">
           <div class="panel-head">
             <h2>Schedule Plan Service <span class="tag">AUTO SYNC · 4 UNIT LOCK</span></h2>
-          <div class="hint" style="margin-top:8px; width:100%;"><b>HM Sekarang</b> <u>auto-sync setiap hari</u> dari baseline HM sheet + waktu operasi (<b>WH/hari sheet performance</b> / Jam Kerja Harian) — <b>tanpa perlu klik Sync</b>. Est. Sisa HM &amp; Plan Date menyesuaikan otomatis. Override manual (HM Actual) tetap dihormati sampai sheet lebih baru. Sebelum <b>Close</b>, isi <b>HM Eksekusi</b> (HM saat service dikerjakan) untuk plan berikutnya.</div>
             <div class="toolbar">
               <button type="button" class="btn small" id="btn-sync-plan-all" title="Sync performance + HM + Jam Kerja Harian, lalu generate jadwal otomatis">☁ Sync & Generate Otomatis</button>
               <button type="button" class="btn small secondary" id="btn-sync-daily-wh" title="Sync WH harian dari sheet performance (T−S)/hari — tanpa sheet baru">☁ Sync Jam Kerja Harian</button>
@@ -2391,14 +2429,18 @@ body.role-mechanic #history-filters{ display:none !important; }
           </div>
         </div>
 
-        <div class="hint" id="ps-mechanic-input-hint" style="display:none; margin-bottom:16px;">Rencana maintenance bulanan dibuat &amp; ditugaskan oleh <b>Supervisor</b>. Kalau ada rencana yang jadi tugas Anda, cari baris-nya di tabel <b>Database Planning Maintenance</b> di bawah lalu tekan tombol <b>"＋ Isi Jam"</b> untuk mengisi Tgl Pekerjaan &amp; Jam Mulai/Selesai — status akan otomatis berubah jadi <b>Close</b> begitu selesai diisi.</div>
+        <div class="hint" id="ps-mechanic-input-hint" style="display:none; margin-bottom:16px;">Rencana maintenance bulanan dibuat &amp; ditugaskan oleh <b>Supervisor</b>. Kalau ada rencana yang jadi tugas Anda, cari baris-nya di tabel <b>Planning Maintenance</b> di bawah lalu tekan tombol <b>"＋ Isi Jam"</b> untuk mengisi Tgl Pekerjaan &amp; Jam Mulai/Selesai — status akan otomatis berubah jadi <b>Close</b> begitu selesai diisi.</div>
 
         <div class="panel" id="planningsystem-input-panel">
           <div class="panel-head"><h2><span class="tag">INPUT</span> Rencana Maintenance Bulanan</h2></div>
           <form id="form-planningsystem">
             <div class="grid grid-4">
-              <div class="field"><label>Unit Code</label><select id="ps-unitcode" required></select></div>
-              <div class="field"><label>Type Unit</label><input type="text" id="ps-typeunit" disabled></div>
+              <div class="field"><label>Unit Code</label>
+                <input type="text" id="ps-unitcode" list="ps-unitcode-list" required placeholder="Pilih atau ketik Unit Code…" autocomplete="off" style="text-transform:uppercase;">
+                <datalist id="ps-unitcode-list"></datalist>
+                <div class="hint" style="margin-top:4px;margin-bottom:0;">Pilih dari daftar atau ketik Unit Code baru secara manual.</div>
+              </div>
+              <div class="field"><label>Type Unit</label><input type="text" id="ps-typeunit" placeholder="Otomatis / isi manual jika unit baru"></div>
               <div class="field"><label>PIC Mechanic 1</label><select id="ps-pic1" required></select></div>
               <div class="field"><label>PIC Mechanic 2</label><select id="ps-pic2"><option value="">— Tidak ada —</option></select></div>
             </div>
@@ -2444,7 +2486,7 @@ body.role-mechanic #history-filters{ display:none !important; }
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>Database Planning Maintenance</h2></div>
+          <div class="panel-head"><h2>Planning Maintenance</h2></div>
           <div class="filters">
             <input type="month" id="ps-month" style="width:auto;">
             <select id="ps-filter-unit"><option value="">Semua Unit</option></select>
@@ -2469,6 +2511,47 @@ body.role-mechanic #history-filters{ display:none !important; }
                 <th>Plan Tgl Eksekusi</th><th>Due Date</th><th>Tgl Pekerjaan</th><th>Jam Mulai</th><th>Jam Selesai</th><th>Duration</th><th>Status</th><th></th>
               </tr></thead>
               <tbody id="planningsystem-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Historical / Summary — hanya status Close; disembunyikan dari Mechanic -->
+        <div class="panel" id="ps-historical-panel" style="display:none;">
+          <div class="panel-head">
+            <h2><span class="tag">HISTORY</span> Rekap Planning Maintenance (Close)</h2>
+          </div>
+          <div class="hint" style="margin-top:-6px; margin-bottom:12px;">Ringkasan rencana yang sudah dikerjakan (status <b>Close</b>). Panel ini hanya tampil untuk Supervisor / Admin — tidak ditampilkan ke user Mechanic.</div>
+          <div class="filters" style="margin-bottom:12px;">
+            <input type="month" id="ps-hist-month" style="width:auto;" title="Filter bulan (berdasarkan Tgl Pekerjaan / Plan Date)">
+            <select id="ps-hist-unit"><option value="">Semua Unit</option></select>
+            <select id="ps-hist-component">
+              <option value="">Semua Component</option>
+              <option value="Engine">Engine</option>
+              <option value="Transmission">Transmission</option>
+              <option value="Hydraulic">Hydraulic</option>
+              <option value="Attachment">Attachment</option>
+              <option value="Undercarriage">Undercarriage</option>
+              <option value="Cabin">Cabin</option>
+              <option value="Other">Other</option>
+            </select>
+            <button type="button" class="btn small secondary" id="ps-hist-clear-filter">Clear Filter</button>
+          </div>
+          <div class="grid grid-4" id="ps-hist-kpi" style="margin-bottom:14px;">
+            <div class="sp-kpi"><div class="sp-kpi-label">Total Close</div><div class="sp-kpi-val" id="ps-hist-kpi-total">0</div></div>
+            <div class="sp-kpi"><div class="sp-kpi-label">Unit Tersentuh</div><div class="sp-kpi-val" id="ps-hist-kpi-units">0</div></div>
+            <div class="sp-kpi"><div class="sp-kpi-label">Total Durasi (jam)</div><div class="sp-kpi-val" id="ps-hist-kpi-hours">0</div></div>
+            <div class="sp-kpi"><div class="sp-kpi-label">Komponen Terbanyak</div><div class="sp-kpi-val" id="ps-hist-kpi-topcomp" style="font-size:16px;">—</div></div>
+          </div>
+          <div class="scroll-top-track" id="ps-hist-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="ps-hist-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="ps-hist-table-wrap">
+            <table id="ps-hist-table">
+              <thead><tr>
+                <th>Unit Code</th><th>Type Unit</th><th>PIC Mechanic 1</th><th>PIC Mechanic 2</th>
+                <th>Component</th><th>No PR</th><th>Job Description</th>
+                <th>Plan Tgl</th><th>Due Date</th><th>Tgl Pekerjaan</th>
+                <th>Jam Mulai</th><th>Jam Selesai</th><th>Duration</th><th>Status</th>
+              </tr></thead>
+              <tbody id="ps-hist-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -2723,6 +2806,113 @@ body.role-mechanic #history-filters{ display:none !important; }
                   <th>% of Total</th><th>Kumulatif %</th><th>Klasifikasi</th>
                 </tr></thead>
                 <tbody id="cbm-pareto-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ROOT CAUSE ANALYSIS — di bawah Pareto -->
+          <div class="panel" id="cbm-rca-panel" style="margin-top:18px;">
+            <div class="panel-head">
+              <h2><span class="tag">RCA</span> Root Cause Analysis</h2>
+            </div>
+            <p class="hint" style="margin-bottom:14px;">Identitas, Problem, dan 5 Whys diisi <b>otomatis</b> dari Breakdown / Pareto. <b>Hanya Root Cause, Kategori, Corrective, dan Preventive</b> yang bisa diinput / diedit manual (form &amp; langsung di tabel).</p>
+            <div class="toolbar" style="margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+              <button type="button" class="btn" id="rca-auto-generate-btn" title="Buat &amp; simpan RCA otomatis untuk setiap Unit × Komponen Vital Few yang belum ada">⚡ Generate Otomatis dari Breakdown (Vital Few)</button>
+              <button type="button" class="btn secondary" id="rca-auto-refresh-form-btn" title="Isi ulang semua kolom form dari data BD sesuai Unit &amp; Component">↻ Refresh Form dari Data BD</button>
+            </div>
+            <form id="form-cbm-rca">
+              <div class="hint" style="margin-bottom:10px; color:var(--text-dim);">Kolom identitas &amp; 5 Whys terisi otomatis dari Breakdown. <b>Hanya Root Cause, Kategori, Corrective, dan Preventive</b> yang bisa diubah manual.</div>
+              <div class="grid grid-4">
+                <div class="field"><label>Tanggal <span class="pill progress" style="font-size:9px;">AUTO</span></label><input type="date" id="rca-date" required readonly style="opacity:.85;cursor:default;"></div>
+                <div class="field"><label>Unit Code <span class="pill progress" style="font-size:9px;">AUTO</span></label>
+                  <input type="text" id="rca-unit" list="rca-unit-list" required placeholder="Otomatis dari BD / Pareto…" style="text-transform:uppercase;opacity:.85;" autocomplete="off" readonly>
+                  <datalist id="rca-unit-list"></datalist>
+                </div>
+                <div class="field"><label>Component <span class="pill progress" style="font-size:9px;">AUTO</span></label>
+                  <select id="rca-component" required disabled style="opacity:.85;">
+                    <option value="">— Otomatis —</option>
+                    <option value="Engine">Engine</option>
+                    <option value="Transmission">Transmission</option>
+                    <option value="Hydraulic">Hydraulic</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="AC System">AC System</option>
+                    <option value="Undercarriage">Undercarriage</option>
+                    <option value="Attachment">Attachment</option>
+                    <option value="Final Drive">Final Drive</option>
+                    <option value="Axle / Differential">Axle / Differential</option>
+                    <option value="Cabin">Cabin</option>
+                    <option value="Tyre">Tyre</option>
+                    <option value="Wheel">Wheel</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <input type="hidden" id="rca-component-value" value="">
+                </div>
+                <div class="field"><label>Code BD <span class="pill progress" style="font-size:9px;">AUTO</span></label><input type="text" id="rca-codebd" placeholder="Otomatis…" readonly style="opacity:.85;"></div>
+              </div>
+              <div class="field"><label>Problem Statement <span class="pill progress" style="font-size:9px;">AUTO</span></label><textarea id="rca-problem" required placeholder="Otomatis dari Breakdown Deskripsi…" rows="2" readonly style="opacity:.85;"></textarea></div>
+              <div class="section-title" style="margin-top:8px;">5 Whys <span class="pill progress" style="font-size:9px;">AUTO</span></div>
+              <div class="grid grid-2">
+                <div class="field"><label>Why 1</label><input type="text" id="rca-why1" readonly style="opacity:.85;"></div>
+                <div class="field"><label>Why 2</label><input type="text" id="rca-why2" readonly style="opacity:.85;"></div>
+                <div class="field"><label>Why 3</label><input type="text" id="rca-why3" readonly style="opacity:.85;"></div>
+                <div class="field"><label>Why 4</label><input type="text" id="rca-why4" readonly style="opacity:.85;"></div>
+              </div>
+              <div class="field"><label>Why 5</label><input type="text" id="rca-why5" readonly style="opacity:.85;"></div>
+              <div class="section-title" style="margin-top:12px;">Input Manual</div>
+              <div class="grid grid-2">
+                <div class="field"><label>Root Cause <span class="pill open" style="font-size:9px;">MANUAL</span></label><textarea id="rca-rootcause" required placeholder="Akar masalah (boleh edit dari saran otomatis)…" rows="2"></textarea></div>
+                <div class="field"><label>Kategori Penyebab (4M+E) <span class="pill open" style="font-size:9px;">MANUAL</span></label>
+                  <select id="rca-category">
+                    <option value="Man">Man (Manusia)</option>
+                    <option value="Method">Method (Metode)</option>
+                    <option value="Machine">Machine (Mesin/Unit)</option>
+                    <option value="Material">Material (Suku cadang)</option>
+                    <option value="Environment">Environment (Lingkungan)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-2">
+                <div class="field"><label>Corrective Action <span class="pill open" style="font-size:9px;">MANUAL</span></label><textarea id="rca-corrective" placeholder="Perbaikan langsung…" rows="2"></textarea></div>
+                <div class="field"><label>Preventive Action <span class="pill open" style="font-size:9px;">MANUAL</span></label><textarea id="rca-preventive" placeholder="Agar tidak berulang…" rows="2"></textarea></div>
+              </div>
+              <div class="grid grid-2">
+                <div class="field"><label>PIC <span class="pill progress" style="font-size:9px;">AUTO</span></label><input type="text" id="rca-pic" readonly style="opacity:.85;"></div>
+                <div class="field"><label>Status <span class="pill progress" style="font-size:9px;">AUTO</span></label>
+                  <select id="rca-status" disabled style="opacity:.85;">
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Verified">Verified</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                </div>
+              </div>
+              <div class="toolbar">
+                <button type="submit" class="btn">＋ Simpan RCA</button>
+                <button type="button" class="btn secondary" id="rca-form-reset-btn">Reset Form</button>
+              </div>
+            </form>
+            <div class="section-title" style="margin-top:20px;">Daftar RCA</div>
+            <div class="filters" style="margin-bottom:12px;">
+              <select id="rca-filter-status">
+                <option value="">Semua Status</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Verified">Verified</option>
+                <option value="Closed">Closed</option>
+              </select>
+              <select id="rca-filter-comp">
+                <option value="">Semua Component</option>
+              </select>
+              <button type="button" class="btn small secondary" id="rca-clear-filter">Clear Filter</button>
+            </div>
+            <div class="table-wrap">
+              <table id="cbm-rca-table">
+                <thead><tr>
+                  <th>Tanggal</th><th>Unit</th><th>Component</th><th>Problem</th>
+                  <th>Root Cause</th><th>Kategori</th><th>Corrective</th><th>Preventive</th>
+                  <th>PIC</th><th>Status</th><th></th>
+                </tr></thead>
+                <tbody id="cbm-rca-tbody"></tbody>
               </table>
             </div>
           </div>
@@ -4909,6 +5099,8 @@ function sanitizePlanServiceUnits(){
   return planRecords;
 }
 let planningSystemRecords = [];
+let rcaRecords = []; // Root Cause Analysis (CBM Pareto)
+let cbmLastParetoRows = []; // breakdown rows terakhir dari Pareto (untuk auto-fill RCA)
 let p2hRecords = [];
 let preInspectionRecords = [];
 let preInspectionPlans = []; // jadwal Pre Inspection (dibuat Supervisor, ditugaskan ke Mechanic)
@@ -5246,6 +5438,10 @@ async function loadData(){
     planningSystemRecords = ps ? JSON.parse(ps.value) : [];
   }catch(e){ planningSystemRecords = []; }
   try{
+    const rca = await appStorage.get('rca-records');
+    rcaRecords = rca ? JSON.parse(rca.value) : [];
+  }catch(e){ rcaRecords = []; }
+  try{
     const p2h = await appStorage.get('p2h-records');
     p2hRecords = p2h ? JSON.parse(p2h.value) : [];
   }catch(e){ p2hRecords = []; }
@@ -5550,6 +5746,10 @@ async function refreshPlanningSystemRecords(){
 async function savePlanningSystem(){
   try{ await appStorage.set('planning-system-records', JSON.stringify(planningSystemRecords)); }
   catch(e){ console.error('save planning system failed', e); }
+}
+async function saveRcaRecords(){
+  try{ await appStorage.set('rca-records', JSON.stringify(rcaRecords)); }
+  catch(e){ console.error('saveRcaRecords', e); }
 }
 async function saveP2H(){
   try{ await appStorage.set('p2h-records', JSON.stringify(p2hRecords)); }
@@ -6514,7 +6714,7 @@ function updateRoleUI(){
   document.body.classList.toggle('role-pjo', currentPosition()==='PJO');
   const isMechanicUser = !!(loggedInUser && ((loggedInUser.role||'')==='Mechanic' || (loggedInUser.position||'')==='Mechanic'));
   document.body.classList.toggle('role-mechanic', isMechanicUser);
-  if(userInfoEl){ userInfoEl.textContent = loggedInUser ? `${loggedInUser.name} · ${loggedInUser.position || loggedInUser.role}` : '—'; }
+  if(userInfoEl){ userInfoEl.textContent = loggedInUser ? (loggedInUser.name || loggedInUser.username || '—') : '—'; }
   const banner = document.getElementById('daily-role-banner');
   if(banner){
     if(currentPosition()==='PJO'){
@@ -11215,15 +11415,61 @@ document.getElementById('daily-bulk-delete-btn')?.addEventListener('click', bulk
 
 /* ================= PLANNING SYSTEM (MONTHLY MAINTENANCE PLANNING) ================= */
 const psUnitSelect = document.getElementById('ps-unitcode');
-fillUnitSelectCodeOnly(psUnitSelect);
-psUnitSelect.addEventListener('change', ()=>syncTypeFromUnit(psUnitSelect, document.getElementById('ps-typeunit')));
-syncTypeFromUnit(psUnitSelect, document.getElementById('ps-typeunit'));
+const psTypeUnitEl = document.getElementById('ps-typeunit');
+/** Isi datalist Unit Code (daftar + unit custom dari record yang sudah tersimpan). */
+function fillPsUnitCodeDatalist(){
+  const dl = document.getElementById('ps-unitcode-list');
+  if(!dl) return;
+  const codes = new Set();
+  (typeof UNITS!=='undefined' && Array.isArray(UNITS) ? UNITS : []).forEach(u=>{
+    const c = String(u.code||'').trim();
+    if(c) codes.add(c);
+  });
+  try{
+    (planningSystemRecords||[]).forEach(r=>{
+      const c = String(r.unitCode||'').trim();
+      if(c) codes.add(c);
+    });
+  }catch(_e){}
+  const sorted = Array.from(codes).sort((a,b)=>a.localeCompare(b));
+  dl.innerHTML = sorted.map(c=>'<option value="'+String(c).replace(/"/g,'&quot;')+'"></option>').join('');
+}
+function syncPsTypeFromUnit(){
+  if(!psUnitSelect || !psTypeUnitEl) return;
+  const code = String(psUnitSelect.value||'').trim().toUpperCase();
+  if(psUnitSelect.value !== code) psUnitSelect.value = code;
+  const u = (typeof UNITS!=='undefined' && Array.isArray(UNITS))
+    ? UNITS.find(x=>String(x.code||'').trim().toUpperCase()===code) : null;
+  if(u){
+    psTypeUnitEl.value = u.type || '';
+    psTypeUnitEl.readOnly = true;
+    psTypeUnitEl.style.opacity = '0.85';
+  } else {
+    // Unit Code manual / belum di Master Unit → Type Unit bisa diisi bebas
+    if(psTypeUnitEl.readOnly){
+      psTypeUnitEl.value = psTypeUnitEl.value || '';
+    }
+    psTypeUnitEl.readOnly = false;
+    psTypeUnitEl.style.opacity = '1';
+  }
+}
+fillPsUnitCodeDatalist();
+if(psUnitSelect){
+  psUnitSelect.addEventListener('change', syncPsTypeFromUnit);
+  psUnitSelect.addEventListener('input', syncPsTypeFromUnit);
+  psUnitSelect.addEventListener('blur', ()=>{
+    const v = String(psUnitSelect.value||'').trim().toUpperCase();
+    if(psUnitSelect.value !== v) psUnitSelect.value = v;
+    syncPsTypeFromUnit();
+  });
+}
+syncPsTypeFromUnit();
 
 /* Form "Rencana Maintenance Bulanan" (input rencana baru) sekarang HANYA untuk Supervisor —
    Supervisor yang membuat & menugaskan rencana (Unit, PIC Mechanic, Component, No PR, Job
    Description, Plan/Due Date). Mechanic TIDAK perlu lagi mengisi form perencanaan ini sama
    sekali; mekanik yang menjadi PIC hanya perlu menekan tombol "＋ Isi Jam" pada baris rencana
-   miliknya di tabel Database Planning Maintenance untuk menandai pekerjaan selesai (Close) —
+   miliknya di tabel Planning Maintenance untuk menandai pekerjaan selesai (Close) —
    cukup isi Tgl Pekerjaan + Jam Mulai/Selesai, status otomatis berubah jadi Close. */
 function toggleSupervisorExecFields(){
   const panel = document.getElementById('planningsystem-input-panel');
@@ -11290,7 +11536,18 @@ document.getElementById('ps-jammulai').addEventListener('change', computePsDurat
 document.getElementById('ps-jamselesai').addEventListener('change', computePsDurationField);
 
 const psFilterUnit = document.getElementById('ps-filter-unit');
-psFilterUnit.innerHTML = '<option value="">Semua Unit</option>' + UNITS.map(u=>`<option value="${u.code}">${u.code}</option>`).join('');
+function refreshPsFilterUnitOptions(){
+  if(!psFilterUnit) return;
+  const prev = psFilterUnit.value || '';
+  const codes = new Set();
+  (UNITS||[]).forEach(u=>{ const c=String(u.code||'').trim(); if(c) codes.add(c); });
+  try{ (planningSystemRecords||[]).forEach(r=>{ const c=String(r.unitCode||'').trim(); if(c) codes.add(c); }); }catch(_e){}
+  const sorted = Array.from(codes).sort((a,b)=>a.localeCompare(b));
+  psFilterUnit.innerHTML = '<option value="">Semua Unit</option>' +
+    sorted.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+  if(prev && sorted.indexOf(prev)>=0) psFilterUnit.value = prev;
+}
+refreshPsFilterUnitOptions();
 
 const psMonth = document.getElementById('ps-month');
 psMonth.value = new Date().toISOString().slice(0,7);
@@ -11315,10 +11572,16 @@ document.getElementById('form-planningsystem').addEventListener('submit', async 
   const mech2User = getAllUsers().find(u=>u.username===document.getElementById('ps-pic2').value);
   const jamMulai = isSupervisor ? '' : document.getElementById('ps-jammulai').value;
   const jamSelesai = isSupervisor ? '' : document.getElementById('ps-jamselesai').value;
+  const unitCodeRaw = String(document.getElementById('ps-unitcode').value||'').trim().toUpperCase();
+  if(!unitCodeRaw){
+    alert('Unit Code wajib diisi (pilih dari daftar atau ketik manual).');
+    return;
+  }
+  const typeUnitRaw = String(document.getElementById('ps-typeunit').value||'').trim();
   const rec = {
     id: uid(),
-    unitCode: document.getElementById('ps-unitcode').value,
-    typeUnit: document.getElementById('ps-typeunit').value,
+    unitCode: unitCodeRaw,
+    typeUnit: typeUnitRaw,
     picUsername: mech1User.username,
     picName: mech1User.name,
     pic2Username: mech2User ? mech2User.username : '',
@@ -11337,7 +11600,9 @@ document.getElementById('form-planningsystem').addEventListener('submit', async 
   planningSystemRecords.unshift(rec);
   await savePlanningSystem();
   document.getElementById('form-planningsystem').reset();
-  syncTypeFromUnit(psUnitSelect, document.getElementById('ps-typeunit'));
+  fillPsUnitCodeDatalist();
+  try{ refreshPsFilterUnitOptions(); }catch(_e){}
+  syncPsTypeFromUnit();
   populatePicMechanicSelect();
   document.getElementById('ps-duration').value = '';
   renderPlanningTable();
@@ -11463,7 +11728,144 @@ function renderPlanningTable(){
   document.getElementById('ps-stat-open').textContent = open;
   document.getElementById('ps-stat-close').textContent = close;
   document.getElementById('ps-stat-overdue').textContent = overdue;
+  try{ renderPlanningHistorical(); }catch(_e){ console.warn('renderPlanningHistorical', _e); }
 }
+
+/** Rekap historical Planning Maintenance (status Close saja).
+ *  Disembunyikan total dari user Mechanic. */
+function canViewPlanningHistorical(){
+  try{
+    const role = (typeof currentRole==='function') ? currentRole() : '';
+    if(role==='Mechanic') return false;
+    // Supervisor, Admin, atau role non-mechanic lain
+    if(role==='Supervisor' || role==='Admin' || role==='Administrator') return true;
+    // fallback: bukan mechanic
+    if(loggedInUser && String(loggedInUser.role||'')==='Mechanic') return false;
+    return !!loggedInUser && role!=='Mechanic';
+  }catch(_e){ return false; }
+}
+
+function filterPlanningHistoricalRows(){
+  const monthEl = document.getElementById('ps-hist-month');
+  const unitEl = document.getElementById('ps-hist-unit');
+  const compEl = document.getElementById('ps-hist-component');
+  const month = (monthEl && monthEl.value) || '';
+  const unit = (unitEl && unitEl.value) || '';
+  const component = (compEl && compEl.value) || '';
+  return (planningSystemRecords||[]).filter(r=>{
+    if(!r || r.status!=='Close') return false;
+    const dateKey = String(r.workDate || r.planDate || '').slice(0,7);
+    if(month && dateKey !== month) return false;
+    if(unit && String(r.unitCode||'')!==unit) return false;
+    if(component && String(r.component||'')!==component) return false;
+    return true;
+  }).sort((a,b)=>{
+    const da = String(a.workDate || a.planDate || '');
+    const db = String(b.workDate || b.planDate || '');
+    return db.localeCompare(da);
+  });
+}
+
+function refreshPsHistUnitOptions(){
+  const sel = document.getElementById('ps-hist-unit');
+  if(!sel) return;
+  const prev = sel.value || '';
+  const codes = new Set();
+  (UNITS||[]).forEach(u=>{ const c=String(u.code||'').trim(); if(c) codes.add(c); });
+  try{
+    (planningSystemRecords||[]).forEach(r=>{
+      if(r && r.status==='Close'){
+        const c=String(r.unitCode||'').trim();
+        if(c) codes.add(c);
+      }
+    });
+  }catch(_e){}
+  const sorted = Array.from(codes).sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = '<option value="">Semua Unit</option>' +
+    sorted.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+  if(prev && sorted.indexOf(prev)>=0) sel.value = prev;
+}
+
+function renderPlanningHistorical(){
+  const panel = document.getElementById('ps-historical-panel');
+  const tbody = document.getElementById('ps-hist-tbody');
+  if(!panel || !tbody) return;
+
+  if(!canViewPlanningHistorical()){
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = '';
+  try{ refreshPsHistUnitOptions(); }catch(_e){}
+
+  const rows = filterPlanningHistoricalRows();
+  if(!rows.length){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Belum ada rencana Close untuk filter ini.</td></tr>`;
+  } else {
+    tbody.innerHTML = rows.map(r=>`
+      <tr>
+        <td><b>${escUH(r.unitCode||'')}</b></td>
+        <td>${escUH(r.typeUnit||'—')}</td>
+        <td>${escUH(r.picName||'—')}</td>
+        <td>${escUH(r.pic2Name||'—')}</td>
+        <td><span class="cat ${escUH(r.component||'')}">${escUH(r.component||'—')}</span></td>
+        <td>${escUH(r.noPR||'—')}</td>
+        <td style="white-space:normal;min-width:180px;text-align:left;">${escUH(r.jobDesc||'—')}</td>
+        <td>${formatDateDMY(r.planDate)}</td>
+        <td>${formatDateDMY(r.dueDate)}</td>
+        <td>${formatDateDMY(r.workDate)}</td>
+        <td style="font-family:JetBrains Mono,monospace;font-size:12px;">${escUH(r.jamMulai||'—')}</td>
+        <td style="font-family:JetBrains Mono,monospace;font-size:12px;">${escUH(r.jamSelesai||'—')}</td>
+        <td><b>${escUH(r.jamTotal||'—')}</b></td>
+        <td><span class="pill close">Close</span></td>
+      </tr>`).join('');
+  }
+
+  // KPI
+  const units = new Set(rows.map(r=>String(r.unitCode||'').trim()).filter(Boolean));
+  let totalHours = 0;
+  const compCount = {};
+  rows.forEach(r=>{
+    const jt = String(r.jamTotal||'').replace(/,/g,'.').match(/([\d.]+)/);
+    if(jt) totalHours += Number(jt[1])||0;
+    const c = r.component || 'Other';
+    compCount[c] = (compCount[c]||0)+1;
+  });
+  let topComp = '—';
+  let topN = 0;
+  Object.keys(compCount).forEach(k=>{
+    if(compCount[k] > topN){ topN = compCount[k]; topComp = k+' ('+topN+')'; }
+  });
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('ps-hist-kpi-total', rows.length);
+  set('ps-hist-kpi-units', units.size);
+  set('ps-hist-kpi-hours', Math.round(totalHours*10)/10);
+  set('ps-hist-kpi-topcomp', topComp);
+
+  try{ attachTopScroll('ps-hist'); }catch(_e){}
+}
+
+(function initPsHistoricalFilters(){
+  const monthEl = document.getElementById('ps-hist-month');
+  if(monthEl && !monthEl.value){
+    try{ monthEl.value = new Date().toISOString().slice(0,7); }catch(_e){}
+  }
+  ['ps-hist-month','ps-hist-unit','ps-hist-component'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('change', ()=>{
+      try{ renderPlanningHistorical(); }catch(_e){}
+    });
+  });
+  document.getElementById('ps-hist-clear-filter')?.addEventListener('click', ()=>{
+    const m = document.getElementById('ps-hist-month');
+    const u = document.getElementById('ps-hist-unit');
+    const c = document.getElementById('ps-hist-component');
+    if(m) m.value = '';
+    if(u) u.value = '';
+    if(c) c.value = '';
+    try{ renderPlanningHistorical(); }catch(_e){}
+  });
+})();
+
 window.deletePlanningSystem = async function(id){
   planningSystemRecords = planningSystemRecords.filter(r=>r.id!==id);
   await savePlanningSystem();
@@ -17465,6 +17867,7 @@ function renderCBMPareto(rows, stats){
   const tbody = document.getElementById('cbm-pareto-tbody');
   const insightEl = document.getElementById('cbm-pareto-insight');
   if(!wrap && !tbody) return;
+  cbmLastParetoRows = rows || [];
 
   const compMeta = {};
   CBM_COMPONENTS.forEach(c=> compMeta[c.key] = c);
@@ -17485,6 +17888,7 @@ function renderCBMPareto(rows, stats){
     if(wrap) wrap.innerHTML = `<div class="hint" style="padding:24px 0;">Tidak ada data breakdown saat ini.</div>`;
     if(tbody) tbody.innerHTML = `<tr class="empty-row"><td colspan="8">No breakdown data yet.</td></tr>`;
     if(insightEl) insightEl.innerHTML = '';
+    try{ renderCbmRca(); }catch(_e){}
     return;
   }
 
@@ -17497,8 +17901,12 @@ function renderCBMPareto(rows, stats){
     const cumPct = totalVal ? cum/totalVal*100 : 0;
     const isVital = beforePct < 80;
     if(isVital) vitalCount++;
-    const unitBadges = d.units.map(u=>`<span class="pill" style="margin:1px 3px 1px 0;">${escUH(u)}</span>`).join('') || '—';
-    return `<tr>
+    const compKeyAttr = escUH(d.key).replace(/'/g,"&#39;");
+    const unitBadges = d.units.map(u=>{
+      const uAttr = escUH(u).replace(/'/g,"&#39;");
+      return `<span class="pill" style="margin:1px 3px 1px 0;cursor:pointer;" title="Isi otomatis form RCA untuk unit ${uAttr}" onclick="event.stopPropagation();rcaAutoFillFromPareto('${compKeyAttr}','${uAttr}');">${escUH(u)}</span>`;
+    }).join('') || '—';
+    return `<tr data-comp="${compKeyAttr}" style="cursor:pointer;" title="Klik untuk isi otomatis form RCA komponen ${escUH(d.label)}" onclick="rcaAutoFillFromPareto('${compKeyAttr}');">
       <td>${i+1}</td>
       <td><span class="cat ${escUH(d.key)}" style="background:${d.color}26;color:${d.color};">${escUH(d.label)}</span></td>
       <td style="white-space:normal;text-align:left;min-width:180px">${unitBadges}</td>
@@ -17518,7 +17926,571 @@ function renderCBMPareto(rows, stats){
     const top = items.slice(0, vitalCount||1).map(d=>d.label).join(', ');
     insightEl.innerHTML = `<b>${vitalCount}</b> dari <b>${items.length}</b> komponen (<b>Vital Few</b>: ${escUH(top)}) menyumbang sekitar <b>80%</b> dari total ${metricLabel} — dihitung otomatis dari seluruh unit &amp; seluruh periode data Daily Maintenance (tanpa filter manual). Prioritaskan improvement / preventive action pada komponen tersebut untuk dampak pengurangan breakdown terbesar.`;
   }
+  try{ renderCbmRca(); }catch(_e){ console.warn('renderCbmRca', _e); }
 }
+
+/* ---- ROOT CAUSE ANALYSIS (di bawah Pareto CBM) ---- */
+
+/** Map hasil normalizeCBMComponent (bisa sub-komponen detail) ke key high-level
+ *  yang dipakai di Pareto & <select id="rca-component"> (mis. "Turbocharger" -> "Engine"). */
+function cbmGroupKeyOfComp(comp){
+  if(!comp) return null;
+  if((CBM_COMPONENTS||[]).some(c=>c.key===comp)) return comp;
+  const masterHit = Object.values(CBM_MASTER_BY_TYPE||{}).flat().find(c=>c.key===comp);
+  if(masterHit) return CBM_GROUP_TO_KEY[masterHit.group] || masterHit.group;
+  return comp;
+}
+
+/** Template 5 Whys / root cause / preventive per komponen high-level. */
+const RCA_COMPONENT_TEMPLATES = {
+  'Engine': {
+    category: 'Machine',
+    why1: 'Unit mengalami gejala gangguan di sistem engine (performa turun / overheat / smoke / sulit start).',
+    why2: 'Komponen internal atau sistem pendukung engine (fuel, cooling, lubrication, air intake) tidak bekerja optimal.',
+    why3: 'Wear, kontaminasi, atau parameter operasi di luar spesifikasi (suhu, tekanan oli, filter).',
+    why4: 'Interval inspeksi / ganti filter-oli-coolant atau monitoring parameter belum efektif menahan degradasi.',
+    why5: 'Program PM engine dan standar operasi site belum sepenuhnya mencegah failure mode yang berulang.',
+    root: 'Degradasi sistem engine akibat wear/kontaminasi yang belum tertangkap PM secara efektif.',
+    preventive: 'Review interval PM engine; pastikan sample oli & filter sesuai; cek parameter suhu/tekanan tiap shift; training operator idle/overheat.'
+  },
+  'Transmission': {
+    category: 'Machine',
+    why1: 'Gangguan transmisi (slip, shift kasar, noise, loss of drive).',
+    why2: 'Tekanan oli transmisi / clutch pack / valve body tidak stabil atau aus.',
+    why3: 'Kontaminasi oli, overheat, atau kebocoran internal mengurangi kapasitas transmisi.',
+    why4: 'Jadwal ganti oli transmisi / filter dan inspeksi kebocoran belum konsisten dijalankan.',
+    why5: 'Standar PM transmisi dan beban operasi site belum diselaraskan dengan lifetime komponen.',
+    root: 'Kegagalan transmisi terkait kondisi oli/pendinginan dan interval PM yang belum optimal.',
+    preventive: 'Patuhi interval ganti oli & filter transmisi; monitor suhu oli; cek kebocoran; hindari overload/shift kasar.'
+  },
+  'Hydraulic': {
+    category: 'Machine',
+    why1: 'Sistem hidrolik lemah, lambat, atau bocor.',
+    why2: 'Tekanan/flow hidrolik turun karena pump, seal, hose, atau valve bermasalah.',
+    why3: 'Kontaminasi oli hidrolik, seal aus, atau hose rusak karena getaran/abrasí.',
+    why4: 'Inspeksi hose/fitting dan kebersihan oli belum menangkap degradasi dini.',
+    why5: 'Praktik handling attachment dan PM hidrolik site belum mencegah repeat leak/pressure loss.',
+    root: 'Kegagalan hidrolik akibat kontaminasi/keausan seal-hose yang lolos dari inspeksi rutin.',
+    preventive: 'Inspeksi visual hose & fitting tiap shift; jaga kebersihan oli; ganti filter sesuai interval; perbaiki leak segera.'
+  },
+  'Electrical': {
+    category: 'Machine',
+    why1: 'Gangguan kelistrikan (tidak start, sensor error, short, lampu/instrument mati).',
+    why2: 'Kabel, konektor, relay, atau battery/charging system tidak reliable.',
+    why3: 'Korosi, getaran, air masuk, atau beban listrik berlebih merusak rangkaian.',
+    why4: 'Proteksi harness dan inspeksi konektor di lingkungan site belum memadai.',
+    why5: 'Standar routing kabel & sealing di unit belum disesuaikan kondisi site (debu/air/getaran).',
+    root: 'Kegagalan electrical akibat konektor/harness yang terpapar korosi, air, atau getaran.',
+    preventive: 'Inspeksi konektor & battery; pastikan sealing; rapihkan harness; cek charging voltage rutin.'
+  },
+  'AC System': {
+    category: 'Machine',
+    why1: 'AC tidak dingin / tidak berfungsi optimal.',
+    why2: 'Kompressor, condenser, atau sistem freon tidak bekerja sesuai spesifikasi.',
+    why3: 'Condenser kotor, aliran udara terhambat, atau freon bocor / kurang.',
+    why4: 'Pembersihan condenser dan cek pressure AC belum rutin di lingkungan berdebu.',
+    why5: 'Interval service AC belum disesuaikan dengan kondisi debu/suhu site.',
+    root: 'Kinerja AC turun karena condenser kotor / sistem freon bocor dan interval clean belum cukup.',
+    preventive: 'Naikkan frekuensi clean condenser; cek pressure freon berkala; pastikan fan condenser berfungsi.'
+  },
+  'Undercarriage': {
+    category: 'Machine',
+    why1: 'Keausan atau kerusakan undercarriage (track, roller, sprocket, idler).',
+    why2: 'Komponen UC melewati batas wear atau tension tidak sesuai.',
+    why3: 'Kondisi ground abrasive, tracking tidak lurus, atau tension salah mempercepat wear.',
+    why4: 'Pengukuran wear UC dan adjustment tension belum konsisten dicatat.',
+    why5: 'Strategi lifetime UC vs pola operasi site belum dioptimalkan.',
+    root: 'Wear undercarriage dipercepat oleh kondisi ground/tension dan monitoring wear yang kurang ketat.',
+    preventive: 'Ukur wear UC berkala; set tension benar; hindari pivot berlebih; rotasi unit jika perlu.'
+  },
+  'Attachment': {
+    category: 'Machine',
+    why1: 'Attachment (bucket, blade, dll.) rusak atau tidak berfungsi normal.',
+    why2: 'Pin, bushing, cutting edge, atau struktur attachment aus/retak.',
+    why3: 'Beban kerja berat, material abrasive, atau play berlebih mempercepat damage.',
+    why4: 'Penggantian wear part attachment terlambat dari batas yang disarankan.',
+    why5: 'Standar inspeksi attachment sebelum shift belum dijalankan penuh.',
+    root: 'Kerusakan attachment karena wear part melewati limit dan inspeksi pre-start kurang ketat.',
+    preventive: 'Cek pin/bushing/cutting edge tiap shift; ganti wear part sesuai limit; hindari pry/overload.'
+  },
+  'Final Drive': {
+    category: 'Machine',
+    why1: 'Final drive bising, bocor, atau loss of drive.',
+    why2: 'Gear/bearing final drive aus atau level oli tidak sesuai.',
+    why3: 'Kontaminasi oli, overload, atau seal rusak mempercepat kerusakan internal.',
+    why4: 'Cek level & sample oli final drive belum rutin.',
+    why5: 'Interval service final drive belum menyesuaikan beban site.',
+    root: 'Kerusakan final drive terkait pelumasan/kontaminasi dan interval service yang kurang.',
+    preventive: 'Cek level oli FD rutin; ganti oli sesuai interval; hindari spin track berlebih; cek seal.'
+  },
+  'Axle / Differential': {
+    category: 'Machine',
+    why1: 'Axle/differential bising, panas, atau bocor.',
+    why2: 'Gear/bearing axle aus atau pelumasan tidak optimal.',
+    why3: 'Overload, kontaminasi oli, atau seal failure.',
+    why4: 'Inspeksi level oli axle dan kebocoran belum konsisten.',
+    why5: 'PM axle belum diselaraskan dengan pola hauling/loading site.',
+    root: 'Kegagalan axle/diff terkait pelumasan dan beban operasi yang belum dikendalikan PM.',
+    preventive: 'Cek oli axle & kebocoran rutin; patuhi interval ganti oli; hindari overload berulang.'
+  },
+  'Cabin': {
+    category: 'Environment',
+    why1: 'Masalah pada cabin (struktur, door, seat, visibility, kebersihan).',
+    why2: 'Komponen cabin rusak atau tidak nyaman/aman untuk operasi.',
+    why3: 'Getaran, debu, atau penanganan kasar mempercepat kerusakan cabin.',
+    why4: 'Inspeksi cabin & APD operator belum menjadi prioritas harian.',
+    why5: 'Standar house-keeping cabin di site belum ditegakkan.',
+    root: 'Kerusakan/ketidaknyamanan cabin akibat kurangnya inspeksi dan house-keeping rutin.',
+    preventive: 'Inspeksi door/seat/kaca tiap shift; jaga kebersihan; perbaiki segera item safety-related.'
+  },
+  'Tyre': {
+    category: 'Material',
+    why1: 'Ban rusak, aus tidak merata, atau bocor.',
+    why2: 'Tekanan ban tidak sesuai, atau kerusakan dinding/tapak.',
+    why3: 'Kondisi jalan, overload, atau hot-spot mempercepat damage ban.',
+    why4: 'Cek tekanan & inspeksi ban belum konsisten setiap shift.',
+    why5: 'Manajemen tyre pressure dan rute haul belum optimal.',
+    root: 'Kerusakan ban terkait tekanan/beban/jalan yang belum dikontrol dengan disiplin inspeksi.',
+    preventive: 'Cek tekanan ban tiap shift; hindari overload; perbaiki jalan tajam; rotasi ban sesuai policy.'
+  },
+  'Wheel': {
+    category: 'Machine',
+    why1: 'Masalah pada wheel group (bearing, hub, nut).',
+    why2: 'Bearing/hub aus atau kendor.',
+    why3: 'Pelumasan kurang, kontaminasi, atau torsi nut tidak sesuai.',
+    why4: 'Torque check dan greasing wheel belum rutin.',
+    why5: 'Standar wheel maintenance belum diterapkan penuh di workshop/site.',
+    root: 'Kegagalan wheel group karena pelumasan/torsi yang tidak terjaga.',
+    preventive: 'Greasing sesuai interval; torque check nut; cek temperature hub setelah operasi.'
+  },
+  'Other': {
+    category: 'Method',
+    why1: 'Terjadi breakdown pada sistem/komponen terkait.',
+    why2: 'Kondisi komponen atau metode kerja tidak mencegah failure.',
+    why3: 'Penyebab spesifik perlu dikonfirmasi dari gejala dan riwayat perbaikan.',
+    why4: 'Deteksi dini atau standar kerja mungkin belum menangkap anomali.',
+    why5: 'Perlu review prosedur dan data histori untuk penajaman akar masalah.',
+    root: 'Akar masalah perlu diverifikasi dari pola berulang dan kondisi operasi site.',
+    preventive: 'Lakukan inspeksi terarah, catat gejala lengkap, dan review PM terkait komponen ini.'
+  }
+};
+
+function rcaInferCategory(text, fallback){
+  const t = String(text||'').toLowerCase();
+  if(/operator|human|salah prosedur|tidak sesuai sop|training|manusia/.test(t)) return 'Man';
+  if(/prosedur|sop|metode|jadwal|interval|pm |preventive|metode kerja/.test(t)) return 'Method';
+  if(/part|seal|hose|filter|oli |ban |bearing|material|spare/.test(t)) return 'Material';
+  if(/debu|lumpur|air masuk|cuaca|jalan|site|lingkungan|abrasive/.test(t)) return 'Environment';
+  if(/bocor|aus|rusak|overheat|short|noise|patah|retak|mesin|unit/.test(t)) return 'Machine';
+  return fallback || 'Machine';
+}
+
+/** Bangun objek RCA lengkap dari kumpulan record breakdown (satu unit × komponen). */
+function buildAutoRcaFromMatches(compKey, unitCode, matches){
+  const tpl = RCA_COMPONENT_TEMPLATES[compKey] || RCA_COMPONENT_TEMPLATES['Other'];
+  const sorted = (matches||[]).slice().sort((a,b)=> String(b.tanggal||'').localeCompare(String(a.tanggal||'')));
+  const latest = sorted[0] || null;
+  const count = sorted.length;
+  const unplanN = sorted.filter(r=>{
+    const pu = String(r.planUnplan||r.plan_unplan||'').toLowerCase();
+    return pu.indexOf('unplan')>=0 || pu==='unplanned';
+  }).length;
+  const totalHrs = sorted.reduce((a,r)=>a+(Number(r.duration)||0),0);
+  const descs = sorted.map(r=>String(r.jobDesc||'').trim()).filter(Boolean);
+  const repairs = sorted.map(r=>String(r.repairAction||'').trim()).filter(Boolean);
+  const codes = sorted.map(r=>String(r.codeBD||'').trim()).filter(Boolean);
+  const mechs = [];
+  sorted.forEach(r=>{
+    [r.mechanic,r.mechanic2,r.mechanic3,r.picName].forEach(m=>{
+      if(m && mechs.indexOf(m)<0) mechs.push(m);
+    });
+  });
+
+  const problem = descs.length
+    ? (count>1
+        ? `[${count}x BD] ${descs[0]}${descs[1] && descs[1]!==descs[0] ? ' | '+descs[1] : ''}`
+        : descs[0])
+    : (`Breakdown berulang pada ${compKey}` + (unitCode?` unit ${unitCode}`:''));
+
+  let why1 = tpl.why1;
+  if(descs[0]) why1 = `Gejala dilaporkan: ${descs[0]}`;
+  let why2 = tpl.why2;
+  if(unplanN && count){
+    why2 = `${unplanN} dari ${count} kejadian bersifat Unplan — indikasi failure tidak tertangkap preventive.`;
+  }
+  let why3 = tpl.why3;
+  if(totalHrs>0) why3 = `Akumulasi downtime perbaikan ±${totalHrs.toFixed(1)} jam pada pola failure yang sama. ${tpl.why3}`;
+  const why4 = tpl.why4;
+  const why5 = tpl.why5;
+
+  const corrective = repairs.length
+    ? repairs[0] + (repairs[1] && repairs[1]!==repairs[0] ? ' | '+repairs[1] : '')
+    : (`Perbaikan korektif pada ${compKey} sesuai temuan di lapangan (lihat histori Repair Action).`);
+
+  const rootCause = count>1
+    ? `${tpl.root} Pola: ${count} kejadian` + (unplanN?`, ${unplanN} unplan`:'') + (unitCode?` pada ${unitCode}`:'') + '.'
+    : tpl.root;
+
+  const category = rcaInferCategory(problem+' '+corrective, tpl.category);
+  const pic = mechs[0] || ((typeof currentUserName==='function') ? currentUserName() : '') || '';
+  const date = (latest && latest.tanggal) ? latest.tanggal : new Date().toISOString().slice(0,10);
+  const codeBD = codes[0] || '';
+
+  return {
+    date,
+    unitCode: String(unitCode|| (latest&&latest.unitCode) || '').toUpperCase(),
+    component: compKey,
+    codeBD,
+    problem,
+    why1, why2, why3, why4, why5,
+    category,
+    rootCause,
+    corrective,
+    preventive: tpl.preventive,
+    pic,
+    status: 'Open',
+    autoGenerated: true,
+    sourceCount: count
+  };
+}
+
+function applyRcaToForm(data){
+  if(!data) return;
+  const set = (id,v)=>{ const el=document.getElementById(id); if(el && v!=null) el.value = v; };
+  set('rca-date', data.date||'');
+  set('rca-unit', data.unitCode||'');
+  set('rca-component', data.component||'');
+  set('rca-component-value', data.component||'');
+  // disabled <select> tidak ikut submit — pastikan value tetap terlihat
+  const compSel = document.getElementById('rca-component');
+  if(compSel){ compSel.disabled = false; compSel.value = data.component||''; compSel.disabled = true; }
+  set('rca-codebd', data.codeBD||'');
+  set('rca-problem', data.problem||'');
+  set('rca-why1', data.why1||'');
+  set('rca-why2', data.why2||'');
+  set('rca-why3', data.why3||'');
+  set('rca-why4', data.why4||'');
+  set('rca-why5', data.why5||'');
+  set('rca-category', data.category||'Machine');
+  set('rca-rootcause', data.rootCause||'');
+  set('rca-corrective', data.corrective||'');
+  set('rca-preventive', data.preventive||'');
+  set('rca-pic', data.pic||'');
+  set('rca-status', data.status||'Open');
+  const stSel = document.getElementById('rca-status');
+  if(stSel){ stSel.disabled = false; stSel.value = data.status||'Open'; stSel.disabled = true; }
+}
+
+/** Auto-fill form RCA dari data breakdown untuk komponen (dan opsional unit). */
+window.rcaAutoFillFromPareto = function(compKey, unitCode){
+  try{
+    if(!compKey) return;
+    const source = (typeof cbmBreakdownRecords==='function') ? cbmBreakdownRecords() : [];
+    let matches = (source||[]).filter(r => cbmGroupKeyOfComp(r._cbmComp) === compKey);
+    if(unitCode) matches = matches.filter(r => String(r.unitCode||'').trim().toUpperCase() === String(unitCode).trim().toUpperCase());
+    // jika unit tidak dipilih, pakai unit dengan kejadian terbanyak
+    let useUnit = unitCode ? String(unitCode).toUpperCase() : '';
+    if(!useUnit && matches.length){
+      const cnt = {};
+      matches.forEach(r=>{ const u=String(r.unitCode||'').toUpperCase(); if(u) cnt[u]=(cnt[u]||0)+1; });
+      useUnit = Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0] || '';
+      if(useUnit) matches = matches.filter(r=>String(r.unitCode||'').toUpperCase()===useUnit);
+    }
+    const data = buildAutoRcaFromMatches(compKey, useUnit, matches);
+    applyRcaToForm(data);
+    const panel = document.getElementById('cbm-rca-panel');
+    if(panel && panel.scrollIntoView) panel.scrollIntoView({behavior:'smooth', block:'start'});
+  }catch(e){ console.warn('rcaAutoFillFromPareto error', e); }
+};
+
+/** Generate & simpan RCA otomatis untuk semua unit × komponen Vital Few yang belum ada RCA. */
+window.rcaAutoGenerateVitalFew = async function(){
+  try{
+    const source = (typeof cbmBreakdownRecords==='function') ? cbmBreakdownRecords() : [];
+    if(!source.length){
+      alert('Tidak ada data Breakdown untuk di-generate.');
+      return;
+    }
+    // Hitung ranking komponen seperti Pareto (by count)
+    const byComp = {};
+    source.forEach(r=>{
+      const k = cbmGroupKeyOfComp(r._cbmComp);
+      if(!k) return;
+      if(!byComp[k]) byComp[k] = { total:0, units:{} };
+      byComp[k].total++;
+      const u = String(r.unitCode||'').toUpperCase();
+      if(u) byComp[k].units[u] = (byComp[k].units[u]||0)+1;
+    });
+    const items = Object.keys(byComp).map(k=>({key:k, value:byComp[k].total, units:byComp[k].units}))
+      .filter(d=>d.value>0).sort((a,b)=>b.value-a.value);
+    const totalVal = items.reduce((a,d)=>a+d.value,0) || 1;
+    let cum = 0;
+    const vitalKeys = [];
+    items.forEach(d=>{
+      const before = cum/totalVal*100;
+      cum += d.value;
+      if(before < 80) vitalKeys.push(d.key);
+    });
+    if(!vitalKeys.length && items.length) vitalKeys.push(items[0].key);
+
+    const existing = new Set((rcaRecords||[]).map(r=>
+      String(r.unitCode||'').toUpperCase()+'|'+String(r.component||'')
+    ));
+
+    let created = 0;
+    const picDefault = (typeof currentUserName==='function') ? currentUserName() : '';
+    vitalKeys.forEach(compKey=>{
+      const unitMap = (byComp[compKey] && byComp[compKey].units) || {};
+      Object.keys(unitMap).forEach(unit=>{
+        const key = unit+'|'+compKey;
+        if(existing.has(key)) return;
+        const matches = source.filter(r=>
+          cbmGroupKeyOfComp(r._cbmComp)===compKey &&
+          String(r.unitCode||'').toUpperCase()===unit
+        );
+        const data = buildAutoRcaFromMatches(compKey, unit, matches);
+        if(!data.pic) data.pic = picDefault;
+        const rec = {
+          id: (typeof uid==='function') ? uid() : ('rca-'+Date.now()+'-'+created),
+          ...data,
+          createdBy: picDefault,
+          createdAt: new Date().toISOString()
+        };
+        rcaRecords.unshift(rec);
+        existing.add(key);
+        created++;
+      });
+    });
+
+    if(created){
+      await saveRcaRecords();
+      renderCbmRca();
+      alert(`Berhasil generate ${created} RCA otomatis untuk kombinasi Unit × Komponen Vital Few yang belum ada.`);
+    } else {
+      alert('Semua Unit × Komponen Vital Few sudah memiliki RCA. Tidak ada yang ditambahkan.');
+    }
+  }catch(e){
+    console.error(e);
+    alert('Gagal generate RCA: '+(e.message||e));
+  }
+};
+
+window.rcaRefreshFormFromSelection = function(){
+  const comp = (document.getElementById('rca-component')||{}).value || '';
+  const unit = (document.getElementById('rca-unit')||{}).value || '';
+  if(!comp){
+    // ambil vital few top component
+    try{
+      const source = (typeof cbmBreakdownRecords==='function') ? cbmBreakdownRecords() : [];
+      const cnt = {};
+      source.forEach(r=>{ const k=cbmGroupKeyOfComp(r._cbmComp); if(k) cnt[k]=(cnt[k]||0)+1; });
+      const top = Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
+      if(top) rcaAutoFillFromPareto(top, unit||undefined);
+      else alert('Pilih Component terlebih dahulu, atau pastikan ada data Breakdown.');
+    }catch(_e){ alert('Pilih Component terlebih dahulu.'); }
+    return;
+  }
+  rcaAutoFillFromPareto(comp, unit||undefined);
+};
+
+function fillRcaUnitDatalist(){
+  const dl = document.getElementById('rca-unit-list');
+  if(!dl) return;
+  const codes = new Set();
+  try{ (UNITS||[]).forEach(u=>{ const c=String(u.code||u.unitCode||'').trim(); if(c) codes.add(c); }); }catch(_e){}
+  try{ (rcaRecords||[]).forEach(r=>{ const c=String(r.unitCode||'').trim(); if(c) codes.add(c); }); }catch(_e){}
+  try{ (dailyRecords||[]).forEach(r=>{ if(r.category==='Breakdown'){ const c=String(r.unitCode||'').trim(); if(c) codes.add(c); }}); }catch(_e){}
+  dl.innerHTML = Array.from(codes).sort().map(c=>'<option value="'+c+'"></option>').join('');
+}
+function fillRcaCompFilter(){
+  const sel = document.getElementById('rca-filter-comp');
+  if(!sel) return;
+  const prev = sel.value || '';
+  const comps = new Set();
+  try{ (rcaRecords||[]).forEach(r=>{ if(r.component) comps.add(r.component); }); }catch(_e){}
+  const sorted = Array.from(comps).sort();
+  sel.innerHTML = '<option value="">Semua Component</option>' +
+    sorted.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+  if(prev && sorted.indexOf(prev)>=0) sel.value = prev;
+}
+function renderCbmRca(){
+  const tbody = document.getElementById('cbm-rca-tbody');
+  if(!tbody) return;
+  fillRcaUnitDatalist();
+  fillRcaCompFilter();
+  const dateEl = document.getElementById('rca-date');
+  if(dateEl && !dateEl.value){
+    try{ dateEl.value = new Date().toISOString().slice(0,10); }catch(_e){}
+  }
+  const picEl = document.getElementById('rca-pic');
+  if(picEl && !picEl.value && typeof currentUserName==='function'){
+    try{ picEl.value = currentUserName() || ''; }catch(_e){}
+  }
+
+  const stF = (document.getElementById('rca-filter-status')||{}).value || '';
+  const cF = (document.getElementById('rca-filter-comp')||{}).value || '';
+  let rows = (rcaRecords||[]).slice();
+  if(stF) rows = rows.filter(r=>r.status===stF);
+  if(cF) rows = rows.filter(r=>r.component===cF);
+  rows.sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')));
+
+  if(!rows.length){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="11">Belum ada RCA. Klik <b>Generate Otomatis dari Breakdown</b> atau klik baris komponen di tabel Pareto di atas.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r=>{
+    const st = r.status||'Open';
+    const stClass = st==='Closed'||st==='Verified' ? 'close' : (st==='In Progress' ? 'progress' : 'open');
+    const autoTag = r.autoGenerated ? ' <span class="pill progress" title="Di-generate otomatis">AUTO</span>' : '';
+    const id = String(r.id||'').replace(/'/g,"&#39;");
+    return `<tr data-rca-id="${escUH(r.id)}">
+      <td>${formatDateDMY(r.date)}${autoTag}</td>
+      <td><b>${escUH(r.unitCode||'')}</b></td>
+      <td><span class="cat ${escUH(r.component||'')}">${escUH(r.component||'—')}</span></td>
+      <td style="white-space:normal;text-align:left;min-width:120px;max-width:200px;">${escUH(r.problem||'—')}</td>
+      <td style="white-space:normal;text-align:left;min-width:140px;max-width:220px;">${escUH(r.rootCause||'—')}</td>
+      <td>${escUH(r.category||'—')}</td>
+      <td style="white-space:normal;text-align:left;min-width:120px;">${escUH(r.corrective||'—')}</td>
+      <td style="white-space:normal;text-align:left;min-width:120px;">${escUH(r.preventive||'—')}</td>
+      <td>${escUH(r.pic||'—')}</td>
+      <td><span class="pill ${stClass}">${escUH(st)}</span></td>
+      <td style="white-space:nowrap;">
+        <div class="edit-hint" style="display:inline-block;margin-right:6px;"><span class="edit-text-btn" onclick="editRcaRecord('${id}')">Edit</span></div>
+        <button type="button" class="btn danger" onclick="deleteRcaRecord('${id}')">Hapus</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+let rcaEditActiveId = null;
+window.editRcaRecord = function(id){
+  const r = (rcaRecords||[]).find(x=>x.id===id);
+  if(!r){ alert('Record RCA tidak ditemukan.'); return; }
+  rcaEditActiveId = id;
+  const info = document.getElementById('rca-edit-info');
+  if(info){
+    info.innerHTML = `<b>${escUH(r.unitCode||'')}</b> — ${escUH(r.component||'—')}<br>
+      <span class="hint">Problem: ${escUH(r.problem||'—')}</span><br>
+      <span class="hint">Tgl: ${formatDateDMY(r.date)} · PIC: ${escUH(r.pic||'—')}${r.codeBD?' · BD: '+escUH(r.codeBD):''}</span>`;
+  }
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v!=null?v:''; };
+  set('rca-edit-rootcause', r.rootCause||'');
+  set('rca-edit-category', r.category||'Machine');
+  set('rca-edit-corrective', r.corrective||'');
+  set('rca-edit-preventive', r.preventive||'');
+  set('rca-edit-status', r.status||'Open');
+  document.getElementById('rca-edit-overlay')?.classList.add('show');
+};
+function closeRcaEditModal(){
+  rcaEditActiveId = null;
+  document.getElementById('rca-edit-overlay')?.classList.remove('show');
+}
+window.deleteRcaRecord = async function(id){
+  if(!confirm('Hapus record RCA ini?')) return;
+  rcaRecords = (rcaRecords||[]).filter(r=>r.id!==id);
+  await saveRcaRecords();
+  renderCbmRca();
+};
+
+(function initRcaEditModal(){
+  document.getElementById('rca-edit-modal-close')?.addEventListener('click', closeRcaEditModal);
+  document.getElementById('rca-edit-cancel')?.addEventListener('click', closeRcaEditModal);
+  document.getElementById('rca-edit-overlay')?.addEventListener('click', (e)=>{
+    if(e.target && e.target.id==='rca-edit-overlay') closeRcaEditModal();
+  });
+  document.getElementById('rca-edit-save')?.addEventListener('click', async ()=>{
+    const r = (rcaRecords||[]).find(x=>x.id===rcaEditActiveId);
+    if(!r){ closeRcaEditModal(); return; }
+    const rootCause = String(document.getElementById('rca-edit-rootcause').value||'').trim();
+    if(!rootCause){ alert('Root Cause wajib diisi.'); return; }
+    r.rootCause = rootCause;
+    r.category = document.getElementById('rca-edit-category').value || 'Machine';
+    r.corrective = String(document.getElementById('rca-edit-corrective').value||'').trim();
+    r.preventive = String(document.getElementById('rca-edit-preventive').value||'').trim();
+    r.status = document.getElementById('rca-edit-status').value || 'Open';
+    r.updatedAt = new Date().toISOString();
+    r.updatedBy = (typeof currentUserName==='function') ? currentUserName() : '';
+    await saveRcaRecords();
+    closeRcaEditModal();
+    renderCbmRca();
+  });
+})();
+
+(function initCbmRcaHandlers(){
+  const form = document.getElementById('form-cbm-rca');
+  if(form && !form.dataset.bound){
+    form.dataset.bound = '1';
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const unit = String(document.getElementById('rca-unit').value||'').trim().toUpperCase();
+      const component = (document.getElementById('rca-component-value')||{}).value
+        || document.getElementById('rca-component').value
+        || '';
+      const problem = String(document.getElementById('rca-problem').value||'').trim();
+      const rootCause = String(document.getElementById('rca-rootcause').value||'').trim();
+      if(!unit || !component || !problem || !rootCause){
+        alert('Data otomatis belum lengkap. Klik baris Pareto / Generate / Refresh Form dulu, lalu lengkapi Root Cause.');
+        return;
+      }
+      const rec = {
+        id: (typeof uid==='function') ? uid() : ('rca-'+Date.now()),
+        date: document.getElementById('rca-date').value || new Date().toISOString().slice(0,10),
+        unitCode: unit,
+        component,
+        codeBD: String(document.getElementById('rca-codebd').value||'').trim(),
+        problem,
+        why1: String(document.getElementById('rca-why1').value||'').trim(),
+        why2: String(document.getElementById('rca-why2').value||'').trim(),
+        why3: String(document.getElementById('rca-why3').value||'').trim(),
+        why4: String(document.getElementById('rca-why4').value||'').trim(),
+        why5: String(document.getElementById('rca-why5').value||'').trim(),
+        category: document.getElementById('rca-category').value || 'Machine',
+        rootCause,
+        corrective: String(document.getElementById('rca-corrective').value||'').trim(),
+        preventive: String(document.getElementById('rca-preventive').value||'').trim(),
+        pic: String(document.getElementById('rca-pic').value||'').trim(),
+        status: (document.getElementById('rca-status')||{}).value || 'Open',
+        autoGenerated: false,
+        createdBy: (typeof currentUserName==='function') ? currentUserName() : '',
+        createdAt: new Date().toISOString()
+      };
+      rcaRecords.unshift(rec);
+      await saveRcaRecords();
+      form.reset();
+      const d = document.getElementById('rca-date');
+      if(d) d.value = new Date().toISOString().slice(0,10);
+      renderCbmRca();
+    });
+  }
+  document.getElementById('rca-auto-generate-btn')?.addEventListener('click', ()=> rcaAutoGenerateVitalFew());
+  document.getElementById('rca-form-reset-btn')?.addEventListener('click', ()=>{
+    const form = document.getElementById('form-cbm-rca');
+    if(form) form.reset();
+    const d = document.getElementById('rca-date');
+    if(d) d.value = new Date().toISOString().slice(0,10);
+    const hv = document.getElementById('rca-component-value');
+    if(hv) hv.value = '';
+  });
+  document.getElementById('rca-auto-refresh-form-btn')?.addEventListener('click', ()=> rcaRefreshFormFromSelection());
+  // Saat unit/component berubah, isi otomatis ulang
+  ['rca-unit','rca-component'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('change', ()=>{
+      const comp = (document.getElementById('rca-component')||{}).value || '';
+      const unit = (document.getElementById('rca-unit')||{}).value || '';
+      if(comp) rcaAutoFillFromPareto(comp, unit||undefined);
+    });
+  });
+  ['rca-filter-status','rca-filter-comp'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('change', ()=> renderCbmRca());
+  });
+  document.getElementById('rca-clear-filter')?.addEventListener('click', ()=>{
+    const s = document.getElementById('rca-filter-status');
+    const c = document.getElementById('rca-filter-comp');
+    if(s) s.value = '';
+    if(c) c.value = '';
+    renderCbmRca();
+  });
+})();
 
 function renderCBMInsight(stats){
   const list = stats.byUC.slice().sort((a,b)=> (a.perfScore||100) - (b.perfScore||100));
