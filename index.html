@@ -2255,7 +2255,7 @@ body.role-mechanic #history-filters{ display:none !important; }
         <div class="panel">
           <div class="panel-head">
             <h2>Schedule Plan Service <span class="tag">AUTO SYNC · 4 UNIT LOCK</span></h2>
-          <div class="hint" style="margin-top:8px; width:100%;">Kolom <b>HM Sekarang</b> bisa diisi <b>HM Actual manual</b> per unit → <b>Est. Sisa HM</b> &amp; <b>Plan Date</b> menyesuaikan otomatis (WH/hari dari <b>Jam Kerja Harian aktual</b> (fallback performance)). Sebelum <b>Close</b>, isi juga <b>HM Eksekusi</b> (HM saat service dikerjakan) untuk plan berikutnya.</div>
+          <div class="hint" style="margin-top:8px; width:100%;"><b>HM Sekarang</b> <u>auto-sync setiap hari</u> dari baseline HM sheet + waktu operasi (<b>WH/hari sheet performance</b> / Jam Kerja Harian) — <b>tanpa perlu klik Sync</b>. Est. Sisa HM &amp; Plan Date menyesuaikan otomatis. Override manual (HM Actual) tetap dihormati sampai sheet lebih baru. Sebelum <b>Close</b>, isi <b>HM Eksekusi</b> (HM saat service dikerjakan) untuk plan berikutnya.</div>
             <div class="toolbar">
               <button type="button" class="btn small" id="btn-sync-plan-all" title="Sync performance + HM + Jam Kerja Harian, lalu generate jadwal otomatis">☁ Sync & Generate Otomatis</button>
               <button type="button" class="btn small secondary" id="btn-sync-daily-wh" title="Sync WH harian dari sheet performance (T−S)/hari — tanpa sheet baru">☁ Sync Jam Kerja Harian</button>
@@ -2294,8 +2294,7 @@ body.role-mechanic #history-filters{ display:none !important; }
               <button type="button" class="btn secondary small" id="plan-period-reset-btn" title="Tampilkan semua jadwal Open">✕ Reset</button>
               <button type="button" class="btn small secondary" id="plan-period-this-month-btn" title="Filter ke bulan berjalan (Open)">Bulan Ini</button>
             </div>
-            <div class="hint" style="margin-top:10px; margin-bottom:0;">Filter <b>Tahun + Bulan</b> berdasarkan <b>Plan Date</b>. Tabel Schedule hanya menampilkan jadwal berstatus <b>Open</b> (Close ada di Record Service Unit).</div>
-            <div class="hint" id="plan-daily-wh-status" style="margin-top:8px; margin-bottom:0;">WH/hari Plan Service: dari <b>sheet performance</b> (T−S)/hari periode, di-expand per tanggal. Opsional: sheet Jam Kerja Harian jika ada.</div>
+            <div class="hint" id="plan-daily-wh-status" style="margin-top:10px; margin-bottom:0;">sumber: <b>sheet performance</b> (W/hari) · auto-sync harian aktif · sync: —</div>
           </div>
           <div class="scroll-top-track" id="plan-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="plan-scroll-top-inner"></div></div>
           <div class="table-wrap" id="plan-table-wrap">
@@ -2599,43 +2598,17 @@ body.role-mechanic #history-filters{ display:none !important; }
       <!-- CBM MONITORING ONLY -->
       <section class="view" id="view-cbm">
         <div class="banner"> The <b>CBM (Condition-Based Monitoring)</b> panel is <b>monitoring only</b> (no manual input). Component life time &amp; performance are calculated automatically from <b>HM</b> and <b>Breakdown / Unplan</b> history in Daily Maintenance.</div>
-        <div class="chip-tabs" id="cbm-tabs">
-          <button type="button" class="chip active" data-cbm-tab="overview">Overview Komponen</button>
-          <button type="button" class="chip" data-cbm-tab="lifetime">Life Time &amp; Performance</button>
-          <button type="button" class="chip" data-cbm-tab="safety">Critical Parts</button>
-          <button type="button" class="chip" data-cbm-tab="unplan">Histori Breakdown / Unplan</button>
-          <button type="button" class="chip" data-cbm-tab="insight">Insight AI</button>
-        </div>
-
-        <div class="panel period-panel" style="margin-bottom:16px;">
-          <div class="panel-head" style="margin-bottom:10px;">
-            <h2>Monitoring Filter</h2>
-            <div class="toolbar">
-              <button type="button" class="btn secondary" id="cbm-refresh">⟲ Refresh Data</button>
-            </div>
+        <div class="chip-tabs" id="cbm-tabs" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <button type="button" class="chip active" data-cbm-tab="overview">Overview Komponen</button>
+            <button type="button" class="chip" data-cbm-tab="lifetime">Life Time &amp; Performance</button>
+            <button type="button" class="chip" data-cbm-tab="safety">Critical Parts</button>
+            <button type="button" class="chip" data-cbm-tab="pareto">Pareto Analysis</button>
+            <button type="button" class="chip" data-cbm-tab="insight">Insight AI</button>
           </div>
-          <div class="filters" style="margin-bottom:0;">
-            <div class="field" style="margin:0;min-width:150px;">
-              <label>Unit</label>
-              <select id="cbm-filter-unit"><option value="">All Units</option></select>
-            </div>
-            <div class="field" style="margin:0;min-width:150px;">
-              <label>From Date</label>
-              <input type="date" id="cbm-filter-start">
-            </div>
-            <div class="field" style="margin:0;min-width:150px;">
-              <label>To Date</label>
-              <input type="date" id="cbm-filter-end">
-            </div>
-            <div class="field" style="margin:0;min-width:170px;">
-              <label>Component</label>
-              <select id="cbm-filter-comp"><option value="">All Components</option></select>
-            </div>
-            <div style="align-self:flex-end;">
-              <button type="button" class="btn small secondary" id="cbm-filter-clear">Clear Filter</button>
-            </div>
-          </div>
+          <button type="button" class="btn small secondary" id="cbm-refresh" title="Tarik ulang data HM/Performance/Daily Maintenance terbaru">⟲ Refresh Data</button>
         </div>
+        <p class="hint" style="margin:8px 0 16px;">Semua unit &amp; seluruh periode data ditampilkan otomatis (tanpa filter manual) — chart dan tabel di bawah selalu mengikuti data Daily Maintenance terbaru.</p>
 
         <!-- OVERVIEW + ASSET CARDS -->
         <div class="cbm-tab-panel" id="cbm-tab-overview">
@@ -2730,22 +2703,26 @@ body.role-mechanic #history-filters{ display:none !important; }
           </div>
         </div>
 
-        <!-- UNPLAN HISTORY -->
-        <div class="cbm-tab-panel" id="cbm-tab-unplan" style="display:none;">
+        <!-- PARETO ANALYSIS -->
+        <div class="cbm-tab-panel" id="cbm-tab-pareto" style="display:none;">
           <div class="panel">
             <div class="panel-head">
-              <h2>Breakdown / Unplan History</h2>
-              <div class="toolbar">
-                <button type="button" class="btn" id="cbm-sync-bd-history-btn" title="Kirim record Breakdown/Unplan ke Google Sheets tab Historical Breakdown">☁ Sync ke Sheet Historical Breakdown</button>
+              <h2><span class="tag" style="background:rgba(229,72,77,0.18);color:var(--red);">80/20</span> Pareto Analysis — Breakdown by Component</h2>
+              <div class="toolbar" id="cbm-pareto-metric-tabs">
+                <button type="button" class="chip active" data-pareto-metric="count">Jumlah Kejadian</button>
+                <button type="button" class="chip" data-pareto-metric="hours">Jam Perbaikan</button>
               </div>
             </div>
-            <div class="table-wrap">
+            <p class="hint" style="margin-bottom:14px;">Prinsip Pareto (80/20): komponen di sisi kiri grafik (bar solid, di atas garis putus-putus <span style="color:var(--red);font-weight:700;">80%</span>) adalah <b>Vital Few</b> — kontributor terbesar breakdown yang paling layak diprioritaskan untuk improvement / preventive action.</p>
+            <div id="cbm-pareto-chart" style="width:100%;overflow-x:auto;"></div>
+            <div class="pdm-insight" id="cbm-pareto-insight" style="margin-top:14px;"></div>
+            <div class="table-wrap" style="margin-top:16px;">
               <table>
                 <thead><tr>
-                  <th>Date</th><th>Unit</th><th>HM</th><th>Component</th>
-                  <th>Plan/Unplan</th><th>Duration (hours)</th><th>Description</th><th>Keterangan Part Consumable</th><th>Mechanic</th><th>Status</th>
+                  <th>Rank</th><th>Component</th><th>Code Unit</th><th>Jumlah Kejadian</th><th>Jam Perbaikan</th>
+                  <th>% of Total</th><th>Kumulatif %</th><th>Klasifikasi</th>
                 </tr></thead>
-                <tbody id="cbm-hist-tbody"></tbody>
+                <tbody id="cbm-pareto-tbody"></tbody>
               </table>
             </div>
           </div>
@@ -9580,22 +9557,33 @@ function calcHmSekarang(unitCode, asOfDateStr){
   }
 
   // Baseline dari HM Eksekusi / HM Actual manual:
-  // - Input MANUAL selalu menang (nilai actual yang diisi user).
+  // - Input MANUAL menang HANYA SELAMA sheet (Monitoring HM / View-SEN-HM / performance)
+  //   belum punya pembacaan yang lebih baru DAN lebih tinggi. Begitu sheet sudah "menyusul"
+  //   (tanggal lebih baru & HM >= nilai manual), auto-sync dari sheet yang menang — supaya
+  //   HM Sekarang tidak beku di angka manual lama walau data operasional terbaru sudah masuk.
   // - Close / max non-manual hanya menaikkan jika lebih tinggi dari monitoring.
+  const preExecHm = hmNow;
+  const preExecDate = lastDate;
   const maxExec = (typeof getMaxHmEksekusiForUnit==='function') ? getMaxHmEksekusiForUnit(unitCode) : null;
   if(maxExec && maxExec.hm!=null){
     const execHm = Number(maxExec.hm);
-    if(maxExec.manual){
+    const execDate = maxExec.date || '';
+    const sheetSupersedesManual = maxExec.manual && preExecHm!=null &&
+      String(preExecDate||'') > String(execDate||'') &&
+      Number(preExecHm) >= execHm;
+
+    if(maxExec.manual && !sheetSupersedesManual){
       hmNow = execHm;
       lastHm = execHm;
-      lastDate = maxExec.date || lastDate || new Date().toISOString().slice(0,10);
+      lastDate = execDate || lastDate || new Date().toISOString().slice(0,10);
       source = 'hm-manual';
-    } else if(hmNow==null || execHm > Number(hmNow)){
+    } else if(!maxExec.manual && (hmNow==null || execHm > Number(hmNow))){
       hmNow = execHm;
       lastHm = execHm;
-      lastDate = maxExec.date || lastDate || new Date().toISOString().slice(0,10);
+      lastDate = execDate || lastDate || new Date().toISOString().slice(0,10);
       source = 'hm-eksekusi-max';
     }
+    // else: sheetSupersedesManual → biarkan hmNow/lastDate tetap dari sheet (auto-sync menang)
   }
 
   const asOfStr = periodEnd || periodStart || (new Date().toISOString().slice(0,10));
@@ -9625,8 +9613,13 @@ function calcHmSekarang(unitCode, asOfDateStr){
     }
   }
 
-  // Floor akhir: HM Sekarang tidak boleh di bawah max HM Eksekusi (input manual / Close)
-  if(maxExec && maxExec.hm!=null && hmNow!=null && Number(hmNow) < Number(maxExec.hm)){
+  // Floor akhir: HM Sekarang tidak boleh di bawah max HM Eksekusi (input manual / Close),
+  // KECUALI saat sheet sudah lebih baru & lebih tinggi (auto-sync sudah menggantikan manual di atas) —
+  // dalam kasus itu floor manual lama tidak boleh menimpa kembali hasil auto-sync.
+  const execAlreadySuperseded = maxExec && maxExec.manual && preExecHm!=null &&
+    String(preExecDate||'') > String(maxExec.date||'') &&
+    Number(preExecHm) >= Number(maxExec.hm);
+  if(maxExec && maxExec.hm!=null && hmNow!=null && Number(hmNow) < Number(maxExec.hm) && !execAlreadySuperseded){
     hmNow = Number(maxExec.hm);
     lastHm = Number(maxExec.hm);
     lastDate = maxExec.date || lastDate;
@@ -9955,7 +9948,12 @@ function correctAllUnitsHmSekarang(){
 }
 
 function renderPlanTable(){
-  try{ correctAllUnitsHmSekarang(); }catch(_e){ console.warn('correctAllUnitsHmSekarang', _e); }
+  try{
+    const corr = correctAllUnitsHmSekarang();
+    if(corr && corr.touched > 0){
+      try{ savePlan(); }catch(_se){}
+    }
+  }catch(_e){ console.warn('correctAllUnitsHmSekarang', _e); }
   const tbody = document.getElementById('plan-tbody');
   if(!tbody) return;
 
@@ -10021,20 +10019,11 @@ function renderPlanTable(){
 function updatePlanDailyWhStatusUI(){
   const el = document.getElementById('plan-daily-wh-status');
   if(!el) return;
-  const units = ['SWA-101','SWA-102','SBD-103','SPC-104'];
-  const parts = units.map(u=>{
-    const actual = (typeof getRecentActualWhPerDay==='function') ? getRecentActualWhPerDay(u,7) : null;
-    const fall = (typeof getPerformanceWorkingHoursPerDay==='function') ? getPerformanceWorkingHoursPerDay(u) : null;
-    const used = (actual!=null) ? actual : (fall!=null ? fall : 18);
-    const tag = actual!=null ? 'harian' : (fall!=null ? 'perf' : 'default');
-    return u+': <b style="color:var(--yellow)">'+Number(used).toFixed(1)+'</b>h <span style="color:var(--text-faint)">('+tag+')</span>';
-  });
   const meta = (typeof _dailyWhMeta!=='undefined' && _dailyWhMeta) ? _dailyWhMeta : {};
   const n = (typeof dailyWhRecords!=='undefined' && dailyWhRecords) ? dailyWhRecords.length : 0;
   const ts = meta.updatedAt ? String(meta.updatedAt).replace('T',' ').slice(0,19) : '—';
-  const src = meta.source || (n ? 'lokal' : '—');
-  el.innerHTML = 'WH/hari aktif (prioritas <b>harian aktual 7hr</b> → performance → 18): '+parts.join(' · ')+
-    '<br>Data harian: <b>'+n+'</b> baris · sumber: <b>'+src+'</b> · sync: <b>'+ts+'</b>'+
+  const src = meta.source || (n ? 'lokal' : 'performance');
+  el.innerHTML = 'sumber: <b>'+src+'</b> · sync: <b>'+ts+'</b>'+
     (meta.lastError ? ' · <span style="color:var(--orange)">'+String(meta.lastError).slice(0,80)+'</span>' : '');
 }
 
@@ -10132,12 +10121,11 @@ function updatePlanDailyWhStatusUI(){
       <td style="font-family:'JetBrains Mono',monospace;"><b style="color:#7fe0e0;">${workingHoursLabel}</b></td>
       <td style="font-family:'JetBrains Mono',monospace;"><b style="color:var(--yellow);">${(dailyWh!=null && dailyWh!==undefined && !isNaN(Number(dailyWh))) ? Number(dailyWh).toFixed(1) : '—'}</b></td>
       <td style="font-family:'JetBrains Mono',monospace;">
-        <input type="number" step="0.1" min="0" placeholder="HM actual"
+        <input type="number" step="0.1" min="0" placeholder="Auto-sync"
           value="${hmSekarang!==null&&hmSekarang!==undefined?Number(hmSekarang).toFixed(1):''}"
-          onchange="updatePlanHmSekarang('${escUH(String(r.unitCode||''))}', this.value)"
-          onblur="updatePlanHmSekarang('${escUH(String(r.unitCode||''))}', this.value)"
-          title="Input HM Actual manual unit. Est. Sisa HM &amp; Plan Date menyesuaikan otomatis (WH/hari dari sheet performance)."
-          style="width:110px; background:var(--panel-2); color:var(--yellow); border:1px solid var(--yellow-dim); border-radius:6px; padding:4px 6px; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; text-align:center;">
+          readonly disabled
+          title="HM Sekarang terkunci: nilai selalu auto-sync dari HM actual (sheet View-SEN-HM) + akumulasi waktu operasi (sheet performance). Tidak bisa diisi manual."
+          style="width:110px; background:var(--panel-2); color:var(--yellow); border:1px solid var(--yellow-dim); border-radius:6px; padding:4px 6px; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; text-align:center; opacity:0.85; cursor:not-allowed;">
         ${hmSource?`<div style="color:var(--text-faint);font-size:9px;margin-top:2px;">${escUH(String(hmSource))}${(r.hmAktualManual?' · manual':'')}</div>`:((r.hmAktualManual)?`<div style="color:var(--yellow);font-size:9px;margin-top:2px;">manual</div>`:'')}
       </td>
       <td>${sisaHmCell}</td>
@@ -11050,56 +11038,14 @@ async function syncPlanFromHM(opts){
 }
 
 /**
- * Input HM Actual manual di kolom HM Sekarang (per unit).
- * - Disimpan ke semua baris Open unit yang sama (hmAktualManual=true)
- * - Est. Sisa HM = Target HM − HM Actual
- * - Plan Date diestimasi ulang dari sisa HM ÷ WH/hari (sheet performance)
+ * (LOCKED) Kolom HM Sekarang sudah dikunci — tidak lagi menerima input manual.
+ * HM Sekarang SELALU auto-sync dari HM actual terbaru (sheet View-SEN-HM/Monitoring HM)
+ * diakumulasikan dengan waktu operasi (WH/hari) dari sheet performance.
+ * Fungsi ini sengaja dibuat no-op untuk mencegah baris lama/handler lama menulis nilai manual.
  */
-window.updatePlanHmSekarang = async function(unitCode, value){
-  const code = String(unitCode||'').trim().toUpperCase();
-  if(!code) return;
-  const raw = (value==='' || value===null || value===undefined) ? '' : String(value).trim();
-  let n = null;
-  if(raw!==''){
-    n = Number(String(raw).replace(/\s/g,'').replace(',','.'));
-    if(isNaN(n) || n<0){
-      alert('HM Actual tidak valid.');
-      renderPlanTable();
-      return;
-    }
-  }
-  const today = new Date().toISOString().slice(0,10);
-  let touched = 0;
-  (planRecords||[]).forEach(r=>{
-    if(!r) return;
-    if(String(r.unitCode||'').trim().toUpperCase()!==code) return;
-    if(typeof isPlanClosed==='function' && isPlanClosed(r)) return;
-    if(n===null){
-      // Kosongkan manual → biarkan auto-sync lagi
-      if(r.hmAktualManual){
-        r.hmAktualManual = false;
-        // biarkan nilai hmAktual tetap sampai correctAllUnits mengisi ulang
-        touched++;
-      }
-      return;
-    }
-    r.hmAktual = n;
-    r.hmAktualManual = true;
-    r.hmAktualDate = today;
-    touched++;
-  });
-  if(touched===0 && n!=null){
-    // Tidak ada baris Open — tetap simpan sebagai catatan di planRecords tidak perlu;
-    // HM unit akan terbaca lewat getMaxHmEksekusi jika ada baris. Buat tidak ada-op.
-    alert('Tidak ada jadwal Open untuk unit '+code+'. HM manual tidak disimpan.');
-    return;
-  }
-  await savePlan();
-  // Render ulang: enrichPlanRow → Est Sisa HM + Plan Date otomatis ikut WH/hari performance
+window.updatePlanHmSekarang = async function(){
+  alert('Kolom HM Sekarang terkunci: nilai selalu auto-sync dari HM actual + waktu operasi sheet performance, tidak bisa diisi manual.');
   renderPlanTable();
-  try{ if(typeof renderRecordServiceTable==='function') renderRecordServiceTable(); }catch(_e){}
-  try{ if(typeof renderCBM==='function') renderCBM(); }catch(_e2){}
-  try{ if(typeof renderSparepart==='function') renderSparepart(); }catch(_e3){}
 };
 
 window.updatePlanHmEksekusi = async function(id, value){
@@ -15376,72 +15322,205 @@ async function autoSyncPerformanceAndRefresh(which){
   }
 }
 
-/** Live poll setiap 60 detik — Monitoring HM + Performance (hormati TTL, tanpa force). */
+/** Live poll + auto sync harian — Monitoring HM + Performance + proyeksi HM Sekarang.
+ *  - Poll tiap 60 detik (hormati TTL saat hari sama)
+ *  - Saat ganti hari / buka app hari baru / tab kembali fokus: FORCE fetch sheet
+ *    performance + HM + Jam Kerja Harian, lalu proyeksi ulang HM Sekarang Plan Service
+ *  - Tidak perlu klik tombol Sync — HM Sekarang naik mengikuti waktu operasi (WH/hari).
+ */
 let _lastPlanHmDay = '';
+let _lastDailyForceSyncDay = '';
+let _hmLiveSyncInFlight = false;
+const DAILY_FORCE_SYNC_KEY = 'sen-fleetcare-last-daily-hm-sync';
+
+function _todayLocalYMD(){
+  try{
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+day;
+  }catch(_e){
+    return new Date().toISOString().slice(0,10);
+  }
+}
+
+function _readLastDailyForceSyncDay(){
+  try{
+    const v = localStorage.getItem(DAILY_FORCE_SYNC_KEY) || '';
+    if(v && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0,10);
+  }catch(_e){}
+  return _lastDailyForceSyncDay || '';
+}
+
+function _writeLastDailyForceSyncDay(day){
+  _lastDailyForceSyncDay = day || '';
+  try{ if(day) localStorage.setItem(DAILY_FORCE_SYNC_KEY, day); }catch(_e){}
+}
+
+/** Update status hint Plan Service (sumber + waktu sync terakhir). */
+function updatePlanAutoSyncStatus(extra){
+  const el = document.getElementById('plan-daily-wh-status');
+  if(!el) return;
+  const t = new Date();
+  const hh = String(t.getHours()).padStart(2,'0');
+  const mm = String(t.getMinutes()).padStart(2,'0');
+  const note = extra ? (' · '+extra) : '';
+  el.innerHTML = 'sumber: <b>sheet performance</b> (W/hari) · auto-sync harian aktif · terakhir: <b>'+hh+':'+mm+'</b>'+note;
+}
+
+/**
+ * Satu siklus sync Plan Service / HM Sekarang.
+ * forceDay: true → abaikan TTL, tarik ulang sheet (dipakai tiap ganti hari).
+ */
+async function runPlanHmLiveSyncCycle(opts){
+  opts = opts || {};
+  if(!loggedInUser) return { ok:false, skipped:true };
+  if(_hmLiveSyncInFlight) return { ok:false, busy:true };
+  _hmLiveSyncInFlight = true;
+  try{
+    const todayStr = _todayLocalYMD();
+    const prevDay = _lastPlanHmDay || _readLastDailyForceSyncDay();
+    const dayChanged = !!(prevDay && prevDay !== todayStr);
+    const neverForcedToday = _readLastDailyForceSyncDay() !== todayStr;
+    const forceDay = !!(opts.forceDay || dayChanged || neverForcedToday || opts.force);
+    _lastPlanHmDay = todayStr;
+
+    // 1) Sync HM terakhir dari sheet Monitoring HM
+    let hmChanged = false;
+    try{
+      const hmRes = await ensureHmSynced({ force: forceDay });
+      hmChanged = !!(hmRes && hmRes.ok && (hmRes.changed || forceDay));
+    }catch(_e){}
+
+    // 2) Sync WH dari sheet performance → (T − S) / hari
+    const prevStamp = (mapaData && mapaData.updatedAt) || '';
+    let res = null;
+    try{
+      res = await ensurePerformanceSynced({ force: forceDay });
+    }catch(_e){}
+    const newStamp = (mapaData && mapaData.updatedAt) || '';
+    const perfChanged = !!(res && res.ok && (res.changed || forceDay || (newStamp && newStamp !== prevStamp)));
+
+    // 2b) Sync Jam Kerja HARIAN aktual
+    let dailyWhChanged = false;
+    try{
+      const prevDwh = (_dailyWhMeta && _dailyWhMeta.updatedAt) || '';
+      const dwhRes = await ensureDailyWhSynced({ force: forceDay });
+      const newDwh = (_dailyWhMeta && _dailyWhMeta.updatedAt) || '';
+      dailyWhChanged = !!(dwhRes && dwhRes.ok && (dwhRes.changed || forceDay || (newDwh && newDwh !== prevDwh)));
+    }catch(_e){}
+
+    // 3) Push KPI ke tab Maintenance (silent)
+    try{ await syncMaintenanceKPIToSheet({ force:false, manual:false }); }catch(_e){}
+
+    const dash = document.getElementById('view-dashboard');
+    const units = document.getElementById('view-database');
+    const planView = document.getElementById('view-plan');
+    const planActive = planView && planView.classList.contains('active');
+    const needRefresh = perfChanged || hmChanged || dayChanged || dailyWhChanged || forceDay || !!opts.force;
+
+    if(needRefresh){
+      if(dash && dash.classList.contains('active')){
+        try{ renderDashboard(); }catch(_e){}
+      }
+      if(units && units.classList.contains('active')){
+        try{ renderUnitCards(); }catch(_e){}
+      }
+      const hmView = document.getElementById('view-hm');
+      if(hmView && hmView.classList.contains('active')){
+        try{ renderHMTable(); }catch(_e){}
+      }
+    }
+
+    // HM Sekarang = baseline sheet + hari × WH/hari performance — selalu re-proyeksi saat sync
+    let hmTouched = 0;
+    if(planRecords && planRecords.length){
+      if(needRefresh){
+        try{ await syncOpenPlanCoverage(getPerformanceWByUnit()); }catch(_e){}
+      }
+      try{
+        const corr = (typeof correctAllUnitsHmSekarang==='function')
+          ? correctAllUnitsHmSekarang() : { touched:0 };
+        hmTouched = (corr && corr.touched) || 0;
+        if(hmTouched > 0 || dayChanged || forceDay){
+          try{ await savePlan(); }catch(_e){}
+        }
+      }catch(_e){}
+      if(planActive || needRefresh || hmTouched > 0){
+        try{ renderPlanTable(); }catch(_e){}
+      }
+    } else if(needRefresh){
+      try{ await rebuildPlanServiceAuto({ silent:true }); }catch(_e){}
+    }
+
+    // CBM ikut live HM
+    const cbmView = document.getElementById('view-cbm');
+    if(cbmView && cbmView.classList.contains('active') && needRefresh){
+      try{ if(typeof renderCBM==='function') renderCBM(); }catch(_e){}
+    }
+
+    if(forceDay) _writeLastDailyForceSyncDay(todayStr);
+    try{
+      updatePlanAutoSyncStatus(
+        forceDay ? ('force harian '+todayStr) :
+        (hmTouched ? (hmTouched+' unit HM di-update') : 'poll')
+      );
+    }catch(_e){}
+
+    return {
+      ok:true,
+      forceDay,
+      dayChanged,
+      hmChanged,
+      perfChanged,
+      dailyWhChanged,
+      hmTouched,
+      today: todayStr
+    };
+  }catch(e){
+    console.warn('runPlanHmLiveSyncCycle', e);
+    return { ok:false, error: String(e && e.message || e) };
+  }finally{
+    _hmLiveSyncInFlight = false;
+  }
+}
+
 function startPerformanceLiveSync(){
   if(_perfAutoTimer) return;
-  _perfAutoTimer = setInterval(async ()=>{
-    if(!loggedInUser) return;
-    try{
-      const todayStr = new Date().toISOString().slice(0,10);
-      const dayChanged = _lastPlanHmDay && _lastPlanHmDay !== todayStr;
-      _lastPlanHmDay = todayStr;
 
-      // 1) Sync HM terakhir dari sheet Monitoring HM (HM Akhir per unit)
-      let hmChanged = false;
-      try{
-        const hmRes = await ensureHmSynced({ force:false });
-        hmChanged = !!(hmRes && hmRes.ok && hmRes.changed);
-      }catch(_e){}
-
-      // 2) Sync WH dari sheet performance → (T − S) / hari (TTL, tanpa force)
-      const prevStamp = (mapaData && mapaData.updatedAt) || '';
-      const res = await ensurePerformanceSynced({ force:false });
-      const newStamp = (mapaData && mapaData.updatedAt) || '';
-      const perfChanged = !!(res && res.ok && (res.changed || (newStamp && newStamp !== prevStamp)));
-
-      // 2b) Sync Jam Kerja HARIAN aktual (sheet "Jam Kerja Harian" / telemetri)
-      let dailyWhChanged = false;
-      try{
-        const prevDwh = (_dailyWhMeta && _dailyWhMeta.updatedAt) || '';
-        const dwhRes = await ensureDailyWhSynced({ force:false });
-        const newDwh = (_dailyWhMeta && _dailyWhMeta.updatedAt) || '';
-        dailyWhChanged = !!(dwhRes && dwhRes.ok && (dwhRes.changed || (newDwh && newDwh !== prevDwh)));
-      }catch(_e){}
-
-      // 3) Push KPI (MA/PA/MTBS/MTTR/PMR/SA) ke tab Maintenance (Acv. + Score per minggu)
-      try{ await syncMaintenanceKPIToSheet({ force:false, manual:false }); }catch(_e){}
-
-      const dash = document.getElementById('view-dashboard');
-      const units = document.getElementById('view-database');
-      const planView = document.getElementById('view-plan');
-      const planActive = planView && planView.classList.contains('active');
-      const needRefresh = perfChanged || hmChanged || dayChanged || dailyWhChanged;
-
-      if(needRefresh){
-        if(dash && dash.classList.contains('active')) renderDashboard();
-        if(units && units.classList.contains('active')) renderUnitCards();
-        const hmView = document.getElementById('view-hm');
-        if(hmView && hmView.classList.contains('active')) renderHMTable();
-      }
-
-      if(planRecords && planRecords.length){
-        if(needRefresh){
-          try{ await syncOpenPlanCoverage(getPerformanceWByUnit()); }catch(_e){}
-        }
-        // HM Sekarang = HM Akhir sheet + hari × WH/hari performance
-        if(planActive || needRefresh) renderPlanTable();
-      } else if(needRefresh){
-        try{ await rebuildPlanServiceAuto({ silent:true }); }catch(_e){}
-      }
-
-      // CBM: HM live = HM Akhir sheet + (hari × WH/hari performance) — refresh otomatis
-      const cbmView = document.getElementById('view-cbm');
-      if(cbmView && cbmView.classList.contains('active') && needRefresh){
-        try{ if(typeof renderCBM==='function') renderCBM(); }catch(_e){}
-      }
-    }catch(e){ /* silent */ }
+  // Poll rutin 60 detik
+  _perfAutoTimer = setInterval(()=>{
+    runPlanHmLiveSyncCycle({ force:false }).catch(()=>{});
   }, 60000);
+
+  // Jalankan segera saat start (force jika belum sync hari ini)
+  setTimeout(()=>{
+    runPlanHmLiveSyncCycle({ forceDay:true }).catch(()=>{});
+  }, 1200);
+
+  // Saat tab kembali aktif / laptop bangun: cek ganti hari → force sync
+  if(!window._senHmVisibilityBound){
+    window._senHmVisibilityBound = true;
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.visibilityState !== 'visible') return;
+      if(!loggedInUser) return;
+      const today = _todayLocalYMD();
+      const last = _readLastDailyForceSyncDay();
+      if(last !== today){
+        runPlanHmLiveSyncCycle({ forceDay:true }).catch(()=>{});
+      } else {
+        runPlanHmLiveSyncCycle({ force:false }).catch(()=>{});
+      }
+    });
+    window.addEventListener('focus', ()=>{
+      if(!loggedInUser) return;
+      const today = _todayLocalYMD();
+      if(_readLastDailyForceSyncDay() !== today){
+        runPlanHmLiveSyncCycle({ forceDay:true }).catch(()=>{});
+      }
+    });
+  }
 }
 
 function renderMAPAUploadStatus(){
@@ -16751,7 +16830,7 @@ function renderCBMSafety(){
 function switchCBMTab(tab){
   cbmActiveTab = tab || 'overview';
   document.querySelectorAll('#cbm-tabs .chip').forEach(c=> c.classList.toggle('active', c.dataset.cbmTab===cbmActiveTab));
-  ['overview','lifetime','safety','unplan','insight'].forEach(t=>{
+  ['overview','lifetime','safety','pareto','insight'].forEach(t=>{
     const p = document.getElementById('cbm-tab-'+t);
     if(p) p.style.display = t===cbmActiveTab ? '' : 'none';
   });
@@ -16764,7 +16843,7 @@ function renderCBMActiveTab(){
   if(cbmActiveTab==='overview') renderCBMOverview(rows, stats);
   else if(cbmActiveTab==='lifetime') renderCBMLifetime(stats);
   else if(cbmActiveTab==='safety') renderCBMSafety();
-  else if(cbmActiveTab==='unplan') renderCBMHistory(rows);
+  else if(cbmActiveTab==='pareto') renderCBMPareto(rows, stats);
   else if(cbmActiveTab==='insight') renderCBMInsight(stats);
 }
 
@@ -17277,31 +17356,168 @@ function renderCBMLifetime(stats){
   </tr>`).join('');
 }
 
-function renderCBMHistory(rows){
-  const tbody = document.getElementById('cbm-hist-tbody');
-  if(!tbody) return;
-  const sorted = rows.slice().sort((a,b)=> String(b.tanggal||'').localeCompare(String(a.tanggal||'')));
-  if(!sorted.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">No breakdown history for this filter.</td></tr>`;
+/* ---- PARETO ANALYSIS (menggantikan panel "Breakdown / Unplan History") ----
+   Prinsip Pareto 80/20: komponen diurutkan dari kontributor breakdown terbesar,
+   dengan kurva kumulatif % menandai batas "Vital Few" (di bawah garis 80%) vs
+   "Trivial Many" (sisanya). Metrik bisa ditoggle: Jumlah Kejadian atau Jam Perbaikan,
+   sumber data & warna komponen tetap konsisten dengan CBM_COMPONENTS (Overview/Lifetime). */
+let cbmParetoMetric = 'count';
+
+function cbmParetoChart(items){
+  // items sudah terurut desc by value, masing2: {label, value, color, units:[codes]}
+  if(!items.length) return `<div class="hint" style="padding:24px 0;">Tidak ada data breakdown saat ini.</div>`;
+  const totalVal = items.reduce((a,d)=>a+d.value,0);
+  if(!totalVal) return `<div class="hint" style="padding:24px 0;">Tidak ada data breakdown saat ini.</div>`;
+
+  const n = items.length;
+  const W = Math.max(480, 84*n + 110), H = 380;
+  const padL = 54, padR = 58, padT = 28, padB = 78;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const slot = chartW / n;
+  const barW = Math.max(22, Math.min(56, slot - 14));
+  const maxVal = Math.max(...items.map(d=>d.value));
+
+  let cum = 0;
+  const points = [];
+  const bars = items.map((d,i)=>{
+    const slotX = padL + i*slot;
+    const x = slotX + (slot - barW)/2;
+    const h = maxVal ? (d.value/maxVal) * chartH : 0;
+    const y = padT + (chartH - h);
+    const pct = d.value/totalVal*100;
+    const beforePct = cum/totalVal*100;
+    cum += d.value;
+    const cumPct = cum/totalVal*100;
+    const cy = padT + chartH - (cumPct/100*chartH);
+    const cx = slotX + slot/2;
+    const isVital = beforePct < 80; // masuk Vital Few kalau kumulatif SEBELUM bar ini masih di bawah 80%
+    points.push({x:cx, y:cy});
+    return {x, y, h, cx, cy, d, pct, cumPct, isVital};
+  });
+
+  const y80 = padT + chartH - (80/100*chartH);
+  const linePath = points.map((p,i)=> `${i===0?'M':'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+
+  const gridLines = [0,25,50,75,100].map(g=>{
+    const gy = padT + chartH - (g/100*chartH);
+    return `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${padL+chartW}" y2="${gy.toFixed(1)}" stroke="#33383f" stroke-width="1" opacity="0.35"/>
+      <text x="${padL+chartW+6}" y="${(gy+3.5).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#5C636B">${g}%</text>`;
+  }).join('');
+
+  const barsSvg = bars.map(b=>{
+    const unitList = (b.d.units||[]).join(', ') || '—';
+    return `
+    <g>
+      <rect x="${b.x.toFixed(1)}" y="${b.y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(1,b.h).toFixed(1)}" rx="3"
+        fill="${b.d.color||'#FFC72C'}" opacity="${b.isVital?1:0.4}">
+        <title>${escUH(b.d.label)} — ${cbmParetoMetric==='hours'? b.d.value.toFixed(1)+' jam' : b.d.value+' kejadian'}\nCode Unit: ${escUH(unitList)}</title>
+      </rect>
+      <text x="${b.cx.toFixed(1)}" y="${(b.y-8).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#EDEEF0">${cbmParetoMetric==='hours'? b.d.value.toFixed(1) : b.d.value}</text>
+      <text x="${b.cx.toFixed(1)}" y="${(padT+chartH+20).toFixed(1)}" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="${b.isVital?'#EDEEF0':'#9AA0A8'}">${escUH(b.d.label)}</text>
+    </g>`;
+  }).join('');
+
+  const lineDots = points.map((p,i)=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#E5484D" stroke="#15171b" stroke-width="1.5"/>
+    <text x="${p.x.toFixed(1)}" y="${(p.y-10).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="700" fill="#E5484D">${bars[i].cumPct.toFixed(0)}%</text>`).join('');
+
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="min-width:${Math.min(W,520)}px;overflow:visible;">
+    ${gridLines}
+    <line x1="${padL}" y1="${padT+chartH}" x2="${padL+chartW}" y2="${padT+chartH}" stroke="var(--line)" stroke-width="1.5"/>
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" stroke="var(--line)" stroke-width="1.5"/>
+    <line x1="${padL}" y1="${y80.toFixed(1)}" x2="${padL+chartW}" y2="${y80.toFixed(1)}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.7"/>
+    <text x="${padL+4}" y="${(y80-6).toFixed(1)}" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" fill="var(--red)">80% — batas Vital Few</text>
+    ${barsSvg}
+    <path d="${linePath}" fill="none" stroke="#E5484D" stroke-width="2.25"/>
+    ${lineDots}
+  </svg>`;
+}
+
+/* Daftar Code Unit di samping chart — tiap komponen menampilkan % kontribusi (dari total)
+   sekaligus % kumulatif Pareto-nya, sinkron dengan urutan bar di chart. */
+function cbmParetoSideList(items){
+  if(!items.length) return '';
+  const totalVal = items.reduce((a,d)=>a+d.value,0);
+  let cum = 0;
+  const rows = items.map(d=>{
+    const pct = totalVal ? (d.value/totalVal*100) : 0;
+    const beforePct = cum/totalVal*100;
+    cum += d.value;
+    const cumPct = totalVal ? (cum/totalVal*100) : 0;
+    const isVital = beforePct < 80;
+    const unitBadges = (d.units||[]).map(u=>`<span class="pill" style="margin:2px 4px 2px 0;font-size:10px;">${escUH(u)}</span>`).join('') || '<span class="hint" style="font-size:11px;">—</span>';
+    return `<div style="border:1px solid var(--line);border-left:3px solid ${d.color||'#FFC72C'};border-radius:6px;padding:9px 11px;margin-bottom:8px;background:${isVital?'rgba(255,255,255,0.02)':'transparent'};opacity:${isVital?1:0.75};">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;">
+        <span style="font-family:Oswald,sans-serif;font-weight:700;font-size:13px;color:var(--text);">${escUH(d.label)}</span>
+        <span class="pill ${isVital?'open':'progress'}" style="flex-shrink:0;">${pct.toFixed(1)}%</span>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-faint);margin-bottom:6px;">
+        ${cbmParetoMetric==='hours'? d.value.toFixed(1)+' jam' : d.value+' kejadian'} · kumulatif <b style="color:var(--red);">${cumPct.toFixed(1)}%</b>
+      </div>
+      <div>${unitBadges}</div>
+    </div>`;
+  }).join('');
+  return `<div style="max-height:380px;overflow-y:auto;padding-right:4px;">${rows}</div>`;
+}
+
+function renderCBMPareto(rows, stats){
+  const wrap = document.getElementById('cbm-pareto-chart');
+  const tbody = document.getElementById('cbm-pareto-tbody');
+  const insightEl = document.getElementById('cbm-pareto-insight');
+  if(!wrap && !tbody) return;
+
+  const compMeta = {};
+  CBM_COMPONENTS.forEach(c=> compMeta[c.key] = c);
+
+  let items = Object.values(stats.byComp)
+    .filter(c => c && c.total>0 && compMeta[c.key])
+    .map(c => ({
+      key:c.key, label:c.key,
+      count:c.total, hours:Number(c.hours||0), unplan:c.unplan, plan:c.plan,
+      unitCount:c.unitCount, color:compMeta[c.key].color,
+      units: Array.from(c.units||[]).sort(),
+      value: cbmParetoMetric==='hours' ? Number(c.hours||0) : Number(c.total||0)
+    }))
+    .filter(d => d.value>0)
+    .sort((a,b) => b.value-a.value);
+
+  if(!items.length){
+    if(wrap) wrap.innerHTML = `<div class="hint" style="padding:24px 0;">Tidak ada data breakdown saat ini.</div>`;
+    if(tbody) tbody.innerHTML = `<tr class="empty-row"><td colspan="8">No breakdown data yet.</td></tr>`;
+    if(insightEl) insightEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = sorted.map(r=>{
-    const pu = r.planUnplan||'—';
-    const puCls = pu==='Unplan'?'open':(pu==='Plan'?'close':'progress');
-    const partNote = r.keterangan || '';
+
+  const totalVal = items.reduce((a,d)=>a+d.value,0);
+  let cum = 0, vitalCount = 0;
+  const rowsHtml = items.map((d,i)=>{
+    const pct = totalVal ? d.value/totalVal*100 : 0;
+    const beforePct = cum/totalVal*100;
+    cum += d.value;
+    const cumPct = totalVal ? cum/totalVal*100 : 0;
+    const isVital = beforePct < 80;
+    if(isVital) vitalCount++;
+    const unitBadges = d.units.map(u=>`<span class="pill" style="margin:1px 3px 1px 0;">${escUH(u)}</span>`).join('') || '—';
     return `<tr>
-      <td>${formatDateDMY(r.tanggal)}</td>
-      <td>${escUH(r.unitCode)}</td>
-      <td>${r.hm??'—'}</td>
-      <td><span class="cat ${escUH(r._cbmComp)}">${escUH(r._cbmComp)}</span></td>
-      <td><span class="pill ${puCls}">${escUH(pu)}</span></td>
-      <td>${r.duration!=null?Number(r.duration).toFixed(1):'—'}</td>
-      <td style="white-space:normal;text-align:left;min-width:180px">${escUH(r.jobDesc||'')}</td>
-      <td style="white-space:normal;text-align:left;min-width:160px">${escUH(partNote||'—')}</td>
-      <td style="white-space:normal;min-width:120px">${escUH([r.mechanic, r.mechanic2, r.mechanic3].filter(Boolean).join(', ') || '—')}</td>
-      <td>${escUH(r.status||'')}</td>
+      <td>${i+1}</td>
+      <td><span class="cat ${escUH(d.key)}" style="background:${d.color}26;color:${d.color};">${escUH(d.label)}</span></td>
+      <td style="white-space:normal;text-align:left;min-width:180px">${unitBadges}</td>
+      <td>${d.count}</td>
+      <td>${d.hours.toFixed(1)}</td>
+      <td>${pct.toFixed(1)}%</td>
+      <td><b>${cumPct.toFixed(1)}%</b></td>
+      <td><span class="pill ${isVital?'open':'progress'}">${isVital?'Vital Few':'Trivial Many'}</span></td>
     </tr>`;
   }).join('');
+
+  if(tbody) tbody.innerHTML = rowsHtml;
+  // Chart penuh lebar — panel catatan samping (Code Unit & % Kontribusi) dihapus
+  if(wrap) wrap.innerHTML = `<div style="width:100%;overflow-x:auto;">${cbmParetoChart(items)}</div>`;
+  if(insightEl){
+    const metricLabel = cbmParetoMetric==='hours' ? 'jam perbaikan' : 'kejadian breakdown';
+    const top = items.slice(0, vitalCount||1).map(d=>d.label).join(', ');
+    insightEl.innerHTML = `<b>${vitalCount}</b> dari <b>${items.length}</b> komponen (<b>Vital Few</b>: ${escUH(top)}) menyumbang sekitar <b>80%</b> dari total ${metricLabel} — dihitung otomatis dari seluruh unit &amp; seluruh periode data Daily Maintenance (tanpa filter manual). Prioritaskan improvement / preventive action pada komponen tersebut untuk dampak pengurangan breakdown terbesar.`;
+  }
 }
 
 function renderCBMInsight(stats){
@@ -17351,6 +17567,13 @@ function renderCBM(){
     const chip = e.target.closest('.chip');
     if(!chip || !chip.dataset.cbmTab) return;
     switchCBMTab(chip.dataset.cbmTab);
+  });
+  document.getElementById('cbm-pareto-metric-tabs')?.addEventListener('click', (e)=>{
+    const chip = e.target.closest('[data-pareto-metric]');
+    if(!chip) return;
+    cbmParetoMetric = chip.dataset.paretoMetric;
+    document.querySelectorAll('#cbm-pareto-metric-tabs .chip').forEach(c=> c.classList.toggle('active', c===chip));
+    renderCBMActiveTab();
   });
   document.getElementById('cbm-safety-model-tabs')?.addEventListener('click', (e)=>{
     const chip = e.target.closest('[data-cbm-safety-model]');
