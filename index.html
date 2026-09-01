@@ -2815,82 +2815,11 @@ body.role-mechanic #history-filters{ display:none !important; }
             <div class="panel-head">
               <h2><span class="tag">RCA</span> Root Cause Analysis</h2>
             </div>
-            <p class="hint" style="margin-bottom:14px;">Identitas, Problem, dan 5 Whys diisi <b>otomatis</b> dari Breakdown / Pareto. <b>Hanya Root Cause, Kategori, Corrective, dan Preventive</b> yang bisa diinput / diedit manual (form &amp; langsung di tabel).</p>
+            <p class="hint" style="margin-bottom:14px;">Identitas, Problem, 5 Whys, Root Cause, Kategori, Corrective, dan Preventive terisi <b>otomatis</b> dari data Breakdown / Daily Maintenance langsung ke tabel di bawah. Untuk menyesuaikan, gunakan tombol <b>Edit</b> pada baris terkait.</p>
             <div class="toolbar" style="margin-bottom:14px; flex-wrap:wrap; gap:8px;">
               <button type="button" class="btn" id="rca-auto-generate-btn" title="Buat &amp; simpan RCA otomatis untuk setiap Unit × Komponen Vital Few yang belum ada">⚡ Generate Otomatis dari Breakdown (Vital Few)</button>
-              <button type="button" class="btn secondary" id="rca-auto-refresh-form-btn" title="Isi ulang semua kolom form dari data BD sesuai Unit &amp; Component">↻ Refresh Form dari Data BD</button>
+              <button type="button" class="btn small" id="rca-sync-sheets-btn" title="Kirim semua record RCA ke Google Sheets tab RCA">☁ Sync ke Sheet RCA</button>
             </div>
-            <form id="form-cbm-rca">
-              <div class="hint" style="margin-bottom:10px; color:var(--text-dim);">Kolom identitas &amp; 5 Whys terisi otomatis dari Breakdown. <b>Hanya Root Cause, Kategori, Corrective, dan Preventive</b> yang bisa diubah manual.</div>
-              <div class="grid grid-4">
-                <div class="field"><label>Tanggal <span class="pill progress" style="font-size:9px;">AUTO</span></label><input type="date" id="rca-date" required readonly style="opacity:.85;cursor:default;"></div>
-                <div class="field"><label>Unit Code <span class="pill progress" style="font-size:9px;">AUTO</span></label>
-                  <input type="text" id="rca-unit" list="rca-unit-list" required placeholder="Otomatis dari BD / Pareto…" style="text-transform:uppercase;opacity:.85;" autocomplete="off" readonly>
-                  <datalist id="rca-unit-list"></datalist>
-                </div>
-                <div class="field"><label>Component <span class="pill progress" style="font-size:9px;">AUTO</span></label>
-                  <select id="rca-component" required disabled style="opacity:.85;">
-                    <option value="">— Otomatis —</option>
-                    <option value="Engine">Engine</option>
-                    <option value="Transmission">Transmission</option>
-                    <option value="Hydraulic">Hydraulic</option>
-                    <option value="Electrical">Electrical</option>
-                    <option value="AC System">AC System</option>
-                    <option value="Undercarriage">Undercarriage</option>
-                    <option value="Attachment">Attachment</option>
-                    <option value="Final Drive">Final Drive</option>
-                    <option value="Axle / Differential">Axle / Differential</option>
-                    <option value="Cabin">Cabin</option>
-                    <option value="Tyre">Tyre</option>
-                    <option value="Wheel">Wheel</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  <input type="hidden" id="rca-component-value" value="">
-                </div>
-                <div class="field"><label>Code BD <span class="pill progress" style="font-size:9px;">AUTO</span></label><input type="text" id="rca-codebd" placeholder="Otomatis…" readonly style="opacity:.85;"></div>
-              </div>
-              <div class="field"><label>Problem Statement <span class="pill progress" style="font-size:9px;">AUTO</span></label><textarea id="rca-problem" required placeholder="Otomatis dari Breakdown Deskripsi…" rows="2" readonly style="opacity:.85;"></textarea></div>
-              <div class="section-title" style="margin-top:8px;">5 Whys <span class="pill progress" style="font-size:9px;">AUTO</span></div>
-              <div class="grid grid-2">
-                <div class="field"><label>Why 1</label><input type="text" id="rca-why1" readonly style="opacity:.85;"></div>
-                <div class="field"><label>Why 2</label><input type="text" id="rca-why2" readonly style="opacity:.85;"></div>
-                <div class="field"><label>Why 3</label><input type="text" id="rca-why3" readonly style="opacity:.85;"></div>
-                <div class="field"><label>Why 4</label><input type="text" id="rca-why4" readonly style="opacity:.85;"></div>
-              </div>
-              <div class="field"><label>Why 5</label><input type="text" id="rca-why5" readonly style="opacity:.85;"></div>
-              <div class="section-title" style="margin-top:12px;">Input Manual</div>
-              <div class="grid grid-2">
-                <div class="field"><label>Root Cause <span class="pill open" style="font-size:9px;">MANUAL</span></label><textarea id="rca-rootcause" required placeholder="Akar masalah (boleh edit dari saran otomatis)…" rows="2"></textarea></div>
-                <div class="field"><label>Kategori Penyebab (4M+E) <span class="pill open" style="font-size:9px;">MANUAL</span></label>
-                  <select id="rca-category">
-                    <option value="Man">Man (Manusia)</option>
-                    <option value="Method">Method (Metode)</option>
-                    <option value="Machine">Machine (Mesin/Unit)</option>
-                    <option value="Material">Material (Suku cadang)</option>
-                    <option value="Environment">Environment (Lingkungan)</option>
-                  </select>
-                </div>
-              </div>
-              <div class="grid grid-2">
-                <div class="field"><label>Corrective Action <span class="pill open" style="font-size:9px;">MANUAL</span></label><textarea id="rca-corrective" placeholder="Perbaikan langsung…" rows="2"></textarea></div>
-                <div class="field"><label>Preventive Action <span class="pill open" style="font-size:9px;">MANUAL</span></label><textarea id="rca-preventive" placeholder="Agar tidak berulang…" rows="2"></textarea></div>
-              </div>
-              <div class="grid grid-2">
-                <div class="field"><label>PIC <span class="pill progress" style="font-size:9px;">AUTO</span></label><input type="text" id="rca-pic" readonly style="opacity:.85;"></div>
-                <div class="field"><label>Status <span class="pill progress" style="font-size:9px;">AUTO</span></label>
-                  <select id="rca-status" disabled style="opacity:.85;">
-                    <option value="Open">Open</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Verified">Verified</option>
-                    <option value="Closed">Closed</option>
-                  </select>
-                </div>
-              </div>
-              <div class="toolbar">
-                <button type="submit" class="btn">＋ Simpan RCA</button>
-                <button type="button" class="btn secondary" id="rca-form-reset-btn">Reset Form</button>
-              </div>
-            </form>
             <div class="section-title" style="margin-top:20px;">Daftar RCA</div>
             <div class="filters" style="margin-bottom:12px;">
               <select id="rca-filter-status">
@@ -2905,8 +2834,9 @@ body.role-mechanic #history-filters{ display:none !important; }
               </select>
               <button type="button" class="btn small secondary" id="rca-clear-filter">Clear Filter</button>
             </div>
-            <div class="table-wrap">
-              <table id="cbm-rca-table">
+            <div class="scroll-top-track" id="rca-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="rca-scroll-top-inner"></div></div>
+            <div class="table-wrap" id="rca-table-wrap">
+              <table id="rca-table">
                 <thead><tr>
                   <th>Tanggal</th><th>Unit</th><th>Component</th><th>Problem</th>
                   <th>Root Cause</th><th>Kategori</th><th>Corrective</th><th>Preventive</th>
@@ -5750,6 +5680,8 @@ async function savePlanningSystem(){
 async function saveRcaRecords(){
   try{ await appStorage.set('rca-records', JSON.stringify(rcaRecords)); }
   catch(e){ console.error('saveRcaRecords', e); }
+  // Auto-sync RCA ke sheet "RCA" (silent, non-blocking)
+  try{ if(typeof syncRcaToSheets==='function') syncRcaToSheets({ manual:false }); }catch(_e){}
 }
 async function saveP2H(){
   try{ await appStorage.set('p2h-records', JSON.stringify(p2hRecords)); }
@@ -8287,6 +8219,85 @@ document.getElementById('cbm-sync-bd-history-btn')?.addEventListener('click', as
   if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
   try{ await syncBreakdownHistoryToSheets({ manual:true }); }
   finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet Historical Breakdown'; } }
+});
+
+/* ---- Sinkron Root Cause Analysis (RCA) → Google Sheets tab "RCA" ----
+   Mirip Record Service & Historical Breakdown: sheet dibuat otomatis di Apps Script
+   tepat setelah tab "Historical Breakdown" (atau "Record Service"/"performance" jika belum ada). */
+async function syncRcaToSheets(opts){
+  opts = opts || {};
+  if(!BACKEND_CONFIG.sheetsWebAppUrl){
+    if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG.');
+    return { ok:false, error:'no sheetsWebAppUrl' };
+  }
+  const list = (rcaRecords||[]).slice();
+  try{
+    const res = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'sync',
+        sheet: 'RCA',
+        spreadsheetId: BACKEND_CONFIG.sheetsSpreadsheetId || '',
+        records: list.map(r=>({
+          id: r.id || '',
+          date: r.date || '',
+          unit_code: r.unitCode || '',
+          unitCode: r.unitCode || '',
+          component: r.component || '',
+          code_bd: r.codeBD || '',
+          codeBD: r.codeBD || '',
+          problem: r.problem || '',
+          why1: r.why1 || '',
+          why2: r.why2 || '',
+          why3: r.why3 || '',
+          why4: r.why4 || '',
+          why5: r.why5 || '',
+          category: r.category || '',
+          root_cause: r.rootCause || '',
+          rootCause: r.rootCause || '',
+          corrective: r.corrective || '',
+          preventive: r.preventive || '',
+          pic: r.pic || '',
+          status: r.status || 'Open',
+          auto_generated: r.autoGenerated ? 'AUTO' : '',
+          autoGenerated: r.autoGenerated ? 'AUTO' : '',
+          created_by: r.createdBy || '',
+          createdBy: r.createdBy || '',
+          created_at: r.createdAt || '',
+          createdAt: r.createdAt || '',
+          updated_by: r.updatedBy || '',
+          updatedBy: r.updatedBy || '',
+          updated_at: r.updatedAt || '',
+          updatedAt: r.updatedAt || ''
+        })),
+        syncedAt: new Date().toISOString()
+      })
+    });
+    let data = null;
+    try{ data = await res.json(); }catch(_e){ data = null; }
+    if(opts.manual){
+      if(data && data.ok){
+        alert('✓ Berhasil sync '+ (data.written!=null?data.written:list.length) +' record RCA ke sheet "RCA".\nBuka spreadsheet dan refresh tab RCA.');
+      } else if(data && data.error){
+        alert('⚠ Sync RCA gagal: '+ data.error);
+      } else {
+        alert('✓ Permintaan sync terkirim ('+ list.length +' record RCA).\nCek tab "RCA" di spreadsheet.');
+      }
+    }
+    return data || { ok:true };
+  }catch(e){
+    console.error('Sync RCA ke Google Sheets gagal', e);
+    if(opts.manual) alert('⚠ Sync RCA gagal: '+ (e.message||e) +'\nPastikan Apps Script sudah di-deploy ulang (New version).');
+    return { ok:false, error:String(e) };
+  }
+}
+
+document.getElementById('rca-sync-sheets-btn')?.addEventListener('click', async ()=>{
+  const btn = document.getElementById('rca-sync-sheets-btn');
+  if(btn){ btn.disabled = true; btn.textContent = '☁ Menyinkronkan...'; }
+  try{ await syncRcaToSheets({ manual:true }); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = '☁ Sync ke Sheet RCA'; } }
 });
 
 /**
@@ -18154,35 +18165,9 @@ function buildAutoRcaFromMatches(compKey, unitCode, matches){
   };
 }
 
-function applyRcaToForm(data){
-  if(!data) return;
-  const set = (id,v)=>{ const el=document.getElementById(id); if(el && v!=null) el.value = v; };
-  set('rca-date', data.date||'');
-  set('rca-unit', data.unitCode||'');
-  set('rca-component', data.component||'');
-  set('rca-component-value', data.component||'');
-  // disabled <select> tidak ikut submit — pastikan value tetap terlihat
-  const compSel = document.getElementById('rca-component');
-  if(compSel){ compSel.disabled = false; compSel.value = data.component||''; compSel.disabled = true; }
-  set('rca-codebd', data.codeBD||'');
-  set('rca-problem', data.problem||'');
-  set('rca-why1', data.why1||'');
-  set('rca-why2', data.why2||'');
-  set('rca-why3', data.why3||'');
-  set('rca-why4', data.why4||'');
-  set('rca-why5', data.why5||'');
-  set('rca-category', data.category||'Machine');
-  set('rca-rootcause', data.rootCause||'');
-  set('rca-corrective', data.corrective||'');
-  set('rca-preventive', data.preventive||'');
-  set('rca-pic', data.pic||'');
-  set('rca-status', data.status||'Open');
-  const stSel = document.getElementById('rca-status');
-  if(stSel){ stSel.disabled = false; stSel.value = data.status||'Open'; stSel.disabled = true; }
-}
-
-/** Auto-fill form RCA dari data breakdown untuk komponen (dan opsional unit). */
-window.rcaAutoFillFromPareto = function(compKey, unitCode){
+/** Klik baris/unit di Pareto: generate (jika belum ada) RCA otomatis untuk kombinasi
+ *  Unit × Komponen tsb, langsung tersimpan ke tabel Daftar RCA, lalu scroll & sorot barisnya. */
+window.rcaAutoFillFromPareto = async function(compKey, unitCode){
   try{
     if(!compKey) return;
     const source = (typeof cbmBreakdownRecords==='function') ? cbmBreakdownRecords() : [];
@@ -18196,10 +18181,33 @@ window.rcaAutoFillFromPareto = function(compKey, unitCode){
       useUnit = Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0] || '';
       if(useUnit) matches = matches.filter(r=>String(r.unitCode||'').toUpperCase()===useUnit);
     }
-    const data = buildAutoRcaFromMatches(compKey, useUnit, matches);
-    applyRcaToForm(data);
+    if(!useUnit){ alert('Tidak ada data Unit untuk komponen ini.'); return; }
+    let existing = (rcaRecords||[]).find(r=>
+      String(r.unitCode||'').toUpperCase()===useUnit && String(r.component||'')===compKey
+    );
+    if(!existing){
+      const data = buildAutoRcaFromMatches(compKey, useUnit, matches);
+      const rec = {
+        id: (typeof uid==='function') ? uid() : ('rca-'+Date.now()),
+        ...data,
+        createdBy: (typeof currentUserName==='function') ? currentUserName() : '',
+        createdAt: new Date().toISOString()
+      };
+      rcaRecords.unshift(rec);
+      await saveRcaRecords();
+      renderCbmRca();
+      existing = rec;
+    }
     const panel = document.getElementById('cbm-rca-panel');
     if(panel && panel.scrollIntoView) panel.scrollIntoView({behavior:'smooth', block:'start'});
+    setTimeout(()=>{
+      const row = document.querySelector(`tr[data-rca-id="${existing.id}"]`);
+      if(row){
+        row.style.outline = '2px solid var(--brand,#f5b301)';
+        row.scrollIntoView({behavior:'smooth', block:'center'});
+        setTimeout(()=>{ row.style.outline=''; }, 1800);
+      }
+    }, 300);
   }catch(e){ console.warn('rcaAutoFillFromPareto error', e); }
 };
 
@@ -18275,33 +18283,6 @@ window.rcaAutoGenerateVitalFew = async function(){
   }
 };
 
-window.rcaRefreshFormFromSelection = function(){
-  const comp = (document.getElementById('rca-component')||{}).value || '';
-  const unit = (document.getElementById('rca-unit')||{}).value || '';
-  if(!comp){
-    // ambil vital few top component
-    try{
-      const source = (typeof cbmBreakdownRecords==='function') ? cbmBreakdownRecords() : [];
-      const cnt = {};
-      source.forEach(r=>{ const k=cbmGroupKeyOfComp(r._cbmComp); if(k) cnt[k]=(cnt[k]||0)+1; });
-      const top = Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
-      if(top) rcaAutoFillFromPareto(top, unit||undefined);
-      else alert('Pilih Component terlebih dahulu, atau pastikan ada data Breakdown.');
-    }catch(_e){ alert('Pilih Component terlebih dahulu.'); }
-    return;
-  }
-  rcaAutoFillFromPareto(comp, unit||undefined);
-};
-
-function fillRcaUnitDatalist(){
-  const dl = document.getElementById('rca-unit-list');
-  if(!dl) return;
-  const codes = new Set();
-  try{ (UNITS||[]).forEach(u=>{ const c=String(u.code||u.unitCode||'').trim(); if(c) codes.add(c); }); }catch(_e){}
-  try{ (rcaRecords||[]).forEach(r=>{ const c=String(r.unitCode||'').trim(); if(c) codes.add(c); }); }catch(_e){}
-  try{ (dailyRecords||[]).forEach(r=>{ if(r.category==='Breakdown'){ const c=String(r.unitCode||'').trim(); if(c) codes.add(c); }}); }catch(_e){}
-  dl.innerHTML = Array.from(codes).sort().map(c=>'<option value="'+c+'"></option>').join('');
-}
 function fillRcaCompFilter(){
   const sel = document.getElementById('rca-filter-comp');
   if(!sel) return;
@@ -18316,16 +18297,7 @@ function fillRcaCompFilter(){
 function renderCbmRca(){
   const tbody = document.getElementById('cbm-rca-tbody');
   if(!tbody) return;
-  fillRcaUnitDatalist();
   fillRcaCompFilter();
-  const dateEl = document.getElementById('rca-date');
-  if(dateEl && !dateEl.value){
-    try{ dateEl.value = new Date().toISOString().slice(0,10); }catch(_e){}
-  }
-  const picEl = document.getElementById('rca-pic');
-  if(picEl && !picEl.value && typeof currentUserName==='function'){
-    try{ picEl.value = currentUserName() || ''; }catch(_e){}
-  }
 
   const stF = (document.getElementById('rca-filter-status')||{}).value || '';
   const cF = (document.getElementById('rca-filter-comp')||{}).value || '';
@@ -18360,6 +18332,7 @@ function renderCbmRca(){
       </td>
     </tr>`;
   }).join('');
+  try{ attachTopScroll('rca'); }catch(_e){}
 }
 
 let rcaEditActiveId = null;
@@ -18417,69 +18390,7 @@ window.deleteRcaRecord = async function(id){
 })();
 
 (function initCbmRcaHandlers(){
-  const form = document.getElementById('form-cbm-rca');
-  if(form && !form.dataset.bound){
-    form.dataset.bound = '1';
-    form.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const unit = String(document.getElementById('rca-unit').value||'').trim().toUpperCase();
-      const component = (document.getElementById('rca-component-value')||{}).value
-        || document.getElementById('rca-component').value
-        || '';
-      const problem = String(document.getElementById('rca-problem').value||'').trim();
-      const rootCause = String(document.getElementById('rca-rootcause').value||'').trim();
-      if(!unit || !component || !problem || !rootCause){
-        alert('Data otomatis belum lengkap. Klik baris Pareto / Generate / Refresh Form dulu, lalu lengkapi Root Cause.');
-        return;
-      }
-      const rec = {
-        id: (typeof uid==='function') ? uid() : ('rca-'+Date.now()),
-        date: document.getElementById('rca-date').value || new Date().toISOString().slice(0,10),
-        unitCode: unit,
-        component,
-        codeBD: String(document.getElementById('rca-codebd').value||'').trim(),
-        problem,
-        why1: String(document.getElementById('rca-why1').value||'').trim(),
-        why2: String(document.getElementById('rca-why2').value||'').trim(),
-        why3: String(document.getElementById('rca-why3').value||'').trim(),
-        why4: String(document.getElementById('rca-why4').value||'').trim(),
-        why5: String(document.getElementById('rca-why5').value||'').trim(),
-        category: document.getElementById('rca-category').value || 'Machine',
-        rootCause,
-        corrective: String(document.getElementById('rca-corrective').value||'').trim(),
-        preventive: String(document.getElementById('rca-preventive').value||'').trim(),
-        pic: String(document.getElementById('rca-pic').value||'').trim(),
-        status: (document.getElementById('rca-status')||{}).value || 'Open',
-        autoGenerated: false,
-        createdBy: (typeof currentUserName==='function') ? currentUserName() : '',
-        createdAt: new Date().toISOString()
-      };
-      rcaRecords.unshift(rec);
-      await saveRcaRecords();
-      form.reset();
-      const d = document.getElementById('rca-date');
-      if(d) d.value = new Date().toISOString().slice(0,10);
-      renderCbmRca();
-    });
-  }
   document.getElementById('rca-auto-generate-btn')?.addEventListener('click', ()=> rcaAutoGenerateVitalFew());
-  document.getElementById('rca-form-reset-btn')?.addEventListener('click', ()=>{
-    const form = document.getElementById('form-cbm-rca');
-    if(form) form.reset();
-    const d = document.getElementById('rca-date');
-    if(d) d.value = new Date().toISOString().slice(0,10);
-    const hv = document.getElementById('rca-component-value');
-    if(hv) hv.value = '';
-  });
-  document.getElementById('rca-auto-refresh-form-btn')?.addEventListener('click', ()=> rcaRefreshFormFromSelection());
-  // Saat unit/component berubah, isi otomatis ulang
-  ['rca-unit','rca-component'].forEach(id=>{
-    document.getElementById(id)?.addEventListener('change', ()=>{
-      const comp = (document.getElementById('rca-component')||{}).value || '';
-      const unit = (document.getElementById('rca-unit')||{}).value || '';
-      if(comp) rcaAutoFillFromPareto(comp, unit||undefined);
-    });
-  });
   ['rca-filter-status','rca-filter-comp'].forEach(id=>{
     document.getElementById(id)?.addEventListener('change', ()=> renderCbmRca());
   });
