@@ -16437,7 +16437,7 @@ const CBM_COMPONENTS = [
      Detail sub-komponen & lifetime per unit: CBM_MASTER_BY_TYPE (sumber Excel MASTER LIFETIME). */
   { key:'Engine',              match:['engine'], targetLife:15000, color:'#FF6B35' },
   { key:'Transmission',        match:['powertrain','power train','transmission','transmisi','torque converter','steering clutch','steering brake'], targetLife:18000, color:'#4A90D9', loaderOrDozer:true },
-  { key:'Hydraulic',           match:['hydraulic','hidraulik','hidrolik','main pump','pilot pump','swing motor','travel motor','center joint','control valve','steering pump'], targetLife:15000, color:'#FF8A1F' },
+  { key:'Hydraulic',           match:['hydraulic','hidraulik','hidrolik','main pump','pilot pump','swing motor','travel motor','center joint','control valve','steering pump','hose','selang','selang hidrolik','hydraulic hose','hose hydraulic','hose bocor'], targetLife:15000, color:'#FF8A1F' },
   { key:'Final Drive',         match:['final drive','finaldrive'], targetLife:20000, color:'#4CAF6D' },
   { key:'Axle / Differential', match:['differential','exel','axle','axel','diff '], targetLife:20000, color:'#E5484D', loaderOnly:true },
   { key:'Electrical',          match:['electrical','electric','elektrik','kelistrikan','battery'], targetLife:8000, color:'#4A90D9' },
@@ -16741,10 +16741,34 @@ let cbmSelectedUnit = '';
 function normalizeCBMComponent(bdCat, jobDesc){
   const raw = `${bdCat||''} ${jobDesc||''}`.toLowerCase();
   const bd = String(bdCat||'').trim();
+  const desc = String(jobDesc||'').toLowerCase();
+
+  /* 0) Failure komponen nyata sering dicatat sbg "Support & Consumable" (mis. hose hydraulic bocor).
+     Petakan dulu sebelum filter support/consumable, supaya masuk CBM/Pareto/RCA. */
+  // Hydraulic hose / selang hidrolik bocor-putus (SBD-103 dll.)
+  if(/(hydraulic|hidraulik|hidrolik).{0,24}(hose|selang)|(hose|selang).{0,24}(hydraulic|hidraulik|hidrolik)|selang\s*hidrolik|hose\s*hidrolik/i.test(raw)){
+    return 'Hydraulic';
+  }
+  if(/\b(hose|selang)\b.{0,20}(bocor|leak|putus|pecah|rupture|burst)|(bocor|leak|putus|pecah).{0,20}\b(hose|selang)\b/i.test(raw)
+     && !/\b(brake|rem\b|fuel|solar|radiator|coolant|ac\b|air\s*cond)/i.test(raw)){
+    return 'Hydraulic';
+  }
+  // Cylinder / pump / valve hydraulic di deskripsi
+  if(/(main\s*pump|pilot\s*pump|swing\s*motor|travel\s*motor|control\s*valve|center\s*joint|steering\s*pump|lift\s*cylinder|tilt\s*cylinder)/i.test(raw)
+     || (/(cylinder|silinder).{0,12}(bocor|leak|aus)/i.test(raw) && /(hydraulic|hidraulik|hidrolik|boom|arm|blade|bucket)/i.test(raw))){
+    return 'Hydraulic';
+  }
+
   // Support/Consumable, greasing, pelumasan & aktivitas plan daily maintenance
   // (bukan breakdown) tidak masuk CBM — contoh: Greasing attachment, grease nipple, dll.
-  if(/support|consumable/i.test(bd) || /support|consumable/.test(raw)) return null;
-  if(/\bgreas|\bgrease|pelumas|lubricat|nipple\s*grease|grease\s*line|grease\s*nipple/i.test(raw)) return null;
+  if(/support|consumable/i.test(bd) || /support|consumable/.test(raw)){
+    // Kecuali deskripsi jelas menyebut komponen utama (sudah di-handle di atas; sisa support murni)
+    if(!/(engine|transmission|hydraulic|hidraulik|hidrolik|final\s*drive|undercarriage|electrical|attachment|tyre|tire)/i.test(desc)){
+      return null;
+    }
+  }
+  if(/\bgreas|\bgrease|pelumas|lubricat|nipple\s*grease|grease\s*line|grease\s*nipple/i.test(raw)
+     && !/(bocor|leak|putus|rusak|ganti\s*hose|hose)/i.test(raw)) return null;
 
   // 1) Match sub-komponen detail dari master Excel (nama terpanjang dulu)
   const allMaster = [];
@@ -16761,7 +16785,7 @@ function normalizeCBMComponent(bdCat, jobDesc){
   if(bd){
     if(/^engine$/i.test(bd)) return 'Engine';
     if(/power\s*train|transmission/i.test(bd)) return 'Transmission';
-    if(/hydraulic/i.test(bd)) return 'Hydraulic';
+    if(/hydraulic|hidraulik|hidrolik/i.test(bd)) return 'Hydraulic';
     if(/final\s*drive/i.test(bd)) return 'Final Drive';
     if(/differential|exel|axle/i.test(bd)) return 'Axle / Differential';
     if(/electrical/i.test(bd)) return 'Electrical';
@@ -18241,13 +18265,23 @@ window.rcaAutoGenerateVitalFew = async function(){
     });
     if(!vitalKeys.length && items.length) vitalKeys.push(items[0].key);
 
+    /* Sertakan juga semua komponen yang punya minimal 1 BD Unplan (mis. hose hydraulic
+       SBD-103) agar tidak tertinggal hanya karena di luar Vital Few / Pareto 80%. */
+    const unplanKeys = new Set();
+    source.forEach(r=>{
+      if(!cbmIsUnplan(r.planUnplan)) return;
+      const k = cbmGroupKeyOfComp(r._cbmComp);
+      if(k) unplanKeys.add(k);
+    });
+    const genKeys = Array.from(new Set(vitalKeys.concat(Array.from(unplanKeys))));
+
     const existing = new Set((rcaRecords||[]).map(r=>
       String(r.unitCode||'').toUpperCase()+'|'+String(r.component||'')
     ));
 
     let created = 0;
     const picDefault = (typeof currentUserName==='function') ? currentUserName() : '';
-    vitalKeys.forEach(compKey=>{
+    genKeys.forEach(compKey=>{
       const unitMap = (byComp[compKey] && byComp[compKey].units) || {};
       Object.keys(unitMap).forEach(unit=>{
         const key = unit+'|'+compKey;
@@ -18273,9 +18307,9 @@ window.rcaAutoGenerateVitalFew = async function(){
     if(created){
       await saveRcaRecords();
       renderCbmRca();
-      alert(`Berhasil generate ${created} RCA otomatis untuk kombinasi Unit × Komponen Vital Few yang belum ada.`);
+      alert(`Berhasil generate ${created} RCA otomatis (Vital Few + semua komponen yang punya BD Unplan) yang belum ada.`);
     } else {
-      alert('Semua Unit × Komponen Vital Few sudah memiliki RCA. Tidak ada yang ditambahkan.');
+      alert('Semua Unit × Komponen (Vital Few & Unplan) sudah memiliki RCA. Tidak ada yang ditambahkan.');
     }
   }catch(e){
     console.error(e);
