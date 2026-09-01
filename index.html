@@ -321,6 +321,93 @@ body{
 .status-dot{ width:6px; height:6px; border-radius:50%; background:var(--green); display:inline-block; margin-right:6px; box-shadow:0 0 8px var(--green); animation:pulse-dot 2s ease-in-out infinite; }
 @keyframes pulse-dot{ 0%,100%{ opacity:1; } 50%{ opacity:0.5; } }
 
+
+/* ===== Mechanic Activity Report — lebih terang; ikon kalender native tetap tampil ===== */
+#view-summary .summary-month-wrap{
+  display:inline-flex; align-items:center; gap:8px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+  border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:4px 10px 4px 12px;
+}
+#view-summary .summary-month-label{
+  margin:0; font-size:11px; letter-spacing:0.4px; color:#D5DBE3; text-transform:uppercase; font-weight:600;
+}
+#view-summary .summary-month-input{
+  width:auto; min-width:148px; border:none; background:transparent; color:#FFD76A;
+  font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13px; padding:6px 4px;
+  color-scheme:dark; box-shadow:none; cursor:pointer;
+}
+#view-summary .summary-month-input:focus{ outline:none; box-shadow:none; border:none; }
+/* Ikon kalender native — tampil & berwarna emas senada app */
+#view-summary .summary-month-input::-webkit-calendar-picker-indicator{
+  display:inline-block; opacity:0.95; width:18px; height:18px; cursor:pointer;
+  filter:invert(78%) sepia(56%) saturate(586%) hue-rotate(358deg) brightness(103%) contrast(101%);
+}
+#view-summary .summary-month-input::-webkit-calendar-picker-indicator:hover{ opacity:1; }
+
+#view-summary .panel{
+  background:linear-gradient(165deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 40%), #232830;
+  border-color:rgba(255,255,255,0.12);
+  box-shadow:0 8px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+#view-summary .panel-head h2,
+#view-summary .section-title{ color:#F4F6F8; }
+#view-summary .hint{ color:#B8C0CC; }
+#view-summary table th{
+  background:#2c3340; color:#F0F3F7; border-color:rgba(255,255,255,0.1);
+}
+#view-summary table td{ color:#E8ECF1; border-color:rgba(255,255,255,0.08); }
+#view-summary table tr:nth-child(even) td{ background:rgba(255,255,255,0.03); }
+#view-summary .kpi-card,
+#view-summary #summary-kpi-grid > *{
+  /* kartu KPI summary dibuat lebih terang lewat class dinamis + fallback */
+}
+#view-summary .summary-kpi{
+  background:linear-gradient(165deg, #2a303a 0%, #1e242c 100%) !important;
+  border:1px solid rgba(255,255,255,0.14) !important;
+  border-radius:12px; padding:16px 18px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+#view-summary .summary-kpi .sk-label{ color:#C5CDD8; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+#view-summary .summary-kpi .sk-val{ color:#FFE08A; font-family:'Oswald',sans-serif; font-size:26px; font-weight:700; }
+#view-summary .summary-kpi .sk-sub{ color:#9AA3AE; font-size:11px; margin-top:4px; font-family:'JetBrains Mono',monospace; }
+
+/* Chart Mechanic Activity Report — tinggi sejajar, tanpa celah kosong di bawah */
+#view-summary .summary-charts-row{
+  align-items: stretch;
+}
+#view-summary .summary-chart-panel{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  margin-bottom:0;
+}
+#view-summary .summary-chart-panel .panel-head{
+  flex-shrink:0;
+  margin-bottom:12px;
+}
+#view-summary .summary-chart-body{
+  flex:1 1 auto;
+  min-height:200px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+#view-summary .summary-chart-body--donut{
+  flex-direction:row;
+  align-items:center;
+  justify-content:center;
+  gap:22px;
+  flex-wrap:wrap;
+}
+#view-summary .summary-chart-panel--status .summary-chart-body--donut{
+  gap:28px;
+  min-height:180px;
+}
+#view-summary #summary-bar-chart > div{
+  width:100%;
+}
+
+
 /* MAIN */
 .main{
   flex:1; min-width:0; position:relative;
@@ -1825,10 +1912,8 @@ body.role-mechanic #history-filters{ display:none !important; }
               <button type="button" class="btn danger" id="mapa-clear-btn" style="display:none;">Hapus Data</button>
             </div>
           </div>
-          <div class="field" style="max-width:420px; margin-bottom:6px;">
-            <label>Pilih File (fallback manual)</label>
-            <input type="file" id="mapa-file-input" accept=".csv,.xlsx,.xls">
-          </div>
+          <!-- Pilih File (fallback manual) dihapus dari UI; input disembunyikan agar listener lama aman -->
+          <input type="file" id="mapa-file-input" accept=".csv,.xlsx,.xls" style="display:none;" aria-hidden="true">
           <div id="mapa-upload-status" class="hint"></div>
         </div>
 
@@ -2561,26 +2646,28 @@ body.role-mechanic #history-filters{ display:none !important; }
       <section class="view" id="view-summary">
         <div class="panel-head" style="margin-bottom:16px;">
           <h2>Mechanic Activity Report — Ringkasan Report Daily Maintenance</h2>
-          <input type="month" id="s-month" style="width:auto;">
+          <div class="summary-month-wrap" title="Pilih bulan laporan">
+            <label class="summary-month-label" for="s-month">Bulan</label>
+            <input type="month" id="s-month" class="summary-month-input">
+          </div>
         </div>
-        <div class="hint" style="margin-top:-10px; margin-bottom:6px;">Seluruh angka pada halaman ini dihitung murni dari data Report Daily Maintenance pada bulan yang dipilih.</div>
 
         <div class="grid grid-4" id="summary-kpi-grid" style="margin-bottom:20px;"></div>
 
         <div class="section-title">Grafik Ringkasan</div>
-        <div class="grid grid-2" style="margin-bottom:20px;">
-          <div class="panel" style="margin-bottom:0;">
+        <div class="grid grid-2 summary-charts-row" style="margin-bottom:20px;">
+          <div class="panel summary-chart-panel" style="margin-bottom:0;">
             <div class="panel-head"><h2>Total Job per Mechanic</h2></div>
-            <div id="summary-bar-chart"></div>
+            <div id="summary-bar-chart" class="summary-chart-body"></div>
           </div>
-          <div class="panel" style="margin-bottom:0;">
+          <div class="panel summary-chart-panel" style="margin-bottom:0;">
             <div class="panel-head"><h2>Komposisi Kategori Pekerjaan</h2></div>
-            <div id="summary-donut-chart" style="display:flex; align-items:center; gap:22px; justify-content:center; flex-wrap:wrap;"></div>
+            <div id="summary-donut-chart" class="summary-chart-body summary-chart-body--donut"></div>
           </div>
         </div>
-        <div class="panel" style="margin-bottom:20px;">
+        <div class="panel summary-chart-panel summary-chart-panel--status" style="margin-bottom:20px;">
           <div class="panel-head"><h2>Komposisi Status Job</h2></div>
-          <div id="summary-status-chart" style="display:flex; align-items:center; gap:28px; justify-content:center; flex-wrap:wrap;"></div>
+          <div id="summary-status-chart" class="summary-chart-body summary-chart-body--donut"></div>
         </div>
 
         <div class="panel">
@@ -2691,7 +2778,6 @@ body.role-mechanic #history-filters{ display:none !important; }
           </div>
           <button type="button" class="btn small secondary" id="cbm-refresh" title="Tarik ulang data HM/Performance/Daily Maintenance terbaru">⟲ Refresh Data</button>
         </div>
-        <p class="hint" style="margin:8px 0 16px;">Semua unit &amp; seluruh periode data ditampilkan otomatis (tanpa filter manual) — chart dan tabel di bawah selalu mengikuti data Daily Maintenance terbaru.</p>
 
         <!-- OVERVIEW + ASSET CARDS -->
         <div class="cbm-tab-panel" id="cbm-tab-overview">
@@ -2815,7 +2901,6 @@ body.role-mechanic #history-filters{ display:none !important; }
             <div class="panel-head">
               <h2><span class="tag">RCA</span> Root Cause Analysis</h2>
             </div>
-            <p class="hint" style="margin-bottom:14px;">Identitas, Problem, 5 Whys, Root Cause, Kategori, Corrective, dan Preventive terisi <b>otomatis</b> dari data Breakdown / Daily Maintenance langsung ke tabel di bawah. Untuk menyesuaikan, gunakan tombol <b>Edit</b> pada baris terkait.</p>
             <div class="toolbar" style="margin-bottom:14px; flex-wrap:wrap; gap:8px;">
               <button type="button" class="btn" id="rca-auto-generate-btn" title="Buat &amp; simpan RCA otomatis untuk setiap Unit × Komponen Vital Few yang belum ada">⚡ Generate Otomatis dari Breakdown (Vital Few)</button>
               <button type="button" class="btn small" id="rca-sync-sheets-btn" title="Kirim semua record RCA ke Google Sheets tab RCA">☁ Sync ke Sheet RCA</button>
@@ -12880,21 +12965,48 @@ sMonth.value = new Date().toISOString().slice(0,7);
 sMonth.addEventListener('change', renderSummary);
 
 function summaryBarChart(items){
-  // items: [{label, value}] — horizontal bar chart, gaya konsisten dgn KPI dashboard (warna kuning aksen)
+  // items: [{label, value, bd, daily, periodical}] — stacked bar warna = komposisi kategori
+  // Breakdown #E5484D · Daily #4A90D9 · Periodical #FFC72C (sama donut Komposisi Kategori)
   if(!items.length) return `<div class="hint" style="padding:20px 0;">Tidak ada data pada bulan ini.</div>`;
   const max = Math.max(1, ...items.map(d=>d.value));
-  return `<div style="padding-top:6px;">` + items.map(d=>{
-    const pct = Math.max(2, (d.value/max*100));
+  const legend = `<div style="display:flex; flex-wrap:wrap; gap:12px 16px; margin-bottom:12px; font-size:11px; color:#D2D8E0;">
+    <span style="display:inline-flex; align-items:center; gap:6px;"><i style="width:10px;height:10px;border-radius:2px;background:#E5484D;display:inline-block;"></i>Breakdown</span>
+    <span style="display:inline-flex; align-items:center; gap:6px;"><i style="width:10px;height:10px;border-radius:2px;background:#4A90D9;display:inline-block;"></i>Daily Maintenance</span>
+    <span style="display:inline-flex; align-items:center; gap:6px;"><i style="width:10px;height:10px;border-radius:2px;background:#FFC72C;display:inline-block;"></i>Periodical</span>
+  </div>`;
+  const rows = items.map(d=>{
+    const total = Math.max(0, Number(d.value)||0);
+    const bd = Math.max(0, Number(d.bd)||0);
+    const daily = Math.max(0, Number(d.daily)||0);
+    const periodical = Math.max(0, Number(d.periodical)||0);
+    // fallback jika segmen tidak dikirim: seluruh bar kuning (periodical palette)
+    const useStack = (d.bd!=null || d.daily!=null || d.periodical!=null);
+    const pctW = Math.max(2, (total/max*100));
+    let segs = '';
+    if(useStack && total>0){
+      const pBd = (bd/total)*100;
+      const pDaily = (daily/total)*100;
+      const pPer = (periodical/total)*100;
+      if(bd>0) segs += `<div style="height:100%;width:${pBd}%;background:#E5484D;flex-shrink:0;" title="Breakdown: ${bd}"></div>`;
+      if(daily>0) segs += `<div style="height:100%;width:${pDaily}%;background:#4A90D9;flex-shrink:0;" title="Daily: ${daily}"></div>`;
+      if(periodical>0) segs += `<div style="height:100%;width:${pPer}%;background:#FFC72C;flex-shrink:0;" title="Periodical: ${periodical}"></div>`;
+      // sisa (rounding) — netral
+      const used = pBd + pDaily + pPer;
+      if(used < 99.5) segs += `<div style="height:100%;width:${(100-used)}%;background:rgba(255,255,255,0.12);flex-shrink:0;"></div>`;
+    } else {
+      segs = `<div style="height:100%;width:100%;background:linear-gradient(90deg,#E8B84A,#FFD76A);"></div>`;
+    }
     return `<div style="margin-bottom:14px;">
-      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
-        <span style="color:var(--text-dim);">${d.label}</span>
-        <span style="font-family:'JetBrains Mono',monospace; color:var(--yellow); font-weight:700;">${d.value}</span>
+      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; gap:8px;">
+        <span style="color:#D2D8E0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.label}</span>
+        <span style="font-family:'JetBrains Mono',monospace; color:#F4F6F8; font-weight:700; flex-shrink:0;">${total}</span>
       </div>
-      <div style="background:var(--panel-2); border-radius:4px; height:11px; overflow:hidden; border:1px solid var(--line);">
-        <div style="background:linear-gradient(90deg, var(--yellow-dim), var(--yellow)); height:100%; width:${pct}%; border-radius:4px;"></div>
+      <div style="background:rgba(255,255,255,0.08); border-radius:4px; height:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.12);">
+        <div style="display:flex; height:100%; width:${pctW}%; border-radius:4px; overflow:hidden;">${segs}</div>
       </div>
     </div>`;
-  }).join('') + `</div>`;
+  }).join('');
+  return legend + `<div style="padding-top:2px;">` + rows + `</div>`;
 }
 
 function summaryDonutChart(segments){
@@ -12912,10 +13024,10 @@ function summaryDonutChart(segments){
     return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}"
       stroke-dasharray="${dash} ${gap}" transform="rotate(${rotation} ${cx} ${cy})"/>`;
   }).join('');
-  const legend = segments.map(s=>`<div style="display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--text-dim); margin-bottom:8px;">
-      <span style="width:10px; height:10px; border-radius:2px; background:${s.color}; display:inline-block; flex-shrink:0;"></span>
+  const legend = segments.map(s=>`<div style="display:flex; align-items:center; gap:7px; font-size:11.5px; color:#D2D8E0; margin-bottom:8px;">
+      <span style="width:10px; height:10px; border-radius:2px; background:${s.color}; display:inline-block; flex-shrink:0; box-shadow:0 0 0 1px rgba(255,255,255,0.15);"></span>
       <span>${s.label}</span>
-      <span style="margin-left:auto; font-family:'JetBrains Mono',monospace; color:var(--text); font-weight:700;">${s.value}</span>
+      <span style="margin-left:auto; font-family:'JetBrains Mono',monospace; color:#F4F6F8; font-weight:700;">${s.value}</span>
     </div>`).join('');
   return `<svg width="168" height="168" viewBox="0 0 168 168">
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#252932" stroke-width="${sw}"/>
@@ -12936,25 +13048,25 @@ function renderSummaryKPICards(rows, byMech){
   const completionColor = avgCompletion>=90 ? 'var(--green)' : avgCompletion>=70 ? 'var(--yellow)' : 'var(--red)';
 
   grid.innerHTML = `
-    <div class="panel" style="margin-bottom:0;">
-      <div class="panel-head"><h2>Mechanic Aktif</h2></div>
-      <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700;">${totalMechanic}</div>
-      <div class="hint">Mekanik dengan record bulan ini</div>
+    <div class="summary-kpi">
+      <div class="sk-label">Mechanic Aktif</div>
+      <div class="sk-val">${totalMechanic}</div>
+      <div class="sk-sub">Mekanik dengan record bulan ini</div>
     </div>
-    <div class="panel" style="margin-bottom:0;">
-      <div class="panel-head"><h2>Total Job</h2></div>
-      <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700;">${totalJob}</div>
-      <div class="hint">Record Daily Maintenance bulan ini</div>
+    <div class="summary-kpi">
+      <div class="sk-label">Total Job</div>
+      <div class="sk-val">${totalJob}</div>
+      <div class="sk-sub">Record Daily Maintenance bulan ini</div>
     </div>
-    <div class="panel" style="margin-bottom:0;">
-      <div class="panel-head"><h2>Total Durasi</h2></div>
-      <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700;">${totalDur.toFixed(1)}<span style="font-size:15px;"> jam</span></div>
-      <div class="hint">Akumulasi durasi perbaikan</div>
+    <div class="summary-kpi">
+      <div class="sk-label">Total Durasi</div>
+      <div class="sk-val">${totalDur.toFixed(1)}<span style="font-size:15px;font-weight:600;"> jam</span></div>
+      <div class="sk-sub">Akumulasi durasi perbaikan</div>
     </div>
-    <div class="panel" style="margin-bottom:0;">
-      <div class="panel-head"><h2>Rata² % Completion</h2></div>
-      <div style="font-family:'Oswald',sans-serif; font-size:32px; font-weight:700; color:${completionColor};">${avgCompletion.toFixed(0)}%</div>
-      <div class="hint">Job Close dibanding Total Job</div>
+    <div class="summary-kpi">
+      <div class="sk-label">Rata² % Completion</div>
+      <div class="sk-val" style="color:${completionColor};">${avgCompletion.toFixed(0)}%</div>
+      <div class="sk-sub">Job Close dibanding Total Job</div>
     </div>`;
 }
 
@@ -13002,9 +13114,15 @@ function renderSummary(){
 
   renderSummaryKPICards(rows, byMech);
 
-  // Bar chart: Total Job per mechanic, diurutkan dari yang tertinggi
+  // Bar chart: Total Job per mechanic (stacked warna = komposisi kategori pekerjaan)
   const barItems = Object.keys(byMech).sort((a,b)=>byMech[b].total-byMech[a].total)
-    .map(name=>({ label:name, value: byMech[name].total }));
+    .map(name=>({
+      label: name,
+      value: byMech[name].total,
+      bd: byMech[name].bd||0,
+      daily: byMech[name].daily||0,
+      periodical: byMech[name].periodical||0
+    }));
   document.getElementById('summary-bar-chart').innerHTML = summaryBarChart(barItems);
 
   // Donut chart: komposisi kategori pekerjaan dari seluruh record Daily Maintenance bulan ini
