@@ -2837,6 +2837,19 @@ body.role-mechanic #history-filters{ display:none !important; }
           </div>
         </div>
 
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Summary Mechanic Activity</h2>
+          </div>
+          <div class="scroll-top-track" id="summary-all-scroll-top" title="Geser untuk melihat kolom bulan lainnya"><div class="scroll-top-track-inner" id="summary-all-scroll-top-inner"></div></div>
+          <div class="table-wrap" id="summary-all-table-wrap">
+            <table id="summary-all-table">
+              <thead id="summary-all-thead"></thead>
+              <tbody id="summary-all-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="section-title">Historical Report</div>
         <div class="panel">
           <div class="panel-head"><h2>Historical Report</h2></div>
@@ -13229,16 +13242,95 @@ function renderSummaryKPICards(rows, byMech){
    Mechanic — data mentah di Daily Maintenance/Historical Report tetap
    menyimpan nama asli yang diinput mekanik. ---- */
 const MECHANIC_NAME_ALIAS = {
+  /* Robertus */
   'robertus': 'Robertus G M',
   'robertus g': 'Robertus G M',
   'robertus g m': 'Robertus G M',
+  'robert': 'Robertus G M',
+  'robert g m': 'Robertus G M',
+  /* Alfius */
   'alfius': 'Alfius S',
   'alfius s': 'Alfius S',
+  /* Team UT */
+  'team ut': 'Team UT',
+  'mechanic ut': 'Team UT',
+  'mekanik ut': 'Team UT',
+  'ut': 'Team UT',
+  /* Alimudin */
+  'ali': 'Alimudin',
+  'alimudin': 'Alimudin',
+  'alimuddin': 'Alimudin',
+  /* Andika Fajar (seragamkan kapitalisasi) */
+  'andika fajar': 'Andika Fajar',
+  'andika': 'Andika Fajar',
+  /* Bonaventura */
+  'bonaventura iswan meleng': 'Bonaventura Iswan Meleng',
+  'bonaventura iswan meleng': 'Bonaventura Iswan Meleng',
+  'bonaventura': 'Bonaventura Iswan Meleng',
+  /* Nama lain yang sering bervariasi kapitalisasi */
+  'agil': 'Agil',
+  'hajrin': 'Hajrin',
+  'fajar': 'Andika Fajar',
 };
 function normalizeMechanicName(name){
   if(!name) return name;
-  const key = name.trim().toLowerCase();
-  return MECHANIC_NAME_ALIAS[key] || name.trim();
+  // rapikan spasi & kapitalisasi dasar sebelum lookup alias
+  const key = String(name).trim().toLowerCase().replace(/\s+/g, ' ');
+  if(MECHANIC_NAME_ALIAS[key]) return MECHANIC_NAME_ALIAS[key];
+  // Title-case ringan untuk nama yang belum ada di alias (hindari ALL CAPS / all lower sebagai baris terpisah)
+  const titled = key.replace(/\b([a-z])/g, (m)=> m.toUpperCase());
+  return titled || String(name).trim();
+}
+
+/** Pecah field mekanik yang berisi beberapa nama dalam satu string
+ *  (contoh: "Agil, Ali", "Andika Fajar & Bonaventura Iswan Meleng", "Hajrin/Agil").
+ *  Setiap potongan dinormalisasi lewat alias. */
+function splitMechanicNames(raw){
+  if(raw==null || raw==='') return [];
+  const s = String(raw).trim();
+  if(!s) return [];
+  // Pemisah umum: koma, &, /, ;, " dan ", " and "
+  const parts = s.split(/\s*(?:,|&|\/|;|\bdan\b|\band\b)\s*/i)
+    .map(p=>p.trim())
+    .filter(Boolean);
+  const out = [];
+  const seen = new Set();
+  parts.forEach(p=>{
+    const n = normalizeMechanicName(p);
+    if(!n) return;
+    const k = n.toLowerCase();
+    if(seen.has(k)) return;
+    seen.add(k);
+    out.push(n);
+  });
+  return out;
+}
+
+/** Kumpulkan semua nama mekanik dari satu record Daily (mechanic + mechanic2 + mechanic3),
+ *  termasuk yang digabung dalam satu field. */
+function collectMechanicNamesFromRecord(r){
+  const names = [];
+  const seen = new Set();
+  function pushAll(raw){
+    const list = splitMechanicNames(raw);
+    if(!list.length && raw){
+      const n = normalizeMechanicName(raw) || 'Unassigned';
+      list.push(n);
+    }
+    list.forEach(n=>{
+      const k = String(n).toLowerCase();
+      if(seen.has(k)) return;
+      seen.add(k);
+      names.push(n);
+    });
+  }
+  if(r){
+    pushAll(r.mechanic);
+    if(r.mechanic2) pushAll(r.mechanic2);
+    if(r.mechanic3) pushAll(r.mechanic3);
+  }
+  if(!names.length) names.push('Unassigned');
+  return names;
 }
 
 function renderSummary(){
@@ -13258,9 +13350,8 @@ function renderSummary(){
   }
   rows.forEach(r=>{
     // Job dengan lebih dari 1 Man Power dihitung untuk setiap mekanik (masing-masing tetap dapat kredit penuh atas job tsb).
-    addToMech(normalizeMechanicName(r.mechanic) || 'Unassigned', r);
-    if(r.mechanic2) addToMech(normalizeMechanicName(r.mechanic2), r);
-    if(r.mechanic3) addToMech(normalizeMechanicName(r.mechanic3), r);
+    // Nama digabung via alias + field multi-nama dipecah ("Agil, Ali" → Agil + Alimudin).
+    collectMechanicNamesFromRecord(r).forEach(n=> addToMech(n, r));
   });
 
   renderSummaryKPICards(rows, byMech);
@@ -13317,6 +13408,90 @@ function renderSummary(){
     </tr>`;
   }).join('');
   attachTopScroll('summary');
+  renderSummaryAllMonths();
+}
+
+/** Tabel ringkasan Mechanic Activity semua bulan:
+ *  baris = mekanik, kolom = setiap bulan (YYYY-MM) + Total.
+ *  Nilai sel = jumlah job (Daily Maintenance) yang melibatkan mekanik tsb.
+ *  Job multi-manpower dihitung penuh untuk setiap mekanik (sama seperti rekap bulanan). */
+const SUMMARY_MONTH_LABELS = {
+  '01':'Jan','02':'Feb','03':'Mar','04':'Apr','05':'Mei','06':'Jun',
+  '07':'Jul','08':'Agu','09':'Sep','10':'Okt','11':'Nov','12':'Des'
+};
+function summaryMonthLabel(ym){
+  const parts = String(ym||'').split('-');
+  if(parts.length < 2) return ym || '—';
+  const m = SUMMARY_MONTH_LABELS[parts[1]] || parts[1];
+  return m + ' ' + parts[0];
+}
+function renderSummaryAllMonths(){
+  const thead = document.getElementById('summary-all-thead');
+  const tbody = document.getElementById('summary-all-tbody');
+  if(!thead || !tbody) return;
+
+  const monthSet = new Set();
+  const byMechMonth = {}; // name -> { monthKey: count, _total: n }
+
+  function addJob(name, monthKey){
+    if(!name || !monthKey) return;
+    if(!byMechMonth[name]) byMechMonth[name] = { _total: 0 };
+    const row = byMechMonth[name];
+    row[monthKey] = (row[monthKey] || 0) + 1;
+    row._total++;
+  }
+
+  (dailyRecords || []).forEach(r=>{
+    if(!r || !r.tanggal || r.tanggal.length < 7) return;
+    const mk = String(r.tanggal).slice(0, 7); // YYYY-MM
+    if(!/^\d{4}-\d{2}$/.test(mk)) return;
+    monthSet.add(mk);
+    collectMechanicNamesFromRecord(r).forEach(n=> addJob(n, mk));
+  });
+
+  const months = Array.from(monthSet).sort();
+  const names = Object.keys(byMechMonth).sort((a,b)=>{
+    const ta = byMechMonth[a]._total || 0;
+    const tb = byMechMonth[b]._total || 0;
+    if(tb !== ta) return tb - ta;
+    return a.localeCompare(b);
+  });
+
+  if(!months.length || !names.length){
+    thead.innerHTML = '<tr><th>Mechanic</th><th>Total</th></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="2">Belum ada data Daily Maintenance untuk ditampilkan.</td></tr>';
+    try{ attachTopScroll('summary-all'); }catch(_e){}
+    return;
+  }
+
+  thead.innerHTML = '<tr><th style="position:sticky;left:0;z-index:3;background:linear-gradient(180deg,#2a2f38 0%,#22262e 100%);">Mechanic</th>' +
+    months.map(m=>'<th title="'+m+'">'+summaryMonthLabel(m)+'</th>').join('') +
+    '<th style="color:var(--yellow);">Total</th></tr>';
+
+  // footer totals per month
+  const monthTotals = {};
+  months.forEach(m=> monthTotals[m] = 0);
+  let grand = 0;
+
+  const escName = (typeof escUH==='function') ? escUH : (s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  tbody.innerHTML = names.map(name=>{
+    const row = byMechMonth[name];
+    const cells = months.map(m=>{
+      const v = row[m] || 0;
+      monthTotals[m] += v;
+      return '<td style="text-align:center;'+(v? 'font-weight:600;color:var(--text);':'color:var(--text-faint);')+'">'+(v||'—')+'</td>';
+    }).join('');
+    grand += row._total || 0;
+    return '<tr><td style="position:sticky;left:0;z-index:1;background:var(--panel);font-weight:600;white-space:nowrap;">'+escName(name)+'</td>' +
+      cells +
+      '<td style="text-align:center;font-weight:700;color:var(--yellow);">'+row._total+'</td></tr>';
+  }).join('') +
+  '<tr style="background:rgba(255,199,44,0.08);">' +
+    '<td style="position:sticky;left:0;z-index:1;background:#2a2618;font-weight:700;">TOTAL</td>' +
+    months.map(m=>'<td style="text-align:center;font-weight:700;color:var(--yellow);">'+(monthTotals[m]||0)+'</td>').join('') +
+    '<td style="text-align:center;font-weight:700;color:var(--yellow);font-size:13px;">'+grand+'</td></tr>';
+
+  try{ attachTopScroll('summary-all'); }catch(_e){}
 }
 
 /* ================= DASHBOARD KPI ================= */
