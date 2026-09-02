@@ -549,6 +549,30 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover{ opacity:1; }
 }
 @media(max-width:640px){ .topbar-datetime .dt-date{ display:none; } }
 
+/* ===== GRAFIK QUARTER CHART — MEDIUM SIZE ===== */
+.quarter-chart-medium{
+  width:100%;
+  max-width:820px;
+  height:280px;
+  min-height:280px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.quarter-chart-medium svg{
+  width:100%;
+  max-width:760px;
+  height:280px !important;
+  display:block;
+  margin:0 auto;
+}
+@media(max-width:640px){
+  .quarter-chart-medium{height:240px;min-height:240px;}
+  .quarter-chart-medium svg{height:240px !important;}
+}
+
 /* ===== INPUT PERIODE KPI — PREMIUM GOLD ===== */
 .period-panel{
   background:
@@ -703,6 +727,119 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 .cat.Undercarriage{ background:rgba(229,72,77,0.15); color:var(--red); }
 .cat.Cabin{ background:rgba(154,160,168,0.15); color:var(--text-dim); }
 .cat.Other{ background:rgba(92,99,107,0.15); color:var(--text-faint); }
+
+/* ===== RCA TABLE — rapi & mudah dibaca ===== */
+#rca-table{
+  min-width:1280px;
+  table-layout:fixed;
+  font-size:12.5px;
+  border-collapse:separate;
+  border-spacing:0;
+}
+#rca-table thead th{
+  position:sticky; top:0; z-index:2;
+  background:linear-gradient(180deg, #2e3440 0%, #252a33 100%);
+  padding:12px 14px;
+  font-size:10px;
+  letter-spacing:0.55px;
+  border-bottom:1px solid rgba(255,199,44,0.22);
+  vertical-align:middle;
+  text-align:center !important;
+}
+#rca-table tbody td{
+  padding:12px 14px;
+  vertical-align:top;
+  line-height:1.55;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  color:var(--text);
+}
+#rca-table tbody tr:hover td{ background:rgba(255,199,44,0.045); }
+
+/* Lebar kolom tetap agar teks panjang punya ruang */
+#rca-table th:nth-child(1), #rca-table td:nth-child(1){ width:118px; min-width:118px; white-space:nowrap; }
+#rca-table th:nth-child(2), #rca-table td:nth-child(2){ width:88px; min-width:88px; white-space:nowrap; }
+#rca-table th:nth-child(3), #rca-table td:nth-child(3){ width:110px; min-width:110px; white-space:nowrap; }
+#rca-table th:nth-child(4), #rca-table td:nth-child(4){ width:200px; min-width:180px; }
+#rca-table th:nth-child(5), #rca-table td:nth-child(5){ width:240px; min-width:200px; }
+#rca-table th:nth-child(6), #rca-table td:nth-child(6){ width:90px; min-width:90px; white-space:nowrap; text-align:center; }
+#rca-table th:nth-child(7), #rca-table td:nth-child(7){ width:200px; min-width:180px; }
+#rca-table th:nth-child(8), #rca-table td:nth-child(8){ width:200px; min-width:180px; }
+#rca-table th:nth-child(9), #rca-table td:nth-child(9){ width:110px; min-width:100px; white-space:nowrap; }
+#rca-table th:nth-child(10), #rca-table td:nth-child(10){ width:100px; min-width:96px; white-space:nowrap; text-align:center; }
+#rca-table th:nth-child(11), #rca-table td:nth-child(11){ width:120px; min-width:110px; white-space:nowrap; text-align:center; }
+
+/* Sel teks panjang: wrap rapi, tidak potong */
+#rca-table td.rca-text{
+  white-space:normal !important;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  text-align:left;
+  color:#E8ECF1;
+  font-size:12.5px;
+  line-height:1.55;
+}
+#rca-table td.rca-text .rca-clip{
+  display:-webkit-box;
+  -webkit-line-clamp:5;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  max-height:7.75em; /* ~5 baris */
+}
+#rca-table td.rca-text:hover .rca-clip,
+#rca-table td.rca-text:focus-within .rca-clip{
+  -webkit-line-clamp:unset;
+  max-height:none;
+  overflow:visible;
+}
+#rca-table .rca-date{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  font-weight:600;
+  color:#D5DBE3;
+}
+#rca-table .rca-unit{
+  font-family:'Oswald',sans-serif;
+  font-size:13px;
+  letter-spacing:0.4px;
+  color:var(--yellow);
+}
+#rca-table .rca-pic{
+  font-size:12px;
+  color:var(--text);
+  font-weight:500;
+}
+#rca-table .rca-actions{
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+}
+#rca-table .rca-actions .btn{ padding:4px 10px; font-size:11px; }
+#rca-table-wrap{
+  max-height:none;
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:0 0 10px 10px;
+  background:rgba(0,0,0,0.12);
+}
+#rca-scroll-top{
+  border-color:rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.03);
+}
+/* Kategori & teks kolom rapi */
+#rca-table td.rca-cat{
+  font-weight:600; color:#C5CDD8; text-align:center;
+  white-space:nowrap;
+}
+#rca-table td.rca-text{
+  letter-spacing:0.01em;
+}
+#rca-table td.rca-text .rca-clip{
+  text-align:left;
+}
+#rca-table .rca-pic{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:110px;
+}
+
 
 /* P2H DANGER CODE BADGES */
 .dangercode{ display:inline-block; padding:2px 9px; border-radius:10px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:10.5px; }
@@ -1021,6 +1158,13 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 .dash-contrib-legend div{ display:flex; align-items:center; gap:8px; color:var(--text-dim); }
 .dash-contrib-legend b{ color:var(--text); font-family:'Oswald',sans-serif; font-size:13px; letter-spacing:0.4px; }
 .dash-sum-table{ width:100%; border-collapse:collapse; font-size:11.5px; }
+.dash-sum-table.quarter-summary-table{width:100%;table-layout:fixed;}
+.dash-sum-table.quarter-summary-table th,.dash-sum-table.quarter-summary-table td{box-sizing:border-box;}
+.dash-sum-table.quarter-summary-table .quarter-average-cell,
+.dash-sum-table.quarter-summary-table .quarter-average-value{text-align:center !important;font-family:'JetBrains Mono',monospace;font-weight:700;white-space:nowrap;}
+.dash-sum-table.quarter-summary-table .quarter-average-status{text-align:left !important;white-space:nowrap;}
+.dash-sum-table.quarter-summary-table tr.quarter-average-row td{vertical-align:middle;}
+
 .dash-sum-table th{
   text-align:left; padding:7px 8px; color:var(--text-faint); font-family:'JetBrains Mono',monospace;
   font-size:9.5px; text-transform:uppercase; letter-spacing:0.4px; border-bottom:1px solid rgba(255,255,255,0.07);
@@ -1384,6 +1528,13 @@ select.exec-close{ background:rgba(76,175,109,0.15); color:var(--green); }
 /* PJO: sembunyikan juga banner info lain di atas panel */
 body.role-pjo #daily-role-banner{ display:none !important; }
 body.role-pjo .view > .banner{ display:none !important; }
+
+/* Sembunyikan semua banner/info tab di atas setiap menu */
+.view > .banner,
+.view > .banner.warn,
+section.view > .banner{
+  display:none !important;
+}
 
 /* Mechanic: Historical Report hanya lihat tabel — filter & export disembunyikan */
 body.role-mechanic #history-filters{ display:none !important; }
@@ -2923,9 +3074,9 @@ body.role-mechanic #history-filters{ display:none !important; }
             <div class="table-wrap" id="rca-table-wrap">
               <table id="rca-table">
                 <thead><tr>
-                  <th>Tanggal</th><th>Unit</th><th>Component</th><th>Problem</th>
-                  <th>Root Cause</th><th>Kategori</th><th>Corrective</th><th>Preventive</th>
-                  <th>PIC</th><th>Status</th><th></th>
+                  <th>Tanggal</th><th>Unit</th><th>Component</th><th>Event</th>
+                  <th>Root Cause</th><th>Kategori</th><th>Corrective Action</th><th>Preventive Action</th>
+                  <th>PIC</th><th>Status</th><th>Aksi</th>
                 </tr></thead>
                 <tbody id="cbm-rca-tbody"></tbody>
               </table>
@@ -14289,12 +14440,76 @@ function renderKPIChartDashboard(k, globalStats){
       return `<td style="text-align:center;font-family:JetBrains Mono,monospace;font-weight:700;color:${cellColor(avg)}">${Math.round(avg)}%</td>`;
     }).join('');
 
+    // --- Grafik 4D (gaya extrude sama seperti service4DChartSVG / comparisonBarsSVG) untuk
+    //     rata-rata % Achievement per bulan — ringkasan visual dari tabel Monthly KPI Achievement
+    //     di bawahnya (baris "Average"). Warna bar mengikuti threshold cellColor (>=100 hijau,
+    //     >=80 kuning, selain itu merah), konsisten dgn warna sel di tabel.
+    function monthlyAchievement4DSVG(){
+      const n = trendMonths.length;
+      if(!n) return '';
+      const padL=34, padR=18, padT=34, padB=34, cap=120;
+      const gap=12;
+      const barW = Math.min(36, Math.max(16, (760-padL-padR-gap*(n-1))/n));
+      const depthX=8, depthY=7;
+      const total = barW*n + gap*(n-1) + depthX;
+      const W = Math.max(400, padL+padR+total+24);
+      const H = 230;
+      const baseY = H-padB;
+      const chartH = H-padT-padB-depthY;
+
+      function shade(hex, f){
+        const c=hex.replace('#','');
+        const r=Math.min(255,Math.max(0,parseInt(c.slice(0,2),16)*f));
+        const g=Math.min(255,Math.max(0,parseInt(c.slice(2,4),16)*f));
+        const b=Math.min(255,Math.max(0,parseInt(c.slice(4,6),16)*f));
+        return `rgb(${r|0},${g|0},${b|0})`;
+      }
+
+      const bars = trendMonths.map((m,i)=>{
+        const vals = monthlyKpiDefs.map(d => (m.pct && m.pct[d.key] != null) ? m.pct[d.key] : 0);
+        const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+        const color = cellColor(avg);
+        const h = Math.max(6, chartH*Math.min(avg,cap)/cap);
+        const x = padL + i*(barW+gap);
+        const y = baseY - h;
+        const front = shade(color,1);
+        const side = shade(color,0.55);
+        const top = shade(color,1.25);
+        const topPts = `${x},${y} ${x+depthX},${y-depthY} ${x+barW+depthX},${y-depthY} ${x+barW},${y}`;
+        const sidePts = `${x+barW},${y} ${x+barW+depthX},${y-depthY} ${x+barW+depthX},${baseY-depthY} ${x+barW},${baseY}`;
+        return `<g>
+          <polygon points="${sidePts}" fill="${side}"/>
+          <polygon points="${topPts}" fill="${top}" opacity="0.95"/>
+          <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="url(#ma4d${i})"/>
+          <defs><linearGradient id="ma4d${i}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#fff" stop-opacity="0.28"/>
+            <stop offset="15%" stop-color="${front}" stop-opacity="1"/>
+            <stop offset="100%" stop-color="${front}" stop-opacity="0.7"/>
+          </linearGradient></defs>
+          <text x="${(x+barW/2+depthX*0.35).toFixed(1)}" y="${(y-depthY-6).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="${color}" font-family="JetBrains Mono, monospace">${Math.round(avg)}%</text>
+          <text x="${(x+barW/2).toFixed(1)}" y="${H-10}" text-anchor="middle" font-size="9" font-weight="600" fill="#a8aeb6" font-family="JetBrains Mono, monospace">${m.short}</text>
+        </g>`;
+      }).join('');
+
+      const targetY = baseY - chartH*(100/cap);
+      return `
+        <div style="overflow-x:auto;border:1px solid var(--line);border-radius:6px;padding:6px 4px;margin-bottom:12px">
+          <svg viewBox="0 0 ${W} ${H}" style="min-width:${W}px;width:100%;height:215px">
+            <line x1="${padL}" y1="${targetY.toFixed(1)}" x2="${W-padR+depthX}" y2="${targetY.toFixed(1)}" stroke="rgba(255,199,44,0.5)" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="${padL}" y="${(targetY-4).toFixed(1)}" font-size="8" fill="var(--yellow)" font-family="JetBrains Mono, monospace">Target 100%</text>
+            <line x1="${padL}" y1="${baseY}" x2="${W-padR+depthX}" y2="${baseY}" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+            ${bars}
+          </svg>
+        </div>`;
+    }
+
     const tableHtml = `
       <div style="margin-top:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
           <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Monthly KPI Achievement</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">${legend}</div>
         </div>
+        ${monthlyAchievement4DSVG()}
         <div style="overflow-x:auto;border:1px solid var(--line);border-radius:6px">
           <table class="dash-sum-table" style="min-width:100%;margin:0">
             <thead>
@@ -14564,32 +14779,203 @@ function renderKPIChartDashboard(k, globalStats){
     </tr>`;
   }).join('');
 
-  // KPI Summary Quarter — ikut filter periode triwulan aktif; kolom per-bulan (mis. Juli/Agustus/September)
-  // ditampilkan sebelum kolom Value, masing-masing berisi nilai KPI bulan tsb (bukan lagi 1 kolom rentang "Bulan").
+  // KPI Summary Quarter — kolom Q1, Q2, Q3, ... terisi otomatis hanya jika Quarter
+  // tersebut sudah mempunyai hasil KPI. Quarter baru akan muncul tanpa edit manual saat datanya tersedia.
+  const quarterSummaryTableSeries = quarterOptions.slice().reverse().map(qVal=>{
+    const kq = computeKPIsForQuarter(qVal);
+    const vals = monthlyKpiDefs.map(d=>Number(kq[d.key]||0));
+    const hasResult = vals.some(v=>Number.isFinite(v) && v !== 0);
+    return { qVal, kpis:kq, hasResult };
+  }).filter(x=>x.hasResult);
+
+  const quarterSummaryHeaderCells = quarterSummaryTableSeries.map(q=>{
+    const label = String(q.qVal).split('-Q')[1] || '';
+    const year = String(q.qVal).split('-Q')[0] || '';
+    return `<th style="white-space:nowrap;text-align:center">Q${label}<div style="font-size:8.5px;color:var(--text-faint);font-weight:400">${year}</div></th>`;
+  }).join('');
+
   const quarterSumRows = quarterKpiDefs.map(d=>{
     const pct = kpiAchievePct(d.key, d.value);
     const st = kpiStatusIdLabel(pct);
     const valTxt = d.unit==='%' ? d.value.toFixed(1)+'%' : (Math.round(d.value)+' jam');
-    const monthCells = quarterMonthCols.map(mc=>{
-      const mv = (mc.kpis && mc.kpis[d.key]!=null) ? mc.kpis[d.key] : 0;
-      const mTxt = d.unit==='%' ? mv.toFixed(1)+'%' : (Math.round(mv)+' jam');
-      return `<td style="font-family:JetBrains Mono,monospace;color:var(--text-dim);white-space:nowrap">${mTxt}</td>`;
+
+    const quarterCells = quarterSummaryTableSeries.map(q=>{
+      const qv = (q.kpis && q.kpis[d.key]!=null) ? Number(q.kpis[d.key]) : 0;
+      const qTxt = d.unit==='%' ? qv.toFixed(1)+'%' : (Math.round(qv)+' jam');
+      return `<td style="font-family:JetBrains Mono,monospace;color:var(--text-dim);white-space:nowrap;text-align:center">${qTxt}</td>`;
     }).join('');
+
     return `<tr>
       <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.color};margin-right:6px;"></span><b>${d.label}</b></td>
       <td style="color:var(--text-dim)">${d.targetHint}</td>
-      ${monthCells}
-      <td style="font-family:JetBrains Mono,monospace">${valTxt}</td>
-      <td><span class="kpi-dash-status ${st.cls}">${pct.toFixed(0)}% · ${st.text}</span></td>
+      ${quarterCells || '<td style="text-align:center;color:var(--text-faint)">—</td>'}
+      <td style="font-family:JetBrains Mono,monospace;text-align:center;white-space:nowrap">${valTxt}</td>
+      <td style="text-align:left;white-space:nowrap"><span class="kpi-dash-status ${st.cls}">${pct.toFixed(0)}% · ${st.text}</span></td>
     </tr>`;
   }).join('');
+
+  // Average row — HARUS sejajar persis dengan header:
+  // KPI | Target | Q1 | Q2 | Q3 | ... | Value | Status
+  // Setiap sel Quarter berisi rata-rata % achievement dari seluruh KPI
+  // pada Quarter tersebut, sedangkan Value adalah rata-rata seluruh Quarter.
+  const quarterAveragePctByQuarter = quarterSummaryTableSeries.map(q => {
+    const vals = quarterKpiDefs.map(d => {
+      const raw = Number(q.kpis && q.kpis[d.key]);
+      if (!Number.isFinite(raw)) return null;
+      return kpiAchievePct(d.key, raw);
+    }).filter(v => Number.isFinite(v));
+
+    return vals.length ? vals.reduce((a,b) => a + b, 0) / vals.length : null;
+  });
+
+  const quarterAverageCells = quarterAveragePctByQuarter.map(avg => {
+    const txt = Number.isFinite(avg) ? avg.toFixed(1) + '%' : '—';
+    return `<td style="text-align:center;font-family:JetBrains Mono,monospace;font-weight:700;color:${Number.isFinite(avg) ? cellColor(avg) : 'var(--text-faint)'};white-space:nowrap">${txt}</td>`;
+  }).join('');
+
+  const quarterOverallAverage = quarterAveragePctByQuarter.filter(Number.isFinite);
+  const quarterOverallAvg = quarterOverallAverage.length
+    ? quarterOverallAverage.reduce((a,b) => a + b, 0) / quarterOverallAverage.length
+    : null;
+
+  const quarterAverageStatus = Number.isFinite(quarterOverallAvg)
+    ? (quarterOverallAvg >= 100
+        ? {cls:'ok', text:'ACHIEVED'}
+        : (quarterOverallAvg >= 80 ? {cls:'mid', text:'ON TRACK'} : {cls:'bad', text:'BELOW'}))
+    : {cls:'bad', text:'NO DATA'};
+
+  const quarterAverageValueTxt = Number.isFinite(quarterOverallAvg)
+    ? quarterOverallAvg.toFixed(1) + '%'
+    : '—';
+
+  // Average row: buat SELalu sama persis dengan struktur header:
+  // [KPI] [Target] [Q1..Qn] [Value] [Status].
+  // Tidak mengambil data KPI satu-per-satu ke dalam sel Quarter; hanya rata-rata
+  // achievement per Quarter yang ditempatkan pada kolom Quarter masing-masing.
+  const quarterAverageCellList = quarterAveragePctByQuarter.map(avg => {
+    const txt = Number.isFinite(avg) ? avg.toFixed(1) + '%' : '—';
+    return `<td class="quarter-average-cell" style="text-align:center;font-family:JetBrains Mono,monospace;font-weight:700;color:${Number.isFinite(avg) ? cellColor(avg) : 'var(--text-faint)'};white-space:nowrap">${txt}</td>`;
+  });
+
+  // Pastikan jumlah sel tepat: 2 + jumlah Quarter + Value + Status.
+  const expectedQuarterCount = quarterSummaryTableSeries.length;
+  while (quarterAverageCellList.length < expectedQuarterCount) quarterAverageCellList.push('<td class="quarter-average-cell" style="text-align:center;color:var(--text-faint)">—</td>');
+  if (quarterAverageCellList.length > expectedQuarterCount) quarterAverageCellList.length = expectedQuarterCount;
+
+  // Rata-rata Target: hanya KPI berbasis % (MA/PA/PMR/SA) agar satuan konsisten.
+  // Target jam (MTBS/MTTR) tidak dicampur karena satuan berbeda.
+  const pctTargets = quarterKpiDefs
+    .filter(d => d.unit === '%' && Number.isFinite(Number(d.target)))
+    .map(d => Number(d.target));
+  const avgTargetPct = pctTargets.length
+    ? (pctTargets.reduce((a,b) => a + b, 0) / pctTargets.length)
+    : null;
+  const quarterAverageTargetTxt = Number.isFinite(avgTargetPct)
+    ? avgTargetPct.toFixed(0) + '%'
+    : '—';
+
+  const quarterAverageRow = `<tr class="quarter-average-row" style="background:rgba(255,199,44,0.06)">
+    <td style="font-weight:700;color:var(--yellow);white-space:nowrap;text-align:left">Average</td>
+    <td style="color:var(--text-dim);font-family:JetBrains Mono,monospace;font-weight:700;text-align:left;white-space:nowrap">${quarterAverageTargetTxt}</td>
+    ${quarterAverageCellList.join('')}
+    <td class="quarter-average-value" style="font-family:JetBrains Mono,monospace;font-weight:700;color:var(--yellow);text-align:center;white-space:nowrap">${quarterAverageValueTxt}</td>
+    <td class="quarter-average-status" style="text-align:left;white-space:nowrap"><span class="kpi-dash-status ${quarterAverageStatus.cls}">${Number.isFinite(quarterOverallAvg) ? quarterOverallAvg.toFixed(0) + '% · ' : ''}${quarterAverageStatus.text}</span></td>
+  </tr>`;
+
   const quarterMonthHeaderCells = quarterMonthCols.map(mc=>`<th style="white-space:nowrap">${mc.label}</th>`).join('');
-  const quarterDonutSegments = quarterKpiDefs.map(d=>({ label:d.label, color:d.color, value: Math.max(0.001, kpiAchievePct(d.key, d.value)) }));
-  const quarterDonutLegend = quarterKpiDefs.map(d=>{
-    const pct = kpiAchievePct(d.key, d.value);
-    return `<div class="contrib-leg-row">
-      <span class="contrib-leg-dot" style="background:${d.color};box-shadow:0 0 8px ${d.color}88"></span>
-      <span class="contrib-leg-label"><b style="color:${d.color}">${d.label}</b> ${pct.toFixed(0)}%</span>
+  // Continuous GRAFIK QUARTER: avg % capaian KPI per triwulan (Q1 → Qn)
+  const quarterSummarySeries = (quarterOptions.slice().reverse()).map(qVal=>{
+    const kq = computeKPIsForQuarter(qVal);
+    const defs = monthlyKpiDefs.map(d=>({ key:d.key, value:kq[d.key]||0 }));
+    const pcts = defs.map(d=> kpiAchievePct(d.key, d.value));
+    const avg = pcts.length ? (pcts.reduce((a,b)=>a+b,0)/pcts.length) : 0;
+    const [yy,qq] = String(qVal).split('-Q');
+    return {
+      qVal,
+      label: 'Q'+qq,
+      fullLabel: quarterOptionLabel(qVal),
+      year: yy,
+      pct: Math.max(0, Math.min(130, avg)),
+      kpis: kq,
+      isActive: qVal === activeQuarterVal
+    };
+  });
+  function quarterContinuousSummarySVG(series){
+    const list = Array.isArray(series) ? series : [];
+    if(!list.length){
+      return `<div style="padding:28px;text-align:center;color:var(--text-faint);font-size:12px">Belum ada data GRAFIK QUARTER.</div>`;
+    }
+    const W = Math.max(420, 70*list.length + 80);
+    const H = 280, padL = 42, padR = 18, padT = 36, padB = 42, cap = 130;
+    const n = list.length, gap = 14;
+    const barW = Math.min(36, (W-padL-padR-gap*(n-1))/Math.max(1,n));
+    const depthX = 9, depthY = 7;
+    const total = barW*n + gap*(n-1) + depthX;
+    const startX = padL + Math.max(0, (W-padL-padR-total)/2);
+    const baseY = H - padB;
+    const chartH = H - padT - padB - depthY;
+    const targetY = padT + chartH * (1 - 100/cap);
+    function shade(hex, f){
+      const c = String(hex||'#4A90D9').replace('#','');
+      if(c.length!==6) return hex;
+      const r = Math.min(255, Math.max(0, Math.round(parseInt(c.slice(0,2),16)*f)));
+      const g = Math.min(255, Math.max(0, Math.round(parseInt(c.slice(2,4),16)*f)));
+      const b = Math.min(255, Math.max(0, Math.round(parseInt(c.slice(4,6),16)*f)));
+      return `rgb(${r},${g},${b})`;
+    }
+    const yTicks = [0,25,50,75,100,125].map(v=>{
+      const y = padT + chartH * (1 - Math.min(cap,v)/cap);
+      const isT = v===100;
+      if(isT){
+        return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="#FFC72C" stroke-width="1.3" stroke-dasharray="4 4" opacity="0.85"/>
+          <text x="${padL-6}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="9" font-weight="700" fill="#FFC72C" font-family="JetBrains Mono, monospace">100</text>`;
+      }
+      return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+        <text x="${padL-6}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="#5C636B" font-family="JetBrains Mono, monospace">${v}</text>`;
+    }).join('');
+    const bars = list.map((b,i)=>{
+      const pct = Number(b.pct)||0;
+      const color = pct>=100 ? '#4CAF6D' : (pct>=80 ? '#FFC72C' : '#E5484D');
+      const h = Math.max(6, chartH * Math.min(pct, cap)/cap);
+      const x = startX + i*(barW+gap);
+      const y = baseY - h;
+      const front = shade(color, 1);
+      const side = shade(color, 0.55);
+      const top = shade(color, 1.22);
+      const activeStroke = b.isActive ? `stroke="#FFC72C" stroke-width="1.5"` : '';
+      const topPts = `${x},${y} ${x+depthX},${y-depthY} ${x+barW+depthX},${y-depthY} ${x+barW},${y}`;
+      const sidePts = `${x+barW},${y} ${x+barW+depthX},${y-depthY} ${x+barW+depthX},${baseY-depthY} ${x+barW},${baseY}`;
+      const uid = 'qsum'+i;
+      return `<g style="cursor:pointer" onclick="(function(){const s=document.querySelector('.trend-quarter-select');if(s){s.value='${b.qVal}';if(typeof onKpiTrendQuarterChange==='function')onKpiTrendQuarterChange(s);}})()">
+        <polygon points="${sidePts}" fill="${side}"/>
+        <polygon points="${topPts}" fill="${top}" opacity="0.95"/>
+        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="url(#${uid})" ${activeStroke}/>
+        <defs><linearGradient id="${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#fff" stop-opacity="0.28"/>
+          <stop offset="15%" stop-color="${front}" stop-opacity="1"/>
+          <stop offset="100%" stop-color="${front}" stop-opacity="0.7"/>
+        </linearGradient></defs>
+        <text x="${(x+barW/2+depthX*0.3).toFixed(1)}" y="${(y-depthY-6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="${color}" font-family="JetBrains Mono, monospace">${pct.toFixed(0)}%</text>
+        <text x="${(x+barW/2).toFixed(1)}" y="${H-18}" text-anchor="middle" font-size="11" font-weight="700" fill="${b.isActive?'#FFC72C':'#c5cdd8'}" font-family="Oswald, sans-serif">${b.label}</text>
+        <text x="${(x+barW/2).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="8.5" fill="#6a7280" font-family="JetBrains Mono, monospace">${b.year||''}</text>
+      </g>`;
+    }).join('');
+    const overall = list.reduce((s,b)=>s+(Number(b.pct)||0),0)/list.length;
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;max-width:760px;height:280px;display:block;margin:0 auto;overflow:visible">
+      ${yTicks}
+      ${bars}
+      <text x="${W-padR}" y="16" text-anchor="end" font-size="10" fill="#9AA0A8" font-family="JetBrains Mono, monospace">AVG ALL Q · ${overall.toFixed(0)}%</text>
+    </svg>`;
+  }
+  const quarterContinuousChartHtml = quarterContinuousSummarySVG(quarterSummarySeries);
+  const quarterDonutLegend = quarterSummarySeries.map(b=>{
+    const color = b.pct>=100 ? '#4CAF6D' : (b.pct>=80 ? '#FFC72C' : '#E5484D');
+    const activeMark = b.isActive ? ' · selected' : '';
+    // Legend di bawah grafik: format Q1 2026 (bukan "Triwulan 1 2026")
+    const qLabel = (b.label || ('Q'+String(b.qVal).split('-Q')[1])) + (b.year ? (' '+b.year) : '');
+    return `<div class="contrib-leg-row" style="cursor:pointer" onclick="(function(){const s=document.querySelector('.trend-quarter-select');if(s){s.value='${b.qVal}';if(typeof onKpiTrendQuarterChange==='function')onKpiTrendQuarterChange(s);}})()">
+      <span class="contrib-leg-dot" style="background:${color};box-shadow:0 0 8px ${color}88"></span>
+      <span class="contrib-leg-label"><b style="color:${b.isActive?'#FFC72C':color}">${qLabel}</b> ${b.pct.toFixed(0)}%${activeMark}</span>
     </div>`;
   }).join('');
 
@@ -14780,24 +15166,31 @@ function renderKPIChartDashboard(k, globalStats){
     <div class="dash-mid-grid">
       <div class="dash-panel">
         <div class="chart-panel-title-row">
-          <div class="dash-panel-title" style="margin-bottom:0">REKAP QUARTER</div>
+          <div class="dash-panel-title" style="margin-bottom:0">GRAFIK QUARTER</div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span style="font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;display:inline-flex;align-items:center;gap:4px"><span class="status-dot" style="margin-right:0"></span>Live Sync</span>
             <span style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Period</span>
             ${quarterSelectHtml}
           </div>
         </div>
-        <div class="dash-contrib-wrap">
-          ${donut3DGenericSVG(quarterDonutSegments, quarterAvgPct.toFixed(0)+'%', 'AVG ' + quarterOptionLabel(activeQuarterVal).toUpperCase())}
-          <div class="dash-contrib-legend">${quarterDonutLegend}</div>
+        <div class="dash-contrib-wrap" style="flex-direction:column;align-items:stretch;gap:12px">
+          <div class="quarter-chart-medium">${quarterContinuousChartHtml}</div>
+          <div class="dash-contrib-legend" style="flex-direction:row;flex-wrap:wrap;gap:10px 16px;justify-content:center">${quarterDonutLegend}</div>
         </div>
       </div>
       <div class="dash-panel">
         <div class="dash-panel-title">KPI SUMMARY QUARTER</div>
         <div style="overflow-x:auto">
-          <table class="dash-sum-table">
-            <thead><tr><th>KPI</th><th>Target</th>${quarterMonthHeaderCells}<th>Value</th><th>Status</th></tr></thead>
-            <tbody>${quarterSumRows}</tbody>
+          <table class="dash-sum-table quarter-summary-table" style="width:100%;table-layout:fixed">
+            <colgroup>
+              <col style="width:13%">
+              <col style="width:11%">
+              ${quarterSummaryTableSeries.map(()=>`<col style="width:${Math.max(8, 48/Math.max(1,quarterSummaryTableSeries.length))}%">`).join('')}
+              <col style="width:11%">
+              <col style="width:14%">
+            </colgroup>
+            <thead><tr><th style="text-align:left">KPI</th><th style="text-align:left">Target</th>${quarterSummaryHeaderCells}<th style="text-align:center">Value</th><th style="text-align:left">Status</th></tr></thead>
+            <tbody>${quarterSumRows}${quarterAverageRow}</tbody>
           </table>
         </div>
       </div>
@@ -15015,6 +15408,16 @@ function shadeColor(hex, percent){
   return '#' + R.toString(16).padStart(2,'0') + G.toString(16).padStart(2,'0') + B.toString(16).padStart(2,'0');
 }
 
+
+// Global KPI cell color helper.
+// The Monthly table has its own local helper, but Quarter Summary is rendered
+// from renderDashboard(), so this helper must also be available in that scope.
+function cellColor(pct){
+  pct = Number(pct) || 0;
+  if(pct >= 100) return '#4CAF6D';
+  if(pct >= 80) return '#FFC72C';
+  return '#E5484D';
+}
 
 function renderDashboard(){
   // Sumber filter periode bulan sekarang hanya dari dropdown di panel "KPI Report Monthly"
@@ -18462,25 +18865,43 @@ function renderCbmRca(){
     tbody.innerHTML = '<tr class="empty-row"><td colspan="11">Belum ada RCA. Klik <b>Generate Otomatis dari Breakdown</b> atau klik baris komponen di tabel Pareto di atas.</td></tr>';
     return;
   }
+  // Rapikan teks kolom: spasi ganda, pipe berantakan, newline → spasi bersih
+  function rcaCleanText(s){
+    return String(s==null?'':s)
+      .replace(/[\r\n\u2028\u2029]+/g, ' ')
+      .replace(/\s*\|\s*/g, ' · ')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/^\s*[·,;]+\s*|\s*[·,;]+\s*$/g, '')
+      .trim();
+  }
   tbody.innerHTML = rows.map(r=>{
     const st = r.status||'Open';
     const stClass = st==='Closed'||st==='Verified' ? 'close' : (st==='In Progress' ? 'progress' : 'open');
-    const autoTag = r.autoGenerated ? ' <span class="pill progress" title="Di-generate otomatis">AUTO</span>' : '';
     const id = String(r.id||'').replace(/'/g,"&#39;");
+    const eventTxt = escUH(rcaCleanText(r.problem) || '—');
+    const rootCause = escUH(rcaCleanText(r.rootCause) || '—');
+    const corrective = escUH(rcaCleanText(r.corrective) || '—');
+    const preventive = escUH(rcaCleanText(r.preventive) || '—');
+    const category = escUH(rcaCleanText(r.category) || '—');
+    const pic = escUH(rcaCleanText(r.pic) || '—');
+    const unit = escUH(String(r.unitCode||'').trim());
+    const comp = escUH(String(r.component||'').trim() || '—');
     return `<tr data-rca-id="${escUH(r.id)}">
-      <td>${formatDateDMY(r.date)}${autoTag}</td>
-      <td><b>${escUH(r.unitCode||'')}</b></td>
-      <td><span class="cat ${escUH(r.component||'')}">${escUH(r.component||'—')}</span></td>
-      <td style="white-space:normal;text-align:left;min-width:120px;max-width:200px;">${escUH(r.problem||'—')}</td>
-      <td style="white-space:normal;text-align:left;min-width:140px;max-width:220px;">${escUH(r.rootCause||'—')}</td>
-      <td>${escUH(r.category||'—')}</td>
-      <td style="white-space:normal;text-align:left;min-width:120px;">${escUH(r.corrective||'—')}</td>
-      <td style="white-space:normal;text-align:left;min-width:120px;">${escUH(r.preventive||'—')}</td>
-      <td>${escUH(r.pic||'—')}</td>
+      <td><span class="rca-date">${formatDateDMY(r.date)}</span></td>
+      <td><span class="rca-unit">${unit}</span></td>
+      <td><span class="cat ${comp}">${comp}</span></td>
+      <td class="rca-text" title="${eventTxt}"><div class="rca-clip">${eventTxt}</div></td>
+      <td class="rca-text" title="${rootCause}"><div class="rca-clip">${rootCause}</div></td>
+      <td class="rca-cat">${category}</td>
+      <td class="rca-text" title="${corrective}"><div class="rca-clip">${corrective}</div></td>
+      <td class="rca-text" title="${preventive}"><div class="rca-clip">${preventive}</div></td>
+      <td class="rca-pic">${pic}</td>
       <td><span class="pill ${stClass}">${escUH(st)}</span></td>
-      <td style="white-space:nowrap;">
-        <div class="edit-hint" style="display:inline-block;margin-right:6px;"><span class="edit-text-btn" onclick="editRcaRecord('${id}')">Edit</span></div>
-        <button type="button" class="btn danger" onclick="deleteRcaRecord('${id}')">Hapus</button>
+      <td>
+        <div class="rca-actions">
+          <span class="edit-text-btn" onclick="editRcaRecord('${id}')">Edit</span>
+          <button type="button" class="btn danger" onclick="deleteRcaRecord('${id}')">Hapus</button>
+        </div>
       </td>
     </tr>`;
   }).join('');
@@ -18495,7 +18916,7 @@ window.editRcaRecord = function(id){
   const info = document.getElementById('rca-edit-info');
   if(info){
     info.innerHTML = `<b>${escUH(r.unitCode||'')}</b> — ${escUH(r.component||'—')}<br>
-      <span class="hint">Problem: ${escUH(r.problem||'—')}</span><br>
+      <span class="hint">Event: ${escUH(r.problem||'—')}</span><br>
       <span class="hint">Tgl: ${formatDateDMY(r.date)} · PIC: ${escUH(r.pic||'—')}${r.codeBD?' · BD: '+escUH(r.codeBD):''}</span>`;
   }
   const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v!=null?v:''; };
