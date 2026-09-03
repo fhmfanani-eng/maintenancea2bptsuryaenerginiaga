@@ -9487,8 +9487,8 @@ function getPerformanceWByUnit(){
     const rr = Number(r.r)||0;
     let t = Number(r.t);
     if(isNaN(t) || t <= 0) t = w + s + rr;
-    // WH yang menambah HM = Total − Standby (operasi + breakdown). Standby TIDAK menambah HM.
-    const workHours = Math.max(0, t - s);
+    // HM naik dari Waktu Operasi (prioritas), fallback T−S — tanpa tergantung filter periode
+    const workHours = (w > 0) ? w : Math.max(0, t - s);
     let whPerDay = null;
     if(periodDays > 0){
       whPerDay = Math.round(Math.min(24, Math.max(0, workHours / periodDays)) * 10) / 10;
@@ -10206,7 +10206,11 @@ function calcHmSekarang(unitCode, asOfDateStr){
     lastDate,
     daysElapsed,
     liveCalc,
-    asOfDate: asOfStr
+    asOfDate: asOfStr,
+    // Debug: nilai HM aktual mentah (dari View-SEN-HM) yang dipakai sebagai dasar hitungan,
+    // supaya kelihatan langsung di tooltip kalau ada dugaan data hmRecords basi/stale.
+    debugActualHm: (actual && actual.hm!=null) ? Number(actual.hm) : null,
+    debugActualDate: (actual && actual.tanggal) ? String(actual.tanggal).slice(0,10) : null
   };
 }
 
@@ -10390,7 +10394,8 @@ function enrichPlanRow(r){
     r, hmBase, hmW, hmAktualNum, hmPlanNum: hmPlanLive,
     sisaHm: sisaHmLive, daysLeft: daysLeftLive, hmSource,
     hmSekarang, dailyWh, planDateAuto,
-    lastHm: cur.lastHm, lastDate: cur.lastDate, daysElapsed: cur.daysElapsed||0
+    lastHm: cur.lastHm, lastDate: cur.lastDate, daysElapsed: cur.daysElapsed||0,
+    debugActualHm: cur.debugActualHm, debugActualDate: cur.debugActualDate
   };
 }
 
@@ -10635,7 +10640,7 @@ function updatePlanDailyWhStatusUI(){
     return;
   }
 
-  tbody.innerHTML = rows.map(({ r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft, hmSource, hmSekarang, dailyWh, planDateAuto, lastHm, lastDate, daysElapsed })=>{
+  tbody.innerHTML = rows.map(({ r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft, hmSource, hmSekarang, dailyWh, planDateAuto, lastHm, lastDate, daysElapsed, debugActualHm, debugActualDate })=>{
     // Status live berdasarkan HM: OVERDUE jika HM sekarang sudah MELEWATI HM Target + toleransi 25 jam.
     // Tidak memakai due date kalender sebagai pemicu utama.
     const OVERDUE_TOLERANCE_HM = 25;
@@ -10699,7 +10704,7 @@ function updatePlanDailyWhStatusUI(){
           readonly disabled
           title="HM Sekarang terkunci: nilai selalu auto-sync dari HM actual (sheet View-SEN-HM) + akumulasi waktu operasi (sheet performance). Tidak bisa diisi manual."
           style="width:110px; background:var(--panel-2); color:var(--yellow); border:1px solid var(--yellow-dim); border-radius:6px; padding:4px 6px; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; text-align:center; opacity:0.85; cursor:not-allowed;">
-        ${hmSource?`<div style="color:var(--text-faint);font-size:9px;margin-top:2px;">${escUH(String(hmSource))}${(r.hmAktualManual?' · manual':'')}</div>`:((r.hmAktualManual)?`<div style="color:var(--yellow);font-size:9px;margin-top:2px;">manual</div>`:'')}
+        ${hmSource?`<div style="color:var(--text-faint);font-size:9px;margin-top:2px;" title="Basis hitungan: HM aktual terakhir dari View-SEN-HM">${escUH(String(hmSource))}${(r.hmAktualManual?' · manual':'')}${(debugActualHm!=null?` · actual ${escUH(String(debugActualHm))}@${escUH(String(debugActualDate||'-'))}`:'')}</div>`:((r.hmAktualManual)?`<div style="color:var(--yellow);font-size:9px;margin-top:2px;">manual</div>`:'')}
       </td>
       <td>${sisaHmCell}</td>
       <td><span class="pill ${statusClass}">${statusLabel}</span></td>
@@ -15771,7 +15776,7 @@ async function saveMapaData(){
 
 /* ---- Auto-sync sheet performance (live, tanpa klik tombol) ----
    Cache singkat agar filter periode tidak membanjiri Apps Script. */
-const PERF_AUTO_SYNC_TTL_MS = 15000; // 15 detik — live per-shift, tetap hindari spam saat pindah menu cepat
+const PERF_AUTO_SYNC_TTL_MS = 7000; // 7 detik — HM Sekarang ikut update otomatis tiap data performance berubah
 let _perfSyncInFlight = null;
 let _perfLastFetchAt = 0;
 let _perfAutoTimer = null;
@@ -15820,16 +15825,23 @@ async function fetchPerformanceFromSheets(opts){
       const periodDays = (data.periodStart && data.periodEnd)
         ? Math.max(1, Math.round((new Date(data.periodEnd+'T00:00:00') - new Date(data.periodStart+'T00:00:00'))/86400000)+1)
         : 0;
-      const workHours = Math.max(0, t - s); // T − S (= W + R bila T = W+S+R)
+      // HM naik dari Waktu Operasi (prioritas), fallback T−S — tanpa tergantung periode
+      const workHours = (w > 0) ? w : Math.max(0, t - s);
       const whPerDay = periodDays > 0 && workHours > 0
         ? Math.round(Math.min(24, workHours / periodDays) * 10) / 10
         : 18;
+      // Bawa hmSekarang dari Apps Script agar kolom HM Sekarang ikut update otomatis
+      const hmSekarang = (r.hmSekarang != null && !isNaN(Number(r.hmSekarang)))
+        ? Number(r.hmSekarang) : null;
       return {
         unit: String(r.unit||'').trim(),
         w, s, r: rv, t,
         workingHours: w,
         totalWorkingHours: t,
-        workingHoursPerDay: whPerDay
+        workingHoursPerDay: whPerDay,
+        hmSekarang: hmSekarang,
+        hmSekarangSource: r.hmSekarangSource || (hmSekarang != null ? 'performance-live-incremental' : null),
+        hmLastSyncedAt: r.hmLastSyncedAt || null
       };
     }).filter(r=>r.unit);
 
@@ -16711,10 +16723,24 @@ async function runPlanHmLiveSyncCycle(opts){
 function startPerformanceLiveSync(){
   if(_perfAutoTimer) return;
 
-  // Poll rutin 20 detik — live per-shift (sheet performance: waktu operasi/standby/total jam kerja)
-  _perfAutoTimer = setInterval(()=>{
-    runPlanHmLiveSyncCycle({ force:false }).catch(()=>{});
-  }, 20000);
+  // Poll otomatis: HM Sekarang ikut update tiap Waktu Operasi/Standby/Total di sheet performance berubah
+  // (tidak tergantung filter periode). 8 dtk saat Plan aktif, 10 dtk di view lain.
+  function _hmSyncIntervalMs(){
+    try{
+      const planView = document.getElementById('view-plan');
+      if(planView && planView.classList.contains('active')) return 8000;
+    }catch(_e){}
+    return 10000;
+  }
+  function _scheduleNextHmSync(){
+    if(_perfAutoTimer) clearTimeout(_perfAutoTimer);
+    _perfAutoTimer = setTimeout(()=>{
+      runPlanHmLiveSyncCycle({ force:false })
+        .catch(()=>{})
+        .finally(()=>{ _scheduleNextHmSync(); });
+    }, _hmSyncIntervalMs());
+  }
+  _scheduleNextHmSync();
 
   // Jalankan segera saat start (force jika belum sync hari ini)
   setTimeout(()=>{
