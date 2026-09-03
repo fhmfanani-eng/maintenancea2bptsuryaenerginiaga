@@ -9949,6 +9949,68 @@ function getActualMonitoringHM(unitCode, periodStart, periodEnd){
 }
 
 /**
+ * Baseline HM SEBELUM periode performance dimulai.
+ * Prioritas:
+ *  1) HM Akhir Monitoring HM terakhir dengan tanggal < periodStart.
+ *  2) Fallback: HM Awal entry paling awal PADA/SETELAH periodStart (asumsi baseline = HM Awal hari pertama periode).
+ */
+function getHmBaselineBeforePeriod(unitCode, periodStart){
+  const code = String(unitCode||'').trim().toUpperCase();
+  const ps = String(periodStart||'').slice(0,10);
+  if(!code || !ps) return null;
+  const rows = (hmRecords||[]).filter(r=>{
+    const u = String(r.unitCode||'').trim().toUpperCase();
+    if(u !== code) return false;
+    const hm = parseHmNumberLocal(r.hmAkhir != null ? r.hmAkhir : r.hm_akhir);
+    if(!(hm > 0)) return false;
+    r._hmAkhirNum = hm;
+    r._tanggalNorm = String(r.tanggal||'').slice(0,10);
+    return !!r._tanggalNorm;
+  });
+  if(!rows.length) return null;
+
+  const before = rows.filter(r=> r._tanggalNorm < ps);
+  if(before.length){
+    before.sort((a,b)=> (Number(b._hmAkhirNum)||0) - (Number(a._hmAkhirNum)||0) || String(b._tanggalNorm).localeCompare(String(a._tanggalNorm)));
+    return { hm: Number(before[0]._hmAkhirNum), date: before[0]._tanggalNorm, source:'baseline-before-period' };
+  }
+  const onOrAfter = rows.filter(r=> r._tanggalNorm >= ps).sort((a,b)=> String(a._tanggalNorm).localeCompare(String(b._tanggalNorm)));
+  if(onOrAfter.length){
+    const first = onOrAfter[0];
+    const awal = parseHmNumberLocal(first.hmAwal);
+    const hm = (!isNaN(awal) && awal > 0) ? awal : Number(first._hmAkhirNum);
+    return { hm, date: first._tanggalNorm, source:'baseline-first-in-period' };
+  }
+  return null;
+}
+
+/**
+ * HM Sekarang LIVE-EKSAK = baseline (HM sebelum periode performance) + Waktu Operasi
+ * KUMULATIF AKTUAL (Total Jam Kerja − Standby) dari sheet performance saat ini.
+ * BUKAN estimasi/rata-rata — nilainya persis mengikuti apa yang tercatat di sheet performance,
+ * jadi otomatis berubah tiap sheet performance ter-update (per shift, live poll).
+ */
+function calcHmSekarangFromPerformanceLive(unitCode){
+  const code = String(unitCode||'').trim().toUpperCase();
+  if(!code || !mapaData || !mapaData.periodStart) return null;
+  const perf = (typeof getPerformanceWByUnit==='function') ? getPerformanceWByUnit()[code] : null;
+  if(!perf) return null;
+  const baseline = getHmBaselineBeforePeriod(code, mapaData.periodStart);
+  if(!baseline || baseline.hm == null || isNaN(Number(baseline.hm))) return null;
+  const workHours = Math.max(0, Number(perf.workHours) || 0); // T − S, live dari sheet performance
+  const hmNow = Math.round((Number(baseline.hm) + workHours) * 10) / 10;
+  const asOfDate = String(mapaData.periodEnd || mapaData.updatedAt || '').slice(0,10) || new Date().toISOString().slice(0,10);
+  return {
+    hm: hmNow,
+    date: asOfDate,
+    baseline: baseline.hm,
+    baselineDate: baseline.date,
+    workHours,
+    source: 'performance-live-shift'
+  };
+}
+
+/**
  * HM Sekarang = HM AKTUAL Monitoring (baseline) + proyeksi otomatis per hari.
  *
  * Working Hours (dari sheet performance):
@@ -10000,6 +10062,17 @@ function calcHmSekarang(unitCode, asOfDateStr){
       hm: Number(liveCalc.hmBase),
       date: String(liveCalc.hmBaseDate||'').slice(0,10),
       source: 'live-base'
+    });
+  }
+  // Sync live per-shift: baseline sebelum periode + Waktu Operasi KUMULATIF AKTUAL
+  // dari sheet performance (bukan estimasi). Otomatis ikut update tiap sheet performance
+  // berubah (W/S/T per shift), lewat live poll (runPlanHmLiveSyncCycle).
+  const perfLive = (typeof calcHmSekarangFromPerformanceLive==='function') ? calcHmSekarangFromPerformanceLive(code) : null;
+  if(perfLive && perfLive.hm!=null && !isNaN(Number(perfLive.hm))){
+    candidates.push({
+      hm: Number(perfLive.hm),
+      date: String(perfLive.date||'').slice(0,10),
+      source: perfLive.source || 'performance-live-shift'
     });
   }
   if(candidates.length){
@@ -15659,7 +15732,7 @@ async function saveMapaData(){
 
 /* ---- Auto-sync sheet performance (live, tanpa klik tombol) ----
    Cache singkat agar filter periode tidak membanjiri Apps Script. */
-const PERF_AUTO_SYNC_TTL_MS = 45000; // 45 detik — hindari spam saat pindah menu
+const PERF_AUTO_SYNC_TTL_MS = 15000; // 15 detik — live per-shift, tetap hindari spam saat pindah menu cepat
 let _perfSyncInFlight = null;
 let _perfLastFetchAt = 0;
 let _perfAutoTimer = null;
@@ -16599,10 +16672,10 @@ async function runPlanHmLiveSyncCycle(opts){
 function startPerformanceLiveSync(){
   if(_perfAutoTimer) return;
 
-  // Poll rutin 60 detik
+  // Poll rutin 20 detik — live per-shift (sheet performance: waktu operasi/standby/total jam kerja)
   _perfAutoTimer = setInterval(()=>{
     runPlanHmLiveSyncCycle({ force:false }).catch(()=>{});
-  }, 60000);
+  }, 20000);
 
   // Jalankan segera saat start (force jika belum sync hari ini)
   setTimeout(()=>{
