@@ -2529,7 +2529,7 @@ body.role-mechanic #history-filters{ display:none !important; }
       <section class="view" id="view-plan">
         <div class="panel">
           <div class="panel-head">
-            <h2>Schedule Plan Service <span class="tag">AUTO SYNC · 4 UNIT LOCK</span></h2>
+            <h2>Plan Schedule Service <span class="tag">AUTO SYNC · 4 UNIT LOCK</span></h2>
             <div class="toolbar">
               <button type="button" class="btn small" id="btn-sync-plan-all" title="Sync performance + HM + Jam Kerja Harian, lalu generate jadwal otomatis">☁ Sync & Generate Otomatis</button>
               <button type="button" class="btn small secondary" id="btn-sync-daily-wh" title="Sync WH harian dari sheet performance (T−S)/hari — tanpa sheet baru">☁ Sync Jam Kerja Harian</button>
@@ -10524,9 +10524,10 @@ function updatePlanDailyWhStatusUI(){
   }
 
   tbody.innerHTML = rows.map(({ r, hmBase, hmW, hmAktualNum, hmPlanNum, sisaHm, daysLeft, hmSource, hmSekarang, dailyWh, planDateAuto, lastHm, lastDate, daysElapsed })=>{
-    // Status live berdasarkan HM: OVERDUE jika HM sekarang sudah MELEWATI HM Target.
+    // Status live berdasarkan HM: OVERDUE jika HM sekarang sudah MELEWATI HM Target + toleransi 25 jam.
     // Tidak memakai due date kalender sebagai pemicu utama.
-    const isOverdue = !isPlanClosed(r) && hmSekarang!=null && hmPlanNum>0 && Number(hmSekarang) > Number(hmPlanNum);
+    const OVERDUE_TOLERANCE_HM = 25;
+    const isOverdue = !isPlanClosed(r) && hmSekarang!=null && hmPlanNum>0 && Number(hmSekarang) > (Number(hmPlanNum) + OVERDUE_TOLERANCE_HM);
     const statusLabel = isOverdue ? 'Overdue' : (r.status||'Planned');
     const statusClass = isOverdue ? 'overdue' : 'planned';
     if(!isPlanClosed(r)) r.status = isOverdue ? 'Overdue' : 'Planned';
@@ -10751,7 +10752,7 @@ window.reopenPlanService = async function(id){
       const typeUnit=r.typeUnit || ((UNITS||[]).find(u=>String(u.code).toUpperCase()===String(r.unitCode).toUpperCase())||{}).type || '';
       r.serviceType=getPsTypeForTargetHm(typeUnit,r.hmPlan).label;
       r.planDate=estimatePlanDateFromHm(r.unitCode,r.hmPlan,cur.hmNow);
-      r.status=Number(cur.hmNow)>=Number(r.hmPlan) ? 'Overdue' : 'Planned';
+      r.status=Number(cur.hmNow)>=(Number(r.hmPlan)+25) ? 'Overdue' : 'Planned';
     }else{
       r.status='Planned';
     }
@@ -11214,7 +11215,7 @@ function syncOpenPlanRecordLive(r, perfMap){
   r.serviceType=ps.label;
   // OVERDUE hanya jika HM sudah melewati target service.
   // Saat HM tepat sama dengan target, status tetap Planned/Jatuh Tempo.
-  r.status=(Number(cur.hmNow)>hmPlan) ? 'Overdue' : 'Planned';
+  r.status=(Number(cur.hmNow)>hmPlan+25) ? 'Overdue' : 'Planned';
   // PIC otomatis mengikuti aturan unit + HM TARGET (SPC-104: Team UT ≤6000, SEN >6000)
   r.mechanic = resolvePlanPic(r.unitCode, hmPlan);
   // Pertahankan tanggal manual/seeded jika sudah ada; tanggal baru hanya
@@ -11282,7 +11283,7 @@ function ensureAugustPlanServiceRecords(perfMap){
       existing.planDate=req.date;
       existing.hmPlan=req.hmPlan;
       existing.serviceType=ps.label;
-      existing.status=(hmAktual!=null && hmAktual>req.hmPlan) ? 'Overdue' : 'Planned';
+      existing.status=(hmAktual!=null && hmAktual>req.hmPlan+25) ? 'Overdue' : 'Planned';
       if(!existing.execStatus || String(existing.execStatus).trim()==='') existing.execStatus='Open';
       existing.mechanic=resolvePlanPic(req.unitCode, req.hmPlan);
       if(!existing.hmAktualManual){
@@ -11301,7 +11302,7 @@ function ensureAugustPlanServiceRecords(perfMap){
       hmPlan:req.hmPlan,
       serviceType:ps.label,
       mechanic:resolvePlanPic(req.unitCode, req.hmPlan),
-      status:(hmAktual!=null && hmAktual>req.hmPlan) ? 'Overdue' : 'Planned',
+      status:(hmAktual!=null && hmAktual>req.hmPlan+25) ? 'Overdue' : 'Planned',
       execStatus:'Open',
       execDate:'',
       hmBase:cur && cur.lastHm!=null ? cur.lastHm : null,
