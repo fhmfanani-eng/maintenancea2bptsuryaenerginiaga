@@ -9501,7 +9501,10 @@ function getPerformanceWByUnit(){
       workHours,
       standbyPerDay: periodDays > 0 ? Math.round((s / periodDays) * 10) / 10 : null,
       whPerDay, // boleh 0 (unit full standby)
-      periodDays
+      periodDays,
+      // HM Sekarang live incremental dari Apps Script (anti-mundur, per-shift) —
+      // ada hanya jika Code.gs sudah versi baru (field hmLive: true di payload).
+      hmSekarangLive: (r.hmSekarang!=null && !isNaN(Number(r.hmSekarang))) ? Number(r.hmSekarang) : null
     };
   });
   return map;
@@ -9992,14 +9995,30 @@ function getHmBaselineBeforePeriod(unitCode, periodStart){
  */
 function calcHmSekarangFromPerformanceLive(unitCode){
   const code = String(unitCode||'').trim().toUpperCase();
-  if(!code || !mapaData || !mapaData.periodStart) return null;
+  if(!code || !mapaData) return null;
   const perf = (typeof getPerformanceWByUnit==='function') ? getPerformanceWByUnit()[code] : null;
   if(!perf) return null;
+  const asOfDate = String(mapaData.periodEnd || mapaData.updatedAt || '').slice(0,10) || new Date().toISOString().slice(0,10);
+
+  // PRIORITAS 1: HM Sekarang live-incremental dari Code.gs (anti-mundur per-shift).
+  // Ini sudah dihitung sebagai state kumulatif di sheet performance sendiri, jadi
+  // tidak perlu baseline-before-period lagi & tidak akan jatuh saat D2/G2 direset.
+  if(perf.hmSekarangLive != null){
+    return {
+      hm: perf.hmSekarangLive,
+      date: asOfDate,
+      workHours: perf.workHours,
+      source: 'performance-live-incremental'
+    };
+  }
+
+  // FALLBACK (Code.gs versi lama, belum ada field hmSekarang): baseline-before-period
+  // + akumulasi Waktu Operasi sejak periodStart — bisa jatuh kalau D2/G2 direset.
+  if(!mapaData.periodStart) return null;
   const baseline = getHmBaselineBeforePeriod(code, mapaData.periodStart);
   if(!baseline || baseline.hm == null || isNaN(Number(baseline.hm))) return null;
   const workHours = Math.max(0, Number(perf.workHours) || 0); // T − S, live dari sheet performance
   const hmNow = Math.round((Number(baseline.hm) + workHours) * 10) / 10;
-  const asOfDate = String(mapaData.periodEnd || mapaData.updatedAt || '').slice(0,10) || new Date().toISOString().slice(0,10);
   return {
     hm: hmNow,
     date: asOfDate,
@@ -10144,6 +10163,26 @@ function calcHmSekarang(unitCode, asOfDateStr){
         }
       }catch(__e){}
     }
+  }
+
+  // SAFETY-NET anti-mundur: performance-live-shift kadang under-count kalau periode/baseline
+  // sheet performance ter-reset (workHours akumulasi jadi lebih pendek dari yang seharusnya),
+  // dan karena date-nya diklaim "hari ini" ia lolos tanpa proyeksi tambahan di atas.
+  // Di sini kita selalu hitung ULANG jalur "Monitoring HM aktual + proyeksi WH-harian s/d hari ini"
+  // secara independen, lalu pakai yang LEBIH TINGGI — HM odometer cuma boleh naik, tidak boleh
+  // lebih rendah dari proyeksi yang sudah terbukti akurat sebelumnya.
+  if(actual && actual.hm!=null && !isNaN(Number(actual.hm))){
+    try{
+      const actualDateStr = String(actual.tanggal||'').slice(0,10);
+      const projFromActual = projectHmDeltaWithDailyWh(unitCode, actualDateStr, asOfStr);
+      const altHm = Math.round((Number(actual.hm) + (Number(projFromActual.delta)||0)) * 10) / 10;
+      if(hmNow==null || altHm > Number(hmNow)){
+        hmNow = altHm;
+        lastHm = altHm;
+        lastDate = asOfStr;
+        source = 'monitoring-actual' + (projFromActual.usedActualDays>0 ? '+wh-harian' : '+wh/day') + '(safety-net)';
+      }
+    }catch(_e){}
   }
 
   // Floor akhir: HM Sekarang tidak boleh di bawah max HM Eksekusi (input manual / Close),
