@@ -5743,7 +5743,7 @@ async function loadData(){
       'SWA-101': { tanggal:'2026-08-26', hm:5619.8 },
       'SWA-102': { tanggal:'2026-08-26', hm:5513.7 },
       'SBD-103': { tanggal:'2026-08-26', hm:5150.6 },
-      'SPC-104': { tanggal:'2026-08-26', hm:2956.7 }
+      'SPC-104': { tanggal:'2026-09-02', hm:3017.8 }
     };
     let fixed = 0;
     Object.keys(latestTargets).forEach(code=>{
@@ -5765,6 +5765,41 @@ async function loadData(){
       }
     });
     if(fixed){ try{ await saveHM(); }catch(e){} }
+  }
+
+  // Koreksi khusus SPC-104: HM aktual = 3017,8 (bukan 5594,3 milik SWA-102)
+  {
+    const SPC = 'SPC-104';
+    const ACTUAL = 3017.8;
+    const DATE = '2026-09-02';
+    let fixedSpc = 0;
+    (hmRecords||[]).forEach(r=>{
+      if(String(r.unitCode||'').trim().toUpperCase() !== SPC) return;
+      const h = parseFloat(r.hmAkhir);
+      if(!isNaN(h) && h > 4000){
+        r.hmAkhir = ACTUAL;
+        r.hmAwal = ACTUAL;
+        r.hmTotal = 0;
+        r.tanggal = DATE;
+        r.keterangan = (r.keterangan||'') + '|fix-spc-3017.8';
+        fixedSpc++;
+      }
+    });
+    const hasOk = (hmRecords||[]).some(r=>
+      String(r.unitCode||'').trim().toUpperCase()===SPC &&
+      Math.abs(parseFloat(r.hmAkhir)-ACTUAL) < 0.05
+    );
+    if(!hasOk){
+      hmRecords.push({
+        id: 'hm-force-SPC-104-'+DATE,
+        tanggal: DATE, user:'BC', category:'Sync', nama:'View-SEN-HM',
+        shift:'Siang', unitCode: SPC, pekerjaan:'Baseline HM Akhir aktual',
+        hmAwal: ACTUAL, hmAkhir: ACTUAL, hmTotal: 0, fuel: 0,
+        keterangan: 'force-spc-104-3017.8'
+      });
+      fixedSpc++;
+    }
+    if(fixedSpc){ try{ await saveHM(); }catch(e){} }
   }
 
   try{
@@ -9926,6 +9961,8 @@ function getActualMonitoringHM(unitCode, periodStart, periodEnd){
     if(!t || t.length < 10) return false;
     const hm = parseHmNumberLocal(r.hmAkhir != null ? r.hmAkhir : r.hm_akhir);
     if(!(hm > 0)) return false;
+    // SPC-104 excavator ~3xxx HM — tolak nilai 5xxx yang tertukar dari SWA
+    if(code === 'SPC-104' && hm > 4000) return false;
     r._hmAkhirNum = hm;
     r._tanggalNorm = t;
     return true;
@@ -10056,7 +10093,22 @@ function calcHmSekarang(unitCode, asOfDateStr){
   const periodStart = range.start || '';
   const periodEnd = range.end || (asOfDateStr && String(asOfDateStr).length>=10 ? String(asOfDateStr).slice(0,10) : '');
 
-  const actual = getActualMonitoringHM(code, periodStart, periodEnd);
+  // Override keras SPC-104: HM aktual View-SEN-HM = 3017,8 (2-Sep-2026)
+  // Mencegah tampilan 5594,3 (nilai SWA-102) tanpa perlu deploy ulang Apps Script.
+  if(code === 'SPC-104'){
+    const forceHm = 3017.8;
+    const forceDate = '2026-09-02';
+    let actual0 = getActualMonitoringHM(code, periodStart, periodEnd);
+    if(!actual0 || !(Number(actual0.hm) > 0) || Number(actual0.hm) > 4000){
+      actual0 = { hm: forceHm, tanggal: forceDate, source: 'monitoring-actual-spc-force' };
+    }
+    // Lanjut pakai pipeline normal dengan actual yang sudah dikoreksi
+    var _spcForcedActual = actual0;
+  }
+
+  const actual = (code === 'SPC-104' && typeof _spcForcedActual !== 'undefined')
+    ? _spcForcedActual
+    : getActualMonitoringHM(code, periodStart, periodEnd);
   const lastSvc = getLastServiceForUnit(unitCode);
   const liveCalc = calcHmTotalForUnit(unitCode);
 
