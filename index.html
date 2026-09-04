@@ -16237,12 +16237,13 @@ function normalizeHmSheetRow(r){
  */
 let _hmLastFetchAt = 0;
 let _hmSyncInFlight = null;
-const HM_AUTO_SYNC_TTL_MS = 90000; // 90 dtk cache HM
+const HM_AUTO_SYNC_TTL_MS = 20000; // 20 dtk — dipercepat dari 90 dtk supaya HM Sekarang tidak nyangkut di data lama
 
 async function fetchHMFromSheets(opts){
   opts = opts || {};
   if(!BACKEND_CONFIG.sheetsWebAppUrl){
     if(opts.manual) alert('⚠ sheetsWebAppUrl belum diisi di BACKEND_CONFIG.');
+    console.warn('[HM-SYNC] gagal: sheetsWebAppUrl kosong');
     return { ok:false, error:'no_url' };
   }
   try{
@@ -16253,21 +16254,25 @@ async function fetchHMFromSheets(opts){
         (BACKEND_CONFIG.sheetsWebAppUrl.indexOf('?')>=0 ? '&' : '?') +
         'action=' + encodeURIComponent(action);
       let res = await fetch(url, { method:'GET', redirect:'follow', cache:'no-store' });
-      try{ data = await res.json(); }catch(_e){ data = null; }
+      try{ data = await res.json(); }catch(_e){ console.warn('[HM-SYNC] GET '+action+' gagal parse JSON:', _e); data = null; }
       if(data && data.ok===true && Array.isArray(data.rows) && data.rows.length) break;
+      if(data && data.ok===false) console.warn('[HM-SYNC] GET '+action+' error dari server:', data.error);
       const res2 = await fetch(BACKEND_CONFIG.sheetsWebAppUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action }),
         cache: 'no-store'
       });
-      try{ data = await res2.json(); }catch(_e){ data = null; }
+      try{ data = await res2.json(); }catch(_e){ console.warn('[HM-SYNC] POST '+action+' gagal parse JSON:', _e); data = null; }
       if(data && data.ok===true && Array.isArray(data.rows) && data.rows.length) break;
+      if(data && data.ok===false) console.warn('[HM-SYNC] POST '+action+' error dari server:', data.error);
     }
     if(!data || data.ok!==true || !Array.isArray(data.rows) || !data.rows.length){
+      console.warn('[HM-SYNC] GAGAL total setelah coba semua action. Response terakhir:', data);
       if(opts.manual) alert('⚠ Sync Monitoring HM gagal: tidak ada data dari sheet.\nPastikan Apps Script punya action getHM yang membaca sheet View-SEN-HM (kolom Tanggal, Kode Unit, HM Akhir, …).');
       return { ok:false, error:(data && data.error) || 'empty' };
     }
+    console.log('[HM-SYNC] sukses, baris diterima:', data.rows.length, '| sheet:', data.sheet);
     const incoming = data.rows.map(normalizeHmSheetRow).filter(Boolean);
     if(!incoming.length){
       if(opts.manual) alert('⚠ Sync Monitoring HM: baris sheet tidak bisa diparsing (cek format tanggal & HM Akhir).');
