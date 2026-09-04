@@ -447,6 +447,7 @@ body{
   flex-wrap:wrap; gap:10px;
   box-shadow:0 4px 20px rgba(0,0,0,0.2);
   position:relative;
+  z-index:100; /* topbar + notif selalu di atas konten semua menu */
 }
 .topbar::after{
   content:''; position:absolute; left:0; right:0; bottom:0; height:1px;
@@ -460,7 +461,7 @@ body{
 .topbar .meta{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); }
 .content{
   padding:28px 28px 70px; max-width:1440px;
-  position:relative; z-index:1;
+  position:relative; z-index:1; /* di bawah topbar agar panel notifikasi tidak tertimpa */
 }
 .view{ display:none; }
 .view.active{ display:block; }
@@ -1547,8 +1548,10 @@ body.role-mechanic #history-filters{ display:none !important; }
   border-radius:10px; line-height:1;
 }
 
-/* NOTIFICATION BELL (Mekanik & Supervisor) */
-.notif-wrap{ position:relative; }
+/* NOTIFICATION BELL (Mekanik & Supervisor)
+   Panel memakai position:fixed + z-index tinggi agar TIDAK tertimpa konten
+   di menu mana pun (Dashboard, Daily, Plan, CBM, Sparepart, dll). */
+.notif-wrap{ position:relative; z-index:200; }
 .notif-bell{
   position:relative; width:38px; height:38px; border-radius:50%;
   background:var(--panel-2); border:1px solid var(--line); color:var(--text-dim);
@@ -1567,14 +1570,23 @@ body.role-mechanic #history-filters{ display:none !important; }
   box-shadow:0 0 0 2px var(--panel);
 }
 .notif-panel{
-  display:none; position:absolute; top:calc(100% + 10px); right:0; width:360px; max-width:92vw;
-  max-height:70vh; overflow-y:auto; background:var(--panel); border:1px solid var(--line);
-  border-radius:6px; box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:80;
+  display:none;
+  position:fixed; /* lepas dari stacking context topbar/content → selalu di atas semua menu */
+  top:0; left:0; /* posisi aktual di-set JS lewat positionNotifPanel() */
+  width:360px; max-width:min(360px, calc(100vw - 16px));
+  max-height:min(70vh, calc(100vh - 24px));
+  overflow-y:auto;
+  background:#1e2126;
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:10px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+  z-index:180; /* di atas seluruh UI menu; di bawah modal (200+) & maint tool */
+  isolation:isolate;
 }
 .notif-panel.show{ display:block; }
 .notif-panel-head{
   display:flex; align-items:center; justify-content:space-between; padding:12px 14px;
-  border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--panel);
+  border-bottom:1px solid var(--line); position:sticky; top:0; background:#1e2126; z-index:1;
 }
 .notif-panel-head h4{ font-family:'Oswald',sans-serif; font-size:13px; letter-spacing:0.5px; text-transform:uppercase; color:var(--text); }
 .notif-panel-empty{ padding:26px 16px; text-align:center; color:var(--text-faint); font-size:12.5px; }
@@ -17192,14 +17204,63 @@ function renderNotificationCenter(){
   fireBrowserNotifications(notifs);
 }
 
+/** Posisikan panel notifikasi (position:fixed) tepat di bawah lonceng, tetap di viewport. */
+function positionNotifPanel(){
+  const bell = document.getElementById('notif-bell');
+  const panel = document.getElementById('notif-panel');
+  if(!bell || !panel) return;
+  const r = bell.getBoundingClientRect();
+  const gap = 10;
+  const pw = Math.min(360, window.innerWidth - 16);
+  const ph = Math.min(window.innerHeight * 0.7, window.innerHeight - 24);
+  let left = r.right - pw;
+  if(left < 8) left = 8;
+  if(left + pw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - pw - 8);
+  let top = r.bottom + gap;
+  if(top + Math.min(ph, 280) > window.innerHeight - 8){
+    top = Math.max(8, r.top - gap - Math.min(ph, 320));
+  }
+  panel.style.top = Math.round(top) + 'px';
+  panel.style.left = Math.round(left) + 'px';
+  panel.style.right = 'auto';
+  panel.style.width = pw + 'px';
+  panel.style.maxHeight = ph + 'px';
+}
+function openNotifPanel(){
+  const panel = document.getElementById('notif-panel');
+  if(!panel) return;
+  panel.classList.add('show');
+  positionNotifPanel();
+}
+function closeNotifPanel(){
+  const panel = document.getElementById('notif-panel');
+  if(panel) panel.classList.remove('show');
+}
+function toggleNotifPanel(){
+  const panel = document.getElementById('notif-panel');
+  if(!panel) return;
+  if(panel.classList.contains('show')) closeNotifPanel();
+  else openNotifPanel();
+}
 document.getElementById('notif-bell').addEventListener('click', (e)=>{
   e.stopPropagation();
-  document.getElementById('notif-panel').classList.toggle('show');
+  toggleNotifPanel();
 });
 document.addEventListener('click', (e)=>{
-  const wrap = document.querySelector('.notif-wrap');
-  if(wrap && !wrap.contains(e.target)) document.getElementById('notif-panel').classList.remove('show');
+  const panel = document.getElementById('notif-panel');
+  const bell = document.getElementById('notif-bell');
+  if(!panel || !panel.classList.contains('show')) return;
+  if(panel.contains(e.target) || (bell && bell.contains(e.target))) return;
+  closeNotifPanel();
 });
+window.addEventListener('resize', ()=>{
+  const panel = document.getElementById('notif-panel');
+  if(panel && panel.classList.contains('show')) positionNotifPanel();
+});
+window.addEventListener('scroll', ()=>{
+  const panel = document.getElementById('notif-panel');
+  if(panel && panel.classList.contains('show')) positionNotifPanel();
+}, true);
 
 /* ================= LAPORAN BREAKDOWN UNIT ================= */
 const bdrUnitSelect = document.getElementById('bdr-unitcode');
