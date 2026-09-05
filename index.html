@@ -2580,7 +2580,7 @@ body.role-mechanic #history-filters{ display:none !important; }
               <button type="button" class="btn secondary small" id="plan-period-reset-btn" title="Tampilkan semua jadwal Open">✕ Reset</button>
               <button type="button" class="btn small secondary" id="plan-period-this-month-btn" title="Filter ke bulan berjalan (Open)">Bulan Ini</button>
             </div>
-            <div class="hint" id="plan-daily-wh-status" style="margin-top:10px; margin-bottom:0;">sumber: <b>sheet performance</b> (W/hari) · auto-sync harian aktif · sync: —</div>
+            <div class="hint" id="plan-daily-wh-status" style="margin-top:10px; margin-bottom:0;">sumber: <b>sheet performance</b> (W/hari) · auto-sync harian aktif · Last Synced: —</div>
           </div>
           <div class="scroll-top-track" id="plan-scroll-top" title="Geser untuk melihat kolom lainnya"><div class="scroll-top-track-inner" id="plan-scroll-top-inner"></div></div>
           <div class="table-wrap" id="plan-table-wrap">
@@ -2734,7 +2734,7 @@ body.role-mechanic #history-filters{ display:none !important; }
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>Planning Maintenance</h2></div>
+          <div class="panel-head"><h2>Schedule Planning Maintenance</h2></div>
           <div class="filters">
             <input type="month" id="ps-month" style="width:auto;">
             <select id="ps-filter-unit"><option value="">Semua Unit</option></select>
@@ -2755,7 +2755,7 @@ body.role-mechanic #history-filters{ display:none !important; }
           <div class="table-wrap" id="planningsystem-table-wrap">
             <table id="planningsystem-table">
               <thead><tr>
-                <th>Unit Code</th><th>Type Unit</th><th>PIC Mechanic 1</th><th>PIC Mechanic 2</th><th>Job Description</th><th>Component</th><th>No PR</th>
+                <th>Unit Code</th><th>Type Unit</th><th>Mechanic</th><th>Job Description</th><th>Component</th><th>No PR</th>
                 <th>Plan Tgl Eksekusi</th><th>Due Date</th><th>Tgl Pekerjaan</th><th>Jam Mulai</th><th>Jam Selesai</th><th>Duration</th><th>Status</th><th></th>
               </tr></thead>
               <tbody id="planningsystem-tbody"></tbody>
@@ -2766,23 +2766,7 @@ body.role-mechanic #history-filters{ display:none !important; }
         <!-- Historical / Summary — hanya status Close; disembunyikan dari Mechanic -->
         <div class="panel" id="ps-historical-panel" style="display:none;">
           <div class="panel-head">
-            <h2><span class="tag">HISTORY</span> Rekap Planning Maintenance (Close)</h2>
-          </div>
-          <div class="hint" style="margin-top:-6px; margin-bottom:12px;">Ringkasan rencana yang sudah dikerjakan (status <b>Close</b>). Panel ini hanya tampil untuk Supervisor / Admin — tidak ditampilkan ke user Mechanic.</div>
-          <div class="filters" style="margin-bottom:12px;">
-            <input type="month" id="ps-hist-month" style="width:auto;" title="Filter bulan (berdasarkan Tgl Pekerjaan / Plan Date)">
-            <select id="ps-hist-unit"><option value="">Semua Unit</option></select>
-            <select id="ps-hist-component">
-              <option value="">Semua Component</option>
-              <option value="Engine">Engine</option>
-              <option value="Transmission">Transmission</option>
-              <option value="Hydraulic">Hydraulic</option>
-              <option value="Attachment">Attachment</option>
-              <option value="Undercarriage">Undercarriage</option>
-              <option value="Cabin">Cabin</option>
-              <option value="Other">Other</option>
-            </select>
-            <button type="button" class="btn small secondary" id="ps-hist-clear-filter">Clear Filter</button>
+            <h2><span class="tag">HISTORY</span> Planning Maintenance</h2>
           </div>
           <div class="grid grid-4" id="ps-hist-kpi" style="margin-bottom:14px;">
             <div class="sp-kpi"><div class="sp-kpi-label">Total Close</div><div class="sp-kpi-val" id="ps-hist-kpi-total">0</div></div>
@@ -2794,7 +2778,7 @@ body.role-mechanic #history-filters{ display:none !important; }
           <div class="table-wrap" id="ps-hist-table-wrap">
             <table id="ps-hist-table">
               <thead><tr>
-                <th>Unit Code</th><th>Type Unit</th><th>PIC Mechanic 1</th><th>PIC Mechanic 2</th>
+                <th>Unit Code</th><th>Type Unit</th><th>Mechanic</th>
                 <th>Component</th><th>No PR</th><th>Job Description</th>
                 <th>Plan Tgl</th><th>Due Date</th><th>Tgl Pekerjaan</th>
                 <th>Jam Mulai</th><th>Jam Selesai</th><th>Duration</th><th>Status</th>
@@ -3491,6 +3475,53 @@ const PLAN_SEED = [
     id: 'seed-'+planDate+'-'+unitCode+'-'+hmPlan,
     unitCode, typeUnit: u?u.type:'', planDate, hmPlan, serviceType, mechanic,
     status:'Planned', notes:'Import dari Plan Schedule Next Service Juli-Desember 2026.xlsx'
+  };
+});
+
+// Imported from "Plan_Monthly_Maintenance_A2B.xlsx" (sheet Februari, Maret, April, Mei 2026) —
+// data Planning Maintenance A2B (job desc per unit, PR, tanggal order part, status, tanggal pemasangan/close).
+// Baris yang identik antar-sheet (job yang sama masih Open/belum berubah di bulan berikutnya)
+// sudah digabung jadi satu baris; baris yang datanya diperbarui di sheet bulan berikutnya
+// (mis. tanggal pemasangan yang dikoreksi) memakai nilai TERBARU (sheet paling akhir).
+// Format tiap baris: [unitCode, jobDesc, component, noPR, planDate(tgl order part), status, workDate(tgl pemasangan/close)]
+const PLANNINGSYSTEM_SEED = [
+  ['SBD-103','Install DC Converter Step Down','DC Converter','PR-31','2026-02-14','Close','2026-02-21'],
+  ['SBD-103','Sealent Window Cabin','Sealent/Lem Kaca','Petty cash','2026-02-15','Close','2026-02-21'],
+  ['SWA-102','Replace Bohlamp Stoplamp','Bohlamp','Petty cash','2026-02-15','Close','2026-03-01'],
+  ['SWA-102','Replace Bohlamp lampu mundur','Bohlamp','Petty cash','2026-02-15','Close','2026-03-01'],
+  ['SBD-103','Repalce Oil Hydraulic','Oil VG46','PR-34','2026-02-21','Close','2026-02-22'],
+  ['SBD-103','Replace Hose Tilt Blade (Conditional)','Hose','PR-30','2026-02-14','Open',''],
+  ['SBD-103','Replace Battery','Battery','PR-29','2026-02-14','Hold PR HO',''],
+  ['SWA-101','Install DC Converter Step down','DC Converter Step Down 24V-12V','PR-39','2026-02-26','Close','2026-03-12'],
+  ['SPC-104','Install DC Converter Step down','DC Converter Step Down 24V-12V','PR-39','2026-02-26','Close','2026-04-04'],
+  ['SWA-102','Install DC Converter Step down','DC Converter Step Down 24V-12V','PR-39','2026-02-26','Close','2026-03-11'],
+  ['SWA-102','Replace Lampu Mundur kanan','Bohlamp','Petty cash','2026-03-02','Close','2026-03-08'],
+  ['SWA-102','Install Bolt Cutting Edge','Bolt,Nut,Washer','PR-46','2026-03-04','Close','2026-03-08'],
+  ['SWA-102','Check Torque Bolt Nut /Welding Cutting Edge','Bolt,Nut,Washer','PR-46','2026-03-04','Close','2026-04-11'],
+  ['SBD-103','Adjust Shim trunion Blade R/L','Attachment blade','-','','Close','2026-04-24'],
+  ['SWA-101','Install Sticker Dashboard Panel Monitor unit','Additional','-','','Close','2026-04-22'],
+  ['SWA-102','Install Sticker Dashboard Panel Monitor unit','Additional','-','','Close','2026-04-22'],
+  ['SBD-103','Install Sticker Dashboard Panel Monitor unit','Additional','-','','Close','2026-04-20'],
+  ['SPC-104','Install Sticker Dashboard Panel Monitor unit','Additional','-','','Close','2026-04-20'],
+  ['SWA-101','Install Bracket APAR','Safety Device','-','','Close','2026-04-26'],
+  ['SWA-102','Install Bracket APAR','Safety Device','-','','Close','2026-04-26'],
+  ['SBD-103','Install Bracket APAR','Safety Device','-','','Close','2026-05-05'],
+  ['SPC-104','Install Bracket APAR','Safety Device','-','','Close','2026-04-27'],
+  ['SWA-101','Recondition Attachment,install rubber attachment','Attachment','-','','Close','2026-05-11'],
+  ['SWA-101','Repalce belt altenator','Altenator','PR 25','2026-02-03','Close','2026-07-11'],
+  ['SPC-104','Replace/ganti Vbelt Altenator & Vbelt Compressor AC','Altenator & Compressor AC','PR 87','2026-04-28','Open','2026-07-29'],
+].map(row=>{
+  const [unitCode, jobDesc, component, noPR, planDate, status, workDate] = row;
+  const u = UNITS.find(x=>x.code===unitCode);
+  return {
+    id: 'seed-planningsystem-'+unitCode+'-'+noPR+'-'+jobDesc.slice(0,12).replace(/[^a-zA-Z0-9]/g,''),
+    unitCode, typeUnit: u?u.type:'',
+    picUsername:'', picName:'', pic2Username:'', pic2Name:'',
+    jobDesc, component, noPR,
+    planDate: planDate||'', dueDate:'', workDate: workDate||'',
+    jamMulai:'', jamSelesai:'', jamTotal:'',
+    status,
+    createdBy:'Import dari Plan_Monthly_Maintenance_A2B.xlsx',
   };
 });
 
@@ -5039,6 +5070,13 @@ const HM_SEED = [
   ['2026-08-26','BC','Barging','Dede Darmawan','Siang','SWA-102','Barging coal bc',5499.7,5506.5,6.8,0,''],
   ['2026-08-26','BC','Barging','Hairul Fadly','Siang','SWA-101','Barging',5612.3,5619.8,7.5,0,''],
   ['2026-08-26','BC','Barging','Jhohan','Malam','SWA-102','Barging coal bc',5506.5,5513.7,7.2,0,''],
+  // 3–5-Sep-2026 — View-SEN-HM (HM Akhir terbaru)
+  ['2026-09-03','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',5240,5247.8,7.8,0,''],
+  ['2026-09-04','BC','General','Muh. Alief Palulun','Siang','SPC-104','Padamkan batu terbakar & Generator',3017.8,3029.6,11.8,0,''],
+  ['2026-09-04','BC','Triming','Miki Mustakim','Siang','SBD-103','Triming',5247.8,5253.1,5.3,0,''],
+  ['2026-09-04','BC','Triming','Hengki Ramadan','Malam','SBD-103','Triming',5253.1,5261.8,8.7,0,''],
+  ['2026-09-04','BC','Barging','Dede Darmawan','Malam','SWA-101','Barging coal bc',5741,5743.2,2.2,0,''],
+  ['2026-09-05','BC','General','Denri Holmen Ambarita','Malam','SPC-104','General',3025,3029.6,4.6,0,''],
 ].map((row,i)=>{
   const [tanggal,user,category,nama,shift,unitCode,pekerjaan,hmAwal,hmAkhir,hmTotal,fuel,keterangan] = row;
   return {
@@ -5628,6 +5666,17 @@ async function loadData(){
     const ps = await appStorage.get('planning-system-records');
     planningSystemRecords = ps ? JSON.parse(ps.value) : [];
   }catch(e){ planningSystemRecords = []; }
+  // Pastikan data import PLANNINGSYSTEM_SEED (Plan_Monthly_Maintenance_A2B.xlsx) selalu ada
+  // di planningSystemRecords, tanpa menghapus/menduplikasi data existing saat load berulang.
+  try{
+    const seedListPS = (typeof PLANNINGSYSTEM_SEED!=='undefined' ? PLANNINGSYSTEM_SEED : []);
+    const psKeys = new Set(planningSystemRecords.map(r=>String(r.id||'')));
+    const psToAdd = seedListPS.filter(r=>!psKeys.has(String(r.id||'')));
+    if(psToAdd.length){
+      planningSystemRecords = psToAdd.concat(planningSystemRecords);
+      await savePlanningSystem();
+    }
+  }catch(e){ console.warn('merge planningsystem seed failed', e); }
   try{
     const rca = await appStorage.get('rca-records');
     rcaRecords = rca ? JSON.parse(rca.value) : [];
@@ -5754,8 +5803,8 @@ async function loadData(){
     const latestTargets = {
       'SWA-101': { tanggal:'2026-08-26', hm:5619.8 },
       'SWA-102': { tanggal:'2026-08-26', hm:5513.7 },
-      'SBD-103': { tanggal:'2026-08-26', hm:5150.6 },
-      'SPC-104': { tanggal:'2026-09-02', hm:3017.8 }
+      'SBD-103': { tanggal:'2026-08-26', hm:5150.6 }
+      // SPC-104 dipindah ke blok "Force baseline 3–5 Sep 2026" di bawah (data lebih baru).
     };
     let fixed = 0;
     Object.keys(latestTargets).forEach(code=>{
@@ -5779,11 +5828,11 @@ async function loadData(){
     if(fixed){ try{ await saveHM(); }catch(e){} }
   }
 
-  // Koreksi khusus SPC-104: HM aktual = 3017,8 (bukan 5594,3 milik SWA-102)
+  // Koreksi khusus SPC-104: HM aktual = 3029,6 (bukan 5594,3 milik SWA-102)
   {
     const SPC = 'SPC-104';
-    const ACTUAL = 3017.8;
-    const DATE = '2026-09-02';
+    const ACTUAL = 3029.6;
+    const DATE = '2026-09-05';
     let fixedSpc = 0;
     (hmRecords||[]).forEach(r=>{
       if(String(r.unitCode||'').trim().toUpperCase() !== SPC) return;
@@ -5812,6 +5861,47 @@ async function loadData(){
       fixedSpc++;
     }
     if(fixedSpc){ try{ await saveHM(); }catch(e){} }
+  }
+
+  // Force baseline 3–5 Sep 2026 dari View-SEN-HM (selalu merge) — SBD-103, SPC-104, SWA-101
+  {
+    const keyOf = r => [String(r.tanggal||'').slice(0,10), String(r.unitCode||'').trim().toUpperCase(), String(r.shift||''), String(Number(r.hmAkhir)||'')].join('|');
+    const existingKeys = new Set((hmRecords||[]).map(keyOf));
+    const existingIds = new Set((hmRecords||[]).map(r=>r.id));
+    const sep0305 = (typeof HM_SEED!=='undefined' ? HM_SEED : []).filter(r=>{
+      const t = String(r.tanggal||'').slice(0,10);
+      return t==='2026-09-03' || t==='2026-09-04' || t==='2026-09-05';
+    });
+    const toAdd = sep0305.filter(r=>!existingIds.has(r.id) && !existingKeys.has(keyOf(r)));
+    if(toAdd.length){
+      hmRecords = (hmRecords||[]).concat(toAdd);
+      try{ await saveHM(); }catch(e){}
+    }
+    const latestTargetsSep = {
+      'SBD-103': { tanggal:'2026-09-04', hm:5261.8 },
+      'SWA-101': { tanggal:'2026-09-04', hm:5743.2 },
+      'SPC-104': { tanggal:'2026-09-05', hm:3029.6 }
+    };
+    let fixedSep = 0;
+    Object.keys(latestTargetsSep).forEach(code=>{
+      const t = latestTargetsSep[code];
+      const has = (hmRecords||[]).some(r=>{
+        if(String(r.unitCode||'').trim().toUpperCase()!==code) return false;
+        if(String(r.tanggal||'').slice(0,10)!==t.tanggal) return false;
+        const h = parseFloat(r.hmAkhir);
+        return !isNaN(h) && Math.abs(h - t.hm) < 0.05;
+      });
+      if(!has){
+        hmRecords.push({
+          id: 'hm-force-'+code+'-'+t.tanggal,
+          tanggal: t.tanggal, user:'BC', category:'Sync', nama:'View-SEN-HM',
+          shift:'Malam', unitCode:code, pekerjaan:'Baseline HM Akhir (sheet)',
+          hmAwal:t.hm, hmAkhir:t.hm, hmTotal:0, fuel:0, keterangan:'force-baseline-sep0305'
+        });
+        fixedSep++;
+      }
+    });
+    if(fixedSep){ try{ await saveHM(); }catch(e){} }
   }
 
   try{
@@ -10105,11 +10195,11 @@ function calcHmSekarang(unitCode, asOfDateStr){
   const periodStart = range.start || '';
   const periodEnd = range.end || (asOfDateStr && String(asOfDateStr).length>=10 ? String(asOfDateStr).slice(0,10) : '');
 
-  // Override keras SPC-104: HM aktual View-SEN-HM = 3017,8 (2-Sep-2026)
+  // Override keras SPC-104: HM aktual View-SEN-HM = 3029,6 (5-Sep-2026)
   // Mencegah tampilan 5594,3 (nilai SWA-102) tanpa perlu deploy ulang Apps Script.
   if(code === 'SPC-104'){
-    const forceHm = 3017.8;
-    const forceDate = '2026-09-02';
+    const forceHm = 3029.6;
+    const forceDate = '2026-09-05';
     let actual0 = getActualMonitoringHM(code, periodStart, periodEnd);
     if(!actual0 || !(Number(actual0.hm) > 0) || Number(actual0.hm) > 4000){
       actual0 = { hm: forceHm, tanggal: forceDate, source: 'monitoring-actual-spc-force' };
@@ -10671,7 +10761,7 @@ function updatePlanDailyWhStatusUI(){
   const n = (typeof dailyWhRecords!=='undefined' && dailyWhRecords) ? dailyWhRecords.length : 0;
   const ts = meta.updatedAt ? String(meta.updatedAt).replace('T',' ').slice(0,19) : '—';
   const src = meta.source || (n ? 'lokal' : 'performance');
-  el.innerHTML = 'sumber: <b>'+src+'</b> · sync: <b>'+ts+'</b>'+
+  el.innerHTML = 'sumber: <b>'+src+'</b> · Last Synced: <b>'+ts+'</b>'+
     (meta.lastError ? ' · <span style="color:var(--orange)">'+String(meta.lastError).slice(0,80)+'</span>' : '');
 }
 
@@ -10771,19 +10861,19 @@ function updatePlanDailyWhStatusUI(){
       <td style="font-family:'JetBrains Mono',monospace;"><b style="color:var(--yellow);">${(dailyWh!=null && dailyWh!==undefined && !isNaN(Number(dailyWh))) ? Number(dailyWh).toFixed(1) : '—'}</b></td>
       <td style="font-family:'JetBrains Mono',monospace;">
         <input type="number" step="0.1" min="0" placeholder="Auto-sync"
-          value="${(debugActualHm!=null&&debugActualHm!==undefined&&!isNaN(Number(debugActualHm)))?Number(debugActualHm).toFixed(1):(hmSekarang!==null&&hmSekarang!==undefined?Number(hmSekarang).toFixed(1):'')}"
+          value="${(r.hmAktual!==undefined&&r.hmAktual!==null&&r.hmAktual!==''&&!isNaN(Number(r.hmAktual)))?Number(r.hmAktual).toFixed(1):((debugActualHm!=null&&debugActualHm!==undefined&&!isNaN(Number(debugActualHm)))?Number(debugActualHm).toFixed(1):(hmSekarang!==null&&hmSekarang!==undefined?Number(hmSekarang).toFixed(1):''))}"
           readonly disabled
-          title="${(debugActualHm!=null)?('HM Actual (mentah) dari sheet View-SEN-HM, tanggal '+escUH(String(debugActualDate||'-'))+'. Auto-sync, tidak bisa diisi manual.'):'HM Actual terkunci: nilai auto-sync dari HM actual (sheet View-SEN-HM) + akumulasi waktu operasi (sheet performance). Tidak bisa diisi manual.'}"
+          title="${(r.hmAktual!==undefined&&r.hmAktual!==null&&r.hmAktual!=='')?('HM Actual — nilai HM Eksekusi (auto-sync/Close/manual) baris ini.'):((debugActualHm!=null)?('HM Actual (mentah) dari sheet View-SEN-HM, tanggal '+escUH(String(debugActualDate||'-'))+'. Auto-sync, tidak bisa diisi manual.'):'HM Actual terkunci: nilai auto-sync dari HM actual (sheet View-SEN-HM) + akumulasi waktu operasi (sheet performance). Tidak bisa diisi manual.')}"
           style="width:110px; background:var(--panel-2); color:var(--yellow); border:1px solid var(--yellow-dim); border-radius:6px; padding:4px 6px; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; text-align:center; opacity:0.85; cursor:not-allowed;">
       </td>
       <td>${sisaHmCell}</td>
       <td><span class="pill ${statusClass}">${statusLabel}</span></td>
       <td>
         <input type="number" step="0.1" min="0" placeholder="Wajib sebelum Close"
-          value="${(r.hmAktual!==undefined && r.hmAktual!==null && r.hmAktual!=='') ? Number(r.hmAktual) : ''}"
+          value="${(isPlanClosed(r) || r.hmAktualManual) && (r.hmAktual!==undefined && r.hmAktual!==null && r.hmAktual!=='') ? Number(r.hmAktual) : ''}"
           onchange="updatePlanHmEksekusi('${r.id}', this.value)"
           onblur="updatePlanHmEksekusi('${r.id}', this.value)"
-          title="Isi HM unit saat service dieksekusi. Nilai ini menjadi baseline HM Sekarang unit (semua baris). Wajib sebelum Close."
+          title="Isi HM unit saat service dieksekusi (manual). Nilai auto-sync tetap dipakai di belakang layar untuk Est. Sisa HM &amp; Tgl Rencana, tapi kolom ini dikosongkan sampai diisi manual atau status Close."
           style="width:110px; background:var(--panel-2); color:var(--yellow); border:1px solid var(--yellow-dim); border-radius:6px; padding:4px 6px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; text-align:center;">
       </td>
       <td>
@@ -11798,8 +11888,9 @@ window.updatePlanExecStatus = async function(id, value){
   if(!r) return;
 
   if(value==='Close'){
-    // HM Eksekusi WAJIB diisi sebelum Close
-    let hmExec = (r.hmAktual!==undefined && r.hmAktual!==null && r.hmAktual!=='')
+    // HM Eksekusi WAJIB diisi MANUAL sebelum Close — nilai auto-sync di belakang layar
+    // (untuk Est. Sisa HM & Tgl Rencana) tidak dihitung sebagai pengisian manual.
+    let hmExec = (r.hmAktualManual && r.hmAktual!==undefined && r.hmAktual!==null && r.hmAktual!=='')
       ? Number(r.hmAktual) : null;
     if(hmExec===null || isNaN(hmExec) || hmExec<=0){
       const typed = prompt(
@@ -12114,6 +12205,49 @@ function filterPlanningRows(){
     return true;
   });
 }
+/* Cari mekanik pelaksana dari data Daily Maintenance (dailyRecords) untuk satu baris
+   Planning Maintenance, dipakai sebagai fallback otomatis kalau PIC Mechanic belum
+   diisi manual di rencana tsb. Dicocokkan dari Unit Code yang sama + tanggal pekerjaan
+   (Tgl Pekerjaan, atau Plan Tgl kalau Tgl Pekerjaan kosong) paling dekat (maks. 3 hari beda). */
+function findDailyMechanicForPlan(r){
+  if(!r || !r.unitCode) return null;
+  const targetDateStr = r.workDate || r.planDate;
+  let candidates = (dailyRecords||[]).filter(d=> String(d.unitCode||'').trim().toUpperCase()===String(r.unitCode||'').trim().toUpperCase());
+  if(!candidates.length) return null;
+  if(targetDateStr){
+    const exact = candidates.filter(d=> String(d.tanggal||'')===String(targetDateStr));
+    if(exact.length){
+      candidates = exact;
+    } else {
+      const targetTime = new Date(targetDateStr).getTime();
+      if(!isNaN(targetTime)){
+        candidates = candidates
+          .filter(d=>d.tanggal)
+          .map(d=>({ d, diff: Math.abs(new Date(d.tanggal).getTime() - targetTime) }))
+          .filter(x=> !isNaN(x.diff) && x.diff <= 3*24*3600*1000)
+          .sort((a,b)=> a.diff - b.diff)
+          .map(x=>x.d);
+      } else {
+        candidates = [];
+      }
+    }
+  }
+  if(!candidates.length) return null;
+  const d = candidates[0];
+  const names = [d.mechanic, d.mechanic2, d.mechanic3].map(x=>String(x||'').trim()).filter(Boolean);
+  return names.length ? names.join(', ') : null;
+}
+
+/* Satu kolom "Mechanic" gabungan (menggantikan kolom terpisah PIC Mechanic 1 & 2).
+   Prioritas: PIC yang diisi manual di form Planning Maintenance (picName + pic2Name) —
+   kalau kosong, otomatis diisi dari data Daily Maintenance unit & tanggal yang cocok. */
+function getEffectiveMechanicDisplay(r){
+  const manual = [r.picName, r.pic2Name].map(x=>String(x||'').trim()).filter(Boolean).join(', ');
+  if(manual) return manual;
+  const auto = findDailyMechanicForPlan(r);
+  return auto || '—';
+}
+
 function renderPlanningTable(){
   updatePicMechanic1Field();
   const rows = filterPlanningRows();
@@ -12122,7 +12256,7 @@ function renderPlanningTable(){
   const isSupervisor = currentRole()==='Supervisor';
 
   if(!rows.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="15">Belum ada rencana maintenance untuk filter ini.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Belum ada rencana maintenance untuk filter ini.</td></tr>`;
   } else {
     tbody.innerHTML = rows.map(r=>{
       const isOverdue = r.status==='Open' && r.dueDate && r.dueDate<today;
@@ -12150,8 +12284,7 @@ function renderPlanningTable(){
       <tr>
         <td>${r.unitCode}</td>
         <td>${r.typeUnit}</td>
-        <td>${r.picName||'—'}</td>
-        <td>${r.pic2Name||'—'}</td>
+        <td>${getEffectiveMechanicDisplay(r)}</td>
         <td style="white-space:normal; min-width:200px;">${r.jobDesc||'—'}</td>
         <td><span class="cat ${r.component}">${r.component}</span></td>
         <td>${r.noPR||'—'}</td>
@@ -12194,44 +12327,13 @@ function canViewPlanningHistorical(){
 }
 
 function filterPlanningHistoricalRows(){
-  const monthEl = document.getElementById('ps-hist-month');
-  const unitEl = document.getElementById('ps-hist-unit');
-  const compEl = document.getElementById('ps-hist-component');
-  const month = (monthEl && monthEl.value) || '';
-  const unit = (unitEl && unitEl.value) || '';
-  const component = (compEl && compEl.value) || '';
-  return (planningSystemRecords||[]).filter(r=>{
-    if(!r || r.status!=='Close') return false;
-    const dateKey = String(r.workDate || r.planDate || '').slice(0,7);
-    if(month && dateKey !== month) return false;
-    if(unit && String(r.unitCode||'')!==unit) return false;
-    if(component && String(r.component||'')!==component) return false;
-    return true;
-  }).sort((a,b)=>{
-    const da = String(a.workDate || a.planDate || '');
-    const db = String(b.workDate || b.planDate || '');
-    return db.localeCompare(da);
-  });
-}
-
-function refreshPsHistUnitOptions(){
-  const sel = document.getElementById('ps-hist-unit');
-  if(!sel) return;
-  const prev = sel.value || '';
-  const codes = new Set();
-  (UNITS||[]).forEach(u=>{ const c=String(u.code||'').trim(); if(c) codes.add(c); });
-  try{
-    (planningSystemRecords||[]).forEach(r=>{
-      if(r && r.status==='Close'){
-        const c=String(r.unitCode||'').trim();
-        if(c) codes.add(c);
-      }
+  // Filter dibuang — rekap menampilkan SEMUA Planning Maintenance status Close.
+  return (planningSystemRecords||[]).filter(r=> r && r.status==='Close')
+    .sort((a,b)=>{
+      const da = String(a.workDate || a.planDate || '');
+      const db = String(b.workDate || b.planDate || '');
+      return db.localeCompare(da);
     });
-  }catch(_e){}
-  const sorted = Array.from(codes).sort((a,b)=>a.localeCompare(b));
-  sel.innerHTML = '<option value="">Semua Unit</option>' +
-    sorted.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
-  if(prev && sorted.indexOf(prev)>=0) sel.value = prev;
 }
 
 function renderPlanningHistorical(){
@@ -12244,18 +12346,16 @@ function renderPlanningHistorical(){
     return;
   }
   panel.style.display = '';
-  try{ refreshPsHistUnitOptions(); }catch(_e){}
 
   const rows = filterPlanningHistoricalRows();
   if(!rows.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="14">Belum ada rencana Close untuk filter ini.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="13">Belum ada rencana Close.</td></tr>`;
   } else {
     tbody.innerHTML = rows.map(r=>`
       <tr>
         <td><b>${escUH(r.unitCode||'')}</b></td>
         <td>${escUH(r.typeUnit||'—')}</td>
-        <td>${escUH(r.picName||'—')}</td>
-        <td>${escUH(r.pic2Name||'—')}</td>
+        <td>${escUH(getEffectiveMechanicDisplay(r))}</td>
         <td><span class="cat ${escUH(r.component||'')}">${escUH(r.component||'—')}</span></td>
         <td>${escUH(r.noPR||'—')}</td>
         <td style="white-space:normal;min-width:180px;text-align:left;">${escUH(r.jobDesc||'—')}</td>
@@ -12292,27 +12392,6 @@ function renderPlanningHistorical(){
 
   try{ attachTopScroll('ps-hist'); }catch(_e){}
 }
-
-(function initPsHistoricalFilters(){
-  const monthEl = document.getElementById('ps-hist-month');
-  if(monthEl && !monthEl.value){
-    try{ monthEl.value = new Date().toISOString().slice(0,7); }catch(_e){}
-  }
-  ['ps-hist-month','ps-hist-unit','ps-hist-component'].forEach(id=>{
-    document.getElementById(id)?.addEventListener('change', ()=>{
-      try{ renderPlanningHistorical(); }catch(_e){}
-    });
-  });
-  document.getElementById('ps-hist-clear-filter')?.addEventListener('click', ()=>{
-    const m = document.getElementById('ps-hist-month');
-    const u = document.getElementById('ps-hist-unit');
-    const c = document.getElementById('ps-hist-component');
-    if(m) m.value = '';
-    if(u) u.value = '';
-    if(c) c.value = '';
-    try{ renderPlanningHistorical(); }catch(_e){}
-  });
-})();
 
 window.deletePlanningSystem = async function(id){
   planningSystemRecords = planningSystemRecords.filter(r=>r.id!==id);
@@ -16487,7 +16566,7 @@ async function fetchDailyWorkingHoursFromSheets(opts){
         dailyWhRecords = Array.from(map2.values());
         _dailyWhMeta = {
           updatedAt: new Date().toISOString(),
-          source: 'performance-local',
+          source: 'performance',
           lastSyncOk: true,
           rowCount: synth.length,
           lastError: ''
@@ -16496,7 +16575,7 @@ async function fetchDailyWorkingHoursFromSheets(opts){
         if(opts.manual){
           alert('✓ WH harian dari sheet performance: '+synth.length+' baris (T−S)/hari periode.\nTidak perlu sheet "Jam Kerja Harian".');
         }
-        return { ok:true, changed:true, rows: synth.length, source:'performance-local' };
+        return { ok:true, changed:true, rows: synth.length, source:'performance' };
       }
       const errMsg = (data && data.error) ? data.error : 'Data performance belum tersedia';
       _dailyWhMeta = Object.assign({}, _dailyWhMeta, { lastSyncOk:false, lastError: errMsg, updatedAt: new Date().toISOString() });
